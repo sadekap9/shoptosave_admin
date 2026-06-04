@@ -34,6 +34,8 @@ import {
   Menu as MenuIcon,
   MenuOpen as MenuOpenIcon,
   KeyboardArrowRight as ChevronRightIcon,
+  Category as CategoryIcon,
+  SupervisorAccount as SubAdminIcon,
 } from '@mui/icons-material';
 
 // Subcomponents import
@@ -46,6 +48,8 @@ import WoohooSyncView from './components/WoohooSyncView';
 import StoresView from './components/StoresView';
 import WalletsView from './components/WalletsView';
 import ProfileView from './components/ProfileView';
+import CategoriesView from './components/CategoriesView';
+import SubAdminsView from './components/SubAdminsView';
 
 // Initial Mock Orders
 const initialOrders = [
@@ -179,6 +183,10 @@ function App() {
         );
       case 'users':
         return <UsersView triggerToast={triggerToast} />;
+      case 'categories':
+        return <CategoriesView triggerToast={triggerToast} />;
+      case 'sub-admins':
+        return <SubAdminsView triggerToast={triggerToast} />;
       case 'gift-card-catalog':
         return <GiftCardCatalogView triggerToast={triggerToast} />;
       case 'orders':
@@ -202,9 +210,6 @@ function App() {
       case 'stores':
         return (
           <StoresView
-            stores={stores}
-            onAddStore={handleAddStore}
-            onToggleStoreStatus={handleToggleStoreStatus}
             triggerToast={triggerToast}
           />
         );
@@ -337,6 +342,18 @@ function App() {
                 {!isCollapsed && <Badge badgeContent="1.2k" color="primary" sx={{ mr: 1, '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16, fontWeight: 700, backgroundColor: 'rgba(109, 40, 217, 0.1)', color: '#6D28D9' } }} />}
               </ListItemButton>
             </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={activeTab === 'sub-admins'}
+                onClick={() => setActiveTab('sub-admins')}
+                className={activeTab === 'sub-admins' ? 'glowing-indicator' : ''}
+              >
+                <ListItemIcon sx={{ color: activeTab === 'sub-admins' ? '#6D28D9' : '#64748B' }}>
+                  <SubAdminIcon fontSize="small" />
+                </ListItemIcon>
+                {!isCollapsed && <ListItemText primary="Sub-Admins" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
+              </ListItemButton>
+            </ListItem>
           </List>
 
           {/* Catalog Category */}
@@ -356,6 +373,18 @@ function App() {
                   <GiftCardIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Gift Cards" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={activeTab === 'categories'}
+                onClick={() => setActiveTab('categories')}
+                className={activeTab === 'categories' ? 'glowing-indicator' : ''}
+              >
+                <ListItemIcon sx={{ color: activeTab === 'categories' ? '#6D28D9' : '#64748B' }}>
+                  <CategoryIcon fontSize="small" />
+                </ListItemIcon>
+                {!isCollapsed && <ListItemText primary="Categories" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
@@ -414,7 +443,7 @@ function App() {
                 <ListItemIcon sx={{ color: activeTab === 'stores' ? '#6D28D9' : '#64748B' }}>
                   <StoresIcon fontSize="small" />
                 </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Partner Stores" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
+                {!isCollapsed && <ListItemText primary="Stores" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>

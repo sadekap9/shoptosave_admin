@@ -19,9 +19,6 @@ import {
   Shield as ShieldIcon,
   Https as HttpsIcon,
   History as HistoryIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  Badge as BadgeIcon,
 } from '@mui/icons-material';
 
 // Helper to get initials dynamically from name

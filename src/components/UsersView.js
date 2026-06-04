@@ -1508,26 +1508,39 @@ const UsersView = ({ triggerToast }) => {
               </Grid>
 
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Adjustment Value (INR)"
-                  placeholder="Enter amount (e.g. 500, 1000)"
-                  type="number"
-                  inputProps={{ min: '1', step: 'any' }}
-                  value={adjustmentAmount}
-                  onChange={(e) => setAdjustmentAmount(e.target.value)}
-                  variant="outlined"
-                  size="small"
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                    },
-                  }}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                  }}
-                />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                    ADJUSTMENT VALUE (INR) *
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    placeholder="Enter amount (e.g. 500, 1000)"
+                    type="number"
+                    inputProps={{ min: '1', step: 'any' }}
+                    value={adjustmentAmount}
+                    onChange={(e) => setAdjustmentAmount(e.target.value)}
+                    variant="outlined"
+                    size="small"
+                    required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        bgcolor: '#F8FAFC',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          bgcolor: '#F1F5F9',
+                        },
+                        '&.Mui-focused': {
+                          bgcolor: '#FFFFFF',
+                          boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                        },
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                    }}
+                  />
+                </Box>
               </Grid>
 
               {/* Stripe preset chips */}
@@ -1652,21 +1665,28 @@ const UsersView = ({ triggerToast }) => {
               </Box>
             )}
 
-            <FormControl
-              fullWidth
-              size="small"
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '12px',
-                },
-              }}
-            >
-              <InputLabel id="target-status-label">New Account Status</InputLabel>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                NEW ACCOUNT STATUS *
+              </Typography>
               <Select
-                labelId="target-status-label"
                 value={targetStatus}
-                label="New Account Status"
                 onChange={(e) => setTargetStatus(e.target.value)}
+                size="small"
+                fullWidth
+                sx={{
+                  borderRadius: '12px',
+                  bgcolor: '#F8FAFC',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(226, 232, 240, 0.8)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#CBD5E1',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#6D28D9',
+                  },
+                }}
               >
                 <MenuItem value="Active">
                   <Box display="flex" alignItems="center" gap={1}>
@@ -1687,7 +1707,7 @@ const UsersView = ({ triggerToast }) => {
                   </Box>
                 </MenuItem>
               </Select>
-            </FormControl>
+            </Box>
           </DialogContent>
 
           <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>

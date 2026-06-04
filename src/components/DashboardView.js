@@ -17,8 +17,6 @@ import {
   DialogActions,
   TextField,
   MenuItem,
-  FormControl,
-  InputLabel,
   Select,
   Tooltip,
   Divider,
@@ -835,18 +833,94 @@ const DashboardView = ({
             Register Partner Store
           </DialogTitle>
           <DialogContent sx={{ pt: '8px !important' }}>
-            <TextField label="Store Name" value={storeName} onChange={e => setStoreName(e.target.value)} fullWidth required size="small"
-              sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '10px' } }} />
-            <TextField label="Cashback %" type="number" value={cashbackPct} onChange={e => setCashbackPct(e.target.value)} fullWidth required size="small"
-              sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '10px' } }} />
-            <FormControl fullWidth size="small">
-              <InputLabel>Status</InputLabel>
-              <Select value={storeStoreStatus} onChange={e => setStoreStoreStatus(e.target.value)} label="Status"
-                sx={{ borderRadius: '10px' }}>
-                <MenuItem value="Live">Live</MenuItem>
-                <MenuItem value="Paused">Paused</MenuItem>
-              </Select>
-            </FormControl>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                  STORE NAME *
+                </Typography>
+                <TextField
+                  fullWidth
+                  placeholder="e.g. Swiggy, Amazon"
+                  value={storeName}
+                  onChange={e => setStoreName(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                      bgcolor: '#F8FAFC',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: '#F1F5F9',
+                      },
+                      '&.Mui-focused': {
+                        bgcolor: '#FFFFFF',
+                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                  CASHBACK % *
+                </Typography>
+                <TextField
+                  fullWidth
+                  type="number"
+                  placeholder="e.g. 5.0"
+                  value={cashbackPct}
+                  onChange={e => setCashbackPct(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  required
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '10px',
+                      bgcolor: '#F8FAFC',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: '#F1F5F9',
+                      },
+                      '&.Mui-focused': {
+                        bgcolor: '#FFFFFF',
+                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                    },
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                  STATUS *
+                </Typography>
+                <Select
+                  value={storeStoreStatus}
+                  onChange={e => setStoreStoreStatus(e.target.value)}
+                  size="small"
+                  fullWidth
+                  sx={{
+                    borderRadius: '10px',
+                    bgcolor: '#F8FAFC',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(226, 232, 240, 0.8)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#CBD5E1',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#6D28D9',
+                    },
+                  }}
+                >
+                  <MenuItem value="Live">Live</MenuItem>
+                  <MenuItem value="Paused">Paused</MenuItem>
+                </Select>
+              </Box>
+            </Box>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
             <Button onClick={() => setOpenStoreDialog(false)} color="inherit" sx={{ fontWeight: 600, borderRadius: '8px' }}>Cancel</Button>
@@ -865,10 +939,29 @@ const DashboardView = ({
             Feature a Gift Card
           </DialogTitle>
           <DialogContent sx={{ pt: '8px !important' }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Select Brand</InputLabel>
-              <Select value={selectedBrand} onChange={e => setSelectedBrand(e.target.value)} label="Select Brand"
-                sx={{ borderRadius: '10px' }}>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                SELECT BRAND *
+              </Typography>
+              <Select
+                value={selectedBrand}
+                onChange={e => setSelectedBrand(e.target.value)}
+                size="small"
+                fullWidth
+                sx={{
+                  borderRadius: '10px',
+                  bgcolor: '#F8FAFC',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(226, 232, 240, 0.8)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#CBD5E1',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#6D28D9',
+                  },
+                }}
+              >
                 <MenuItem value="Amazon">Amazon</MenuItem>
                 <MenuItem value="Flipkart">Flipkart</MenuItem>
                 <MenuItem value="Myntra">Myntra</MenuItem>
@@ -877,7 +970,7 @@ const DashboardView = ({
                 <MenuItem value="Nykaa">Nykaa</MenuItem>
                 <MenuItem value="Google Play">Google Play</MenuItem>
               </Select>
-            </FormControl>
+            </Box>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
             <Button onClick={() => setOpenFeatureDialog(false)} color="inherit" sx={{ fontWeight: 600, borderRadius: '8px' }}>Cancel</Button>

@@ -547,26 +547,58 @@ const GiftCardCatalogView = ({ triggerToast }) => {
               <Grid item xs={12} md={7}>
                 <Grid container spacing={2.5}>
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Brand Name"
-                      placeholder="e.g. Myntra, Swiggy"
-                      value={newBrand}
-                      onChange={(e) => setNewBrand(e.target.value)}
-                      variant="outlined"
-                      size="small"
-                      required
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                    />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                        BRAND NAME *
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        placeholder="e.g. Myntra, Swiggy"
+                        value={newBrand}
+                        onChange={(e) => setNewBrand(e.target.value)}
+                        variant="outlined"
+                        size="small"
+                        required
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            bgcolor: '#F8FAFC',
+                            transition: 'all 0.2s',
+                            '&:hover': {
+                              bgcolor: '#F1F5F9',
+                            },
+                            '&.Mui-focused': {
+                              bgcolor: '#FFFFFF',
+                              boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                            },
+                          },
+                        }}
+                      />
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth size="small" sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}>
-                      <InputLabel id="new-card-cat-label">Category</InputLabel>
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                        CATEGORY *
+                      </Typography>
                       <Select
-                        labelId="new-card-cat-label"
                         value={newCat}
-                        label="Category"
                         onChange={(e) => setNewCat(e.target.value)}
+                        size="small"
+                        fullWidth
+                        sx={{
+                          borderRadius: '12px',
+                          bgcolor: '#F8FAFC',
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'rgba(226, 232, 240, 0.8)',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#CBD5E1',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#6D28D9',
+                          },
+                        }}
                       >
                         <MenuItem value="Shopping">Shopping</MenuItem>
                         <MenuItem value="Lifestyle">Lifestyle</MenuItem>
@@ -574,7 +606,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                         <MenuItem value="Beauty">Beauty</MenuItem>
                         <MenuItem value="Entertainment">Entertainment</MenuItem>
                       </Select>
-                    </FormControl>
+                    </Box>
                   </Grid>
 
                   {/* Buy Options Selector Segment */}
@@ -601,37 +633,71 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                   {allowBuy && (
                     <>
                       <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Discount / Cashback Rate (%)"
-                          placeholder="e.g. 5.0"
-                          type="number"
-                          inputProps={{ step: '0.1', min: '0', max: '100' }}
-                          value={newDisc}
-                          onChange={(e) => setNewDisc(e.target.value)}
-                          variant="outlined"
-                          size="small"
-                          required
-                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                          InputProps={{
-                            endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                          }}
-                        />
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                            DISCOUNT RATE (%) *
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            placeholder="e.g. 5.0"
+                            type="number"
+                            inputProps={{ step: '0.1', min: '0', max: '100' }}
+                            value={newDisc}
+                            onChange={(e) => setNewDisc(e.target.value)}
+                            variant="outlined"
+                            size="small"
+                            required
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '12px',
+                                bgcolor: '#F8FAFC',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  bgcolor: '#F1F5F9',
+                                },
+                                '&.Mui-focused': {
+                                  bgcolor: '#FFFFFF',
+                                  boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                            }}
+                          />
+                        </Box>
                       </Grid>
                       <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Initial Stock Units"
-                          placeholder="e.g. 100"
-                          type="number"
-                          inputProps={{ min: '0' }}
-                          value={newStock}
-                          onChange={(e) => setNewStock(e.target.value)}
-                          variant="outlined"
-                          size="small"
-                          required
-                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                        />
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                            INITIAL STOCK *
+                          </Typography>
+                          <TextField
+                            fullWidth
+                            placeholder="e.g. 100"
+                            type="number"
+                            inputProps={{ min: '0' }}
+                            value={newStock}
+                            onChange={(e) => setNewStock(e.target.value)}
+                            variant="outlined"
+                            size="small"
+                            required
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '12px',
+                                bgcolor: '#F8FAFC',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  bgcolor: '#F1F5F9',
+                                },
+                                '&.Mui-focused': {
+                                  bgcolor: '#FFFFFF',
+                                  boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                                },
+                              },
+                            }}
+                          />
+                        </Box>
                       </Grid>
                     </>
                   )}
@@ -659,22 +725,39 @@ const GiftCardCatalogView = ({ triggerToast }) => {
 
                   {allowSell && (
                     <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        label="Platform Payout Rate (%)"
-                        placeholder="e.g. 90.0"
-                        type="number"
-                        inputProps={{ step: '0.1', min: '0', max: '100' }}
-                        value={newSellPayout}
-                        onChange={(e) => setNewSellPayout(e.target.value)}
-                        variant="outlined"
-                        size="small"
-                        required
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">% Payout</InputAdornment>,
-                        }}
-                      />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                          PLATFORM PAYOUT RATE (%) *
+                        </Typography>
+                        <TextField
+                          fullWidth
+                          placeholder="e.g. 90.0"
+                          type="number"
+                          inputProps={{ step: '0.1', min: '0', max: '100' }}
+                          value={newSellPayout}
+                          onChange={(e) => setNewSellPayout(e.target.value)}
+                          variant="outlined"
+                          size="small"
+                          required
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: '12px',
+                              bgcolor: '#F8FAFC',
+                              transition: 'all 0.2s',
+                              '&:hover': {
+                                bgcolor: '#F1F5F9',
+                              },
+                              '&.Mui-focused': {
+                                bgcolor: '#FFFFFF',
+                                  boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                              },
+                            },
+                          }}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">% Payout</InputAdornment>,
+                          }}
+                        />
+                      </Box>
                     </Grid>
                   )}
 
@@ -688,30 +771,38 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                       </Typography>
                     </Box>
                     <Box display="flex" gap={2}>
-                      <TextField
-                        type="color"
-                        label="Gradient Color Start"
-                        value={newColor1}
-                        onChange={(e) => setNewColor1(e.target.value)}
-                        sx={{
-                          width: '100%',
-                          '& .MuiOutlinedInput-root': { borderRadius: '10px' },
-                          '& input': { height: '36px', p: 0.5, cursor: 'pointer' },
-                        }}
-                        size="small"
-                      />
-                      <TextField
-                        type="color"
-                        label="Gradient Color End"
-                        value={newColor2}
-                        onChange={(e) => setNewColor2(e.target.value)}
-                        sx={{
-                          width: '100%',
-                          '& .MuiOutlinedInput-root': { borderRadius: '10px' },
-                          '& input': { height: '36px', p: 0.5, cursor: 'pointer' },
-                        }}
-                        size="small"
-                      />
+                      <Box sx={{ width: '100%' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                          GRADIENT COLOR START
+                        </Typography>
+                        <TextField
+                          type="color"
+                          value={newColor1}
+                          onChange={(e) => setNewColor1(e.target.value)}
+                          sx={{
+                            width: '100%',
+                            '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#F8FAFC' },
+                            '& input': { height: '36px', p: 0.5, cursor: 'pointer' },
+                          }}
+                          size="small"
+                        />
+                      </Box>
+                      <Box sx={{ width: '100%' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                          GRADIENT COLOR END
+                        </Typography>
+                        <TextField
+                          type="color"
+                          value={newColor2}
+                          onChange={(e) => setNewColor2(e.target.value)}
+                          sx={{
+                            width: '100%',
+                            '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#F8FAFC' },
+                            '& input': { height: '36px', p: 0.5, cursor: 'pointer' },
+                          }}
+                          size="small"
+                        />
+                      </Box>
                     </Box>
                   </Grid>
                 </Grid>
