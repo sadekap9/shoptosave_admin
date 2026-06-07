@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Grid,
   Card,
@@ -12,28 +12,60 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  InputLabel,
   Select,
   MenuItem,
   InputAdornment,
   Switch,
-  LinearProgress,
   Divider,
   Tabs,
   Tab,
   FormControlLabel,
+  Avatar,
+  CircularProgress,
 } from '@mui/material';
 import {
-  Add as AddIcon,
-  Search as SearchIcon,
   LocalOffer as TagIcon,
-  Inventory as StockIcon,
   Palette as PaletteIcon,
   ChevronRight as ChevronRightIcon,
   ShoppingBag as BuyIcon,
   Paid as SellIcon,
+  Info as InfoIcon,
+  ArrowForward as ArrowForwardIcon,
+  MenuBook as InstructionsIcon,
+  Description as DocIcon,
+  CardGiftcard as GiftcardIcon,
 } from '@mui/icons-material';
+
+import { storeService } from '../services/storeService';
+import { categoryService } from '../services/categoryService';
+
+const getBrandGradient = (brandName) => {
+  const name = (brandName || '').toLowerCase();
+  if (name.includes('amazon')) return 'linear-gradient(135deg, #232f3e 0%, #146eb4 100%)';
+  if (name.includes('flipkart')) return 'linear-gradient(135deg, #2874f0 0%, #004ba0 100%)';
+  if (name.includes('myntra')) return 'linear-gradient(135deg, #fe3f6c 0%, #e7184a 100%)';
+  if (name.includes('swiggy')) return 'linear-gradient(135deg, #fc8019 0%, #d45e0c 100%)';
+  if (name.includes('zomato')) return 'linear-gradient(135deg, #cb202d 0%, #9a101b 100%)';
+  if (name.includes('nykaa')) return 'linear-gradient(135deg, #fc2779 0%, #c40a50 100%)';
+  if (name.includes('google')) return 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)';
+  if (name.includes('ajio')) return 'linear-gradient(135deg, #2d3e50 0%, #1e293b 100%)';
+
+  // Fallback dynamic gradient
+  const colors = [
+    ['#6D28D9', '#8B5CF6'],
+    ['#0D9488', '#14B8A6'],
+    ['#4F46E5', '#818CF8'],
+    ['#0284C7', '#38BDF8'],
+    ['#059669', '#34D399'],
+    ['#DB2777', '#F472B6']
+  ];
+  let sum = 0;
+  for (let i = 0; i < name.length; i++) {
+    sum += name.charCodeAt(i);
+  }
+  const pair = colors[sum % colors.length];
+  return `linear-gradient(135deg, ${pair[0]} 0%, ${pair[1]} 100%)`;
+};
 
 const initialCards = [
   { id: 1, brand: 'Amazon', category: 'Shopping', allowBuy: true, allowSell: true, buyDiscount: '3.5%', sellPayout: '90.0%', status: 'Active', stock: 120, bg: 'linear-gradient(135deg, #232f3e 0%, #146eb4 100%)' },
@@ -48,28 +80,89 @@ const initialCards = [
 
 const GiftCardCatalogView = ({ triggerToast }) => {
   const [catalog, setCatalog] = useState(initialCards);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCat, setFilterCat] = useState('All');
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0); // 0 = Buy Catalog, 1 = Sell Catalog
 
   // Dialog state
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [newBrand, setNewBrand] = useState('');
   const [newCat, setNewCat] = useState('Shopping');
-  
+
+  // View details dialog state
+  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+  const [selectedCard, setSelectedCard] = useState(null);
+
   // Dual configurations state
   const [allowBuy, setAllowBuy] = useState(true);
   const [allowSell, setAllowSell] = useState(true);
   const [newDisc, setNewDisc] = useState('5.0');
   const [newStock, setNewStock] = useState('100');
   const [newSellPayout, setNewSellPayout] = useState('90.0');
-  
+
   // Custom design style
   const [newColor1, setNewColor1] = useState('#6D28D9');
   const [newColor2, setNewColor2] = useState('#8B5CF6');
-  
+
   // Mini Dialog Visual Preview Tab (0 = Buy layout preview, 1 = Sell layout preview)
   const [previewTab, setPreviewTab] = useState(0);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      let categoriesList = [];
+      try {
+        const catRes = await categoryService.getCategories();
+        if (catRes && catRes.success && catRes.result && catRes.result.data) {
+          categoriesList = catRes.result.data;
+          setCategories(categoriesList);
+        }
+      } catch (catErr) {
+        console.error('Failed to fetch categories:', catErr);
+      }
+
+      const response = await storeService.getGiftCards();
+      if (response && response.success && response.result && response.result.data) {
+        const fetchedCards = response.result.data.giftCards || [];
+        const mappedCards = fetchedCards.map((card) => {
+          const catNames = (card.categories || []).map(catId => {
+            const matchedCat = categoriesList.find(c => String(c.id) === String(catId));
+            return matchedCat ? matchedCat.category_name : null;
+          }).filter(Boolean);
+
+          const mainCategory = catNames.length > 0 ? catNames[0] : 'General';
+
+          return {
+            id: card.id,
+            brand: card.gift_card_name || card.brand_name || 'N/A',
+            category: mainCategory,
+            allCategories: catNames,
+            allowBuy: true,
+            allowSell: card.payout_enabled === 1,
+            buyDiscount: card.discounts && card.discounts.length > 0 ? `${card.discounts[0]}%` : '3.5%',
+            sellPayout: card.payout_enabled === 1 ? '90.0%' : 'N/A',
+            status: card.status === 1 ? 'Active' : 'Disabled',
+            stock: card.stock || (100 + (card.id % 5) * 20),
+            bg: getBrandGradient(card.gift_card_name || card.brand_name),
+            raw: card,
+          };
+        });
+        setCatalog(mappedCards);
+      } else {
+        triggerToast(response?.message || 'Failed to fetch gift cards', 'error');
+      }
+    } catch (err) {
+      console.error('Error fetching catalog data:', err);
+      triggerToast(err.message || 'An error occurred while fetching the gift card catalog', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
@@ -106,7 +199,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
 
     setCatalog([newCard, ...catalog]);
     triggerToast(`"${newBrand}" successfully registered into the catalog!`, 'success');
-    
+
     // Reset fields
     setNewBrand('');
     setNewDisc('5.0');
@@ -131,11 +224,17 @@ const GiftCardCatalogView = ({ triggerToast }) => {
   };
 
   const filteredCatalog = catalog.filter((card) => {
-    const matchesSearch = card.brand.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCat = filterCat === 'All' || card.category === filterCat;
     const matchesTab = activeTab === 0 ? card.allowBuy : card.allowSell;
-    return matchesSearch && matchesCat && matchesTab;
+    return matchesTab;
   });
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="450px" width="100%">
+        <CircularProgress sx={{ color: '#6D28D9' }} />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease-out-back', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
@@ -189,131 +288,105 @@ const GiftCardCatalogView = ({ triggerToast }) => {
         </Tabs>
       </Box>
 
-      {/* Unified Search & Actions Control Bar */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        gap={2}
-        flexWrap="wrap"
-        sx={{
-          mb: 3,
-          bgcolor: '#FFFFFF',
-          p: 2,
-          borderRadius: '16px',
-          border: '1px solid rgba(226, 232, 240, 0.8)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
-        }}
-      >
-        <Box display="flex" gap={2} flexWrap="wrap" sx={{ flexGrow: 1, maxWidth: { xs: '100%', md: '75%' } }}>
-          <TextField
-            sx={{
-              flexGrow: 1,
-              minWidth: 280,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-                bgcolor: '#F8FAFC',
-                border: '1px solid rgba(226, 232, 240, 0.8)',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  bgcolor: '#F1F5F9',
-                  borderColor: 'rgba(109, 40, 217, 0.3)',
-                },
-                '&.Mui-focused': {
-                  bgcolor: '#FFFFFF',
-                  borderColor: '#6D28D9',
-                  boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                },
-              },
-            }}
-            size="small"
-            placeholder="Filter catalog by brand name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" sx={{ fontSize: 20 }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 180,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-                bgcolor: '#F8FAFC',
-                border: '1px solid rgba(226, 232, 240, 0.8)',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  bgcolor: '#F1F5F9',
-                  borderColor: 'rgba(109, 40, 217, 0.3)',
-                },
-                '&.Mui-focused': {
-                  bgcolor: '#FFFFFF',
-                  borderColor: '#6D28D9',
-                },
-              },
-            }}
-          >
-            <InputLabel id="category-filter-label">Filter Category</InputLabel>
-            <Select
-              labelId="category-filter-label"
-              value={filterCat}
-              label="Filter Category"
-              onChange={(e) => setFilterCat(e.target.value)}
-            >
-              <MenuItem value="All">All Categories</MenuItem>
-              <MenuItem value="Shopping">Shopping</MenuItem>
-              <MenuItem value="Lifestyle">Lifestyle</MenuItem>
-              <MenuItem value="Food">Food</MenuItem>
-              <MenuItem value="Beauty">Beauty</MenuItem>
-              <MenuItem value="Entertainment">Entertainment</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => {
-            setPreviewTab(activeTab); // Sync preview mode initially with active view mode
-            setOpenAddDialog(true);
-          }}
-          sx={{
-            borderRadius: '12px',
-            textTransform: 'none',
-            fontWeight: 650,
-            px: 3,
-            py: 1,
-            height: '40px',
-            bgcolor: '#6D28D9',
-            boxShadow: '0 4px 14px rgba(109, 40, 217, 0.25)',
-            transition: 'all 0.2s',
-            '&:hover': {
-              bgcolor: '#5B21B6',
-              transform: 'translateY(-1px)',
-              boxShadow: '0 6px 20px rgba(109, 40, 217, 0.35)',
-            },
-          }}
-        >
-          Create Digital Listing
-        </Button>
-      </Box>
-
       {/* Catalog Grid */}
       <Grid container spacing={3}>
         {filteredCatalog.length === 0 ? (
           <Grid item xs={12}>
-            <Card sx={{ textAlign: 'center', py: 8, border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-              <Typography variant="body1" color="text.secondary">
-                No gift cards match your filter criteria.
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                py: 10,
+                px: 3,
+                bgcolor: '#FFFFFF',
+                borderRadius: '24px',
+                border: '1px solid rgba(226, 232, 240, 0.8)',
+                boxShadow: '0 4px 20px -2px rgba(109, 40, 217, 0.05)',
+                animation: 'fadeIn 0.6s ease-out-back',
+              }}
+            >
+              <Box
+                sx={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 120,
+                  height: 120,
+                  mb: 3,
+                }}
+              >
+                {/* Glowing Background Rings with Keyframes */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(109, 40, 217, 0.15) 0%, rgba(109, 40, 217, 0) 70%)',
+                    animation: 'pulse 3s infinite alternate ease-in-out',
+                    '@keyframes pulse': {
+                      '0%': { transform: 'scale(0.92)', opacity: 0.6 },
+                      '100%': { transform: 'scale(1.08)', opacity: 1 },
+                    },
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    width: '80%',
+                    height: '80%',
+                    borderRadius: '50%',
+                    border: '2px dashed rgba(109, 40, 217, 0.2)',
+                    animation: 'spin 20s infinite linear',
+                    '@keyframes spin': {
+                      '0%': { transform: 'rotate(0deg)' },
+                      '100%': { transform: 'rotate(360deg)' },
+                    },
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 72,
+                    height: 72,
+                    borderRadius: '24px',
+                    background: 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)',
+                    boxShadow: '0 12px 24px -6px rgba(109, 40, 217, 0.4)',
+                    color: '#FFFFFF',
+                    transform: 'rotate(-10deg)',
+                    transition: 'transform 0.3s ease',
+                    '&:hover': {
+                      transform: 'rotate(0deg) scale(1.05)',
+                    }
+                  }}
+                >
+                  <GiftcardIcon sx={{ fontSize: 36 }} />
+                </Box>
+              </Box>
+              <Typography
+                variant="h5"
+                fontWeight={800}
+                sx={{ color: '#0F172A', mb: 1, letterSpacing: '-0.02em' }}
+              >
+                No Gift Cards Available
               </Typography>
-            </Card>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ maxWidth: 400, mb: 2, lineHeight: 1.6, fontSize: '0.9rem' }}
+              >
+                {activeTab === 0
+                  ? "There are currently no active purchase gift cards registered in this catalog."
+                  : "There are currently no active sell gift cards registered in this catalog."}
+              </Typography>
+            </Box>
           </Grid>
         ) : (
           filteredCatalog.map((card) => {
@@ -364,7 +437,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                   >
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.15em', opacity: 0.85, fontSize: '0.62rem' }}>
-                        {activeTab === 0 ? 'SHOP2SAVE BUY CARD' : 'SHOP2SAVE SELL CARD'}
+                        {activeTab === 0 ? 'BUY CARD' : 'SELL CARD'}
                       </Typography>
                       <Chip
                         label={card.category}
@@ -414,17 +487,17 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                       /* BUY VIEW SPECIFIC DETAILS */
                       <Box sx={{ mb: 2.5 }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 0.8 }}>
-                          <Box display="flex" alignItems="center" gap={0.5}>
+                          {/* <Box display="flex" alignItems="center" gap={0.5}>
                             <StockIcon sx={{ color: 'text.secondary', fontSize: 16 }} />
                             <Typography variant="caption" color="text.secondary" fontWeight={550}>
                               Inventory: <strong>{card.stock}</strong> units
                             </Typography>
-                          </Box>
-                          <Typography variant="caption" fontWeight={750} color={card.stock > 20 ? 'success.main' : card.stock > 0 ? 'warning.main' : 'error.main'}>
+                          </Box> */}
+                          {/* <Typography variant="caption" fontWeight={750} color={card.stock > 20 ? 'success.main' : card.stock > 0 ? 'warning.main' : 'error.main'}>
                             {card.stock > 20 ? 'In Stock' : card.stock > 0 ? 'Low Stock' : 'Out of Stock'}
-                          </Typography>
+                          </Typography> */}
                         </Box>
-                        <LinearProgress
+                        {/* <LinearProgress
                           variant="determinate"
                           value={Math.min(100, (card.stock / 200) * 100)}
                           sx={{
@@ -436,7 +509,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                               bgcolor: card.stock > 20 ? '#10B981' : '#EF4444',
                             },
                           }}
-                        />
+                        /> */}
                       </Box>
                     ) : (
                       /* SELL VIEW SPECIFIC DETAILS */
@@ -453,29 +526,46 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                           </Typography>
                         </Box>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.72rem', display: 'block', lineHeight: 1.3, mt: 0.6 }}>
-                          Allows customers to resell their surplus {card.brand} gift cards. Verified claims are paid instantly into the user's wallet with a 10% fee.
+                          Allows customers to instantly resell surplus {card.brand} gift cards directly to their wallet.
                         </Typography>
                       </Box>
                     )}
 
                     <Box sx={{ mt: 'auto' }}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<InfoIcon sx={{ fontSize: '14px !important' }} />}
+                        onClick={() => {
+                          setSelectedCard(card);
+                          setOpenDetailsDialog(true);
+                        }}
+                        fullWidth
+                        sx={{
+                          mb: 1.5,
+                          borderRadius: '10px',
+                          textTransform: 'none',
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          borderColor: 'rgba(109, 40, 217, 0.3)',
+                          color: '#6D28D9',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            borderColor: '#6D28D9',
+                            bgcolor: 'rgba(109, 40, 217, 0.04)',
+                            transform: 'translateY(-1px)',
+                          }
+                        }}
+                      >
+                        View Details
+                      </Button>
                       <Divider sx={{ mb: 2, borderStyle: 'dashed' }} />
 
                       {/* Dynamic Mode Badges & Toggles */}
                       <Box display="flex" alignItems="center" justifyContent="space-between">
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Box
-                            sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: '50%',
-                              bgcolor: isLive ? '#10B981' : '#EF4444',
-                            }}
-                          />
-                          <Typography variant="caption" fontWeight={750} color={isLive ? 'success.main' : 'text.disabled'} sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            {isLive ? 'Active (Live)' : 'Disabled'}
-                          </Typography>
-                        </Box>
+                        <Typography variant="caption" fontWeight={750} color={isLive ? 'success.main' : 'text.disabled'} sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {isLive ? 'Active' : 'Active'}
+                        </Typography>
                         <Switch
                           size="small"
                           checked={isLive}
@@ -600,11 +690,20 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                           },
                         }}
                       >
-                        <MenuItem value="Shopping">Shopping</MenuItem>
-                        <MenuItem value="Lifestyle">Lifestyle</MenuItem>
-                        <MenuItem value="Food">Food</MenuItem>
-                        <MenuItem value="Beauty">Beauty</MenuItem>
-                        <MenuItem value="Entertainment">Entertainment</MenuItem>
+                        {categories.map((cat) => (
+                          <MenuItem key={cat.id} value={cat.category_name}>
+                            {cat.category_name}
+                          </MenuItem>
+                        ))}
+                        {categories.length === 0 && (
+                          <>
+                            <MenuItem value="Shopping">Shopping</MenuItem>
+                            <MenuItem value="Lifestyle">Lifestyle</MenuItem>
+                            <MenuItem value="Food">Food</MenuItem>
+                            <MenuItem value="Beauty">Beauty</MenuItem>
+                            <MenuItem value="Entertainment">Entertainment</MenuItem>
+                          </>
+                        )}
                       </Select>
                     </Box>
                   </Grid>
@@ -749,7 +848,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                               },
                               '&.Mui-focused': {
                                 bgcolor: '#FFFFFF',
-                                  boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                                boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
                               },
                             },
                           }}
@@ -882,7 +981,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                   >
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.15em', opacity: 0.85, fontSize: '0.62rem' }}>
-                        {previewTab === 0 ? 'SHOP2SAVE BUY CARD' : 'SHOP2SAVE SELL CARD'}
+                        {previewTab === 0 ? 'BUY CARD' : 'SELL CARD'}
                       </Typography>
                       <Chip
                         label={newCat}
@@ -930,32 +1029,274 @@ const GiftCardCatalogView = ({ triggerToast }) => {
             </Grid>
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 4, pt: 2, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
-            <Button
-              onClick={() => setOpenAddDialog(false)}
-              color="inherit"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              sx={{
-                textTransform: 'none',
-                fontWeight: 650,
-                borderRadius: '10px',
-                px: 3,
-                py: 1,
-                bgcolor: '#6D28D9',
-                '&:hover': { bgcolor: '#5B21B6' },
-                boxShadow: '0 4px 10px rgba(109, 40, 217, 0.2)',
-              }}
-            >
-              Create Product Listing
-            </Button>
           </DialogActions>
         </form>
+      </Dialog>
+
+      {/* POPUP: Gift Card Details Popup */}
+      <Dialog
+        open={openDetailsDialog}
+        onClose={() => setOpenDetailsDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '24px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            overflow: 'hidden',
+            border: 'none',
+          },
+        }}
+      >
+        {/* Dynamic Premium Header with Brand Gradient */}
+        <Box
+          sx={{
+            background: selectedCard?.bg || 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)',
+            p: 3,
+            pb: 4,
+            color: '#FFFFFF',
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: 0, left: 0, right: 0, height: '24px',
+              bgcolor: '#FFFFFF',
+              borderRadius: '24px 24px 0 0',
+            }
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Avatar
+                src={selectedCard?.raw?.brand_logo}
+                alt={selectedCard?.brand}
+                sx={{
+                  width: 50,
+                  height: 50,
+                  bgcolor: '#FFFFFF',
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
+                  border: '2px solid #FFFFFF',
+                  p: 0.5,
+                }}
+              />
+              <Box>
+                <Typography variant="h6" fontWeight={850} sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.15)', lineHeight: 1.2 }}>
+                  {selectedCard?.raw?.gift_card_name || selectedCard?.brand}
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 600 }}>
+                  {selectedCard?.raw?.brand_name || 'Gift Card'} • {selectedCard?.raw?.brand_code || 'N/A'}
+                </Typography>
+              </Box>
+            </Box>
+            <Chip
+              label={selectedCard?.status === 'Active' ? 'Active' : 'Disabled'}
+              sx={{
+                fontWeight: 800,
+                fontSize: '0.72rem',
+                bgcolor: selectedCard?.status === 'Active' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.2)',
+                color: '#FFFFFF',
+                backdropFilter: 'blur(4px)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '8px',
+                px: 1,
+              }}
+            />
+          </Box>
+        </Box>
+
+        <DialogContent sx={{ p: 3, pt: 0, bgcolor: '#FFFFFF' }}>
+          {selectedCard?.raw && (
+            <Box display="flex" flexDirection="column" gap={3}>
+
+              {/* Premium 2x2 Highlights Grid with Micro-Icons */}
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Box
+                    sx={{
+                      bgcolor: '#F8FAFC',
+                      p: 2,
+                      borderRadius: '16px',
+                      border: '1px solid rgba(226, 232, 240, 0.7)',
+                      transition: 'all 0.2s',
+                      '&:hover': { bgcolor: '#F1F5F9', borderColor: '#CBD5E1' }
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" gap={1} sx={{ color: 'text.secondary', mb: 0.5 }}>
+                      <BuyIcon sx={{ fontSize: 16, color: '#6D28D9' }} />
+                      <Typography variant="caption" fontWeight={750} sx={{ letterSpacing: '0.05em' }}>
+                        DENOMINATIONS
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle2" fontWeight={850} color="#1E293B">
+                      {selectedCard.raw.currency_symbol || '₹'}{parseFloat(selectedCard.raw.min_denomination).toFixed(0)} - {selectedCard.raw.currency_symbol || '₹'}{parseFloat(selectedCard.raw.max_denomination).toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <Box
+                    sx={{
+                      bgcolor: '#F8FAFC',
+                      p: 2,
+                      borderRadius: '16px',
+                      border: '1px solid rgba(226, 232, 240, 0.7)',
+                      transition: 'all 0.2s',
+                      '&:hover': { bgcolor: '#F1F5F9', borderColor: '#CBD5E1' }
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" gap={1} sx={{ color: 'text.secondary', mb: 0.5 }}>
+                      <InstructionsIcon sx={{ fontSize: 16, color: '#10B981' }} />
+                      <Typography variant="caption" fontWeight={750} sx={{ letterSpacing: '0.05em' }}>
+                        VALIDITY
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle2" fontWeight={850} color="#1E293B">
+                      {selectedCard.raw.validity || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <Box
+                    sx={{
+                      bgcolor: '#F8FAFC',
+                      p: 2,
+                      borderRadius: '16px',
+                      border: '1px solid rgba(226, 232, 240, 0.7)',
+                      transition: 'all 0.2s',
+                      '&:hover': { bgcolor: '#F1F5F9', borderColor: '#CBD5E1' }
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" gap={1} sx={{ color: 'text.secondary', mb: 0.5 }}>
+                      <TagIcon sx={{ fontSize: 16, color: '#3B82F6' }} />
+                      <Typography variant="caption" fontWeight={750} sx={{ letterSpacing: '0.05em' }}>
+                        SKU CODE
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle2" fontWeight={850} color="#1E293B" sx={{ fontFamily: 'monospace' }}>
+                      {selectedCard.raw.sku || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <Box
+                    sx={{
+                      bgcolor: '#F8FAFC',
+                      p: 2,
+                      borderRadius: '16px',
+                      border: '1px solid rgba(226, 232, 240, 0.7)',
+                      transition: 'all 0.2s',
+                      '&:hover': { bgcolor: '#F1F5F9', borderColor: '#CBD5E1' }
+                    }}
+                  >
+                    <Box display="flex" alignItems="center" gap={1} sx={{ color: 'text.secondary', mb: 0.5 }}>
+                      <DocIcon sx={{ fontSize: 16, color: '#EC4899' }} />
+                      <Typography variant="caption" fontWeight={750} sx={{ letterSpacing: '0.05em' }}>
+                        CARD TYPE
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle2" fontWeight={850} color="#1E293B" sx={{ textTransform: 'uppercase' }}>
+                      {selectedCard.raw.product_type?.replace('-', ' ') || 'e-gift-card'}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+
+              {/* Description Card */}
+              <Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={800} display="block" sx={{ mb: 1, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  Product Description
+                </Typography>
+                <Typography variant="body2" color="text.primary" sx={{ lineHeight: 1.6, color: '#475569', bgcolor: '#F8FAFC', p: 2, borderRadius: '12px', borderLeft: `4px solid ${selectedCard?.bg ? (selectedCard.bg.includes('#') ? selectedCard.bg.split('#')[1]?.substring(0, 6) : '6D28D9') : '6D28D9'}` }}>
+                  {selectedCard.raw.description || selectedCard.raw.short_description || 'No description available for this gift card.'}
+                </Typography>
+              </Box>
+
+              {/* Redemption instructions */}
+              {selectedCard.raw.redeem_steps && (
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={800} display="block" sx={{ mb: 1, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    Steps To Redeem
+                  </Typography>
+                  <Box
+                    sx={{
+                      bgcolor: '#F8FAFC',
+                      p: 2.5,
+                      borderRadius: '16px',
+                      border: '1px solid rgba(226, 232, 240, 0.7)',
+                      fontSize: '0.8rem',
+                      color: '#475569',
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      '& ul, & ol': { pl: 2.5, m: 0, mt: 0.5 },
+                      '& li': { mb: 0.8 },
+                      '& a': { color: '#6D28D9', fontWeight: 600 },
+                      // Clean Scrollbar Styling
+                      '&::-webkit-scrollbar': { width: '6px' },
+                      '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
+                      '&::-webkit-scrollbar-thumb': { bgcolor: '#CBD5E1', borderRadius: '4px' },
+                    }}
+                    dangerouslySetInnerHTML={{ __html: selectedCard.raw.redeem_steps }}
+                  />
+                </Box>
+              )}
+
+              {/* Important terms or notes */}
+              {selectedCard.raw.things_to_note && (
+                <Box sx={{ p: 2, bgcolor: '#FFFBEB', borderRadius: '16px', borderLeft: '4px solid #F59E0B' }}>
+                  <Typography variant="caption" color="#B45309" fontWeight={800} display="block" sx={{ mb: 0.5 }}>
+                    IMPORTANT NOTES
+                  </Typography>
+                  <Typography variant="body2" color="#78350F" sx={{ fontSize: '0.78rem', lineHeight: 1.5 }}>
+                    {selectedCard.raw.things_to_note}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* T&C Link */}
+              {selectedCard.raw.tnc_link && (
+                <Box display="flex" justifyContent="flex-start">
+                  <Button
+                    variant="text"
+                    href={selectedCard.raw.tnc_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    endIcon={<ArrowForwardIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 750,
+                      fontSize: '0.78rem',
+                      color: '#6D28D9',
+                      p: 0,
+                      '&:hover': { bgcolor: 'transparent', color: '#5B21B6', textDecoration: 'underline' }
+                    }}
+                  >
+                    View Official Terms & Conditions Link
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)', bgcolor: '#FFFFFF' }}>
+          <Button
+            onClick={() => setOpenDetailsDialog(false)}
+            variant="contained"
+            fullWidth
+            sx={{
+              textTransform: 'none',
+              fontWeight: 700,
+              borderRadius: '12px',
+              py: 1.2,
+              bgcolor: '#6D28D9',
+              '&:hover': { bgcolor: '#5B21B6' },
+              boxShadow: '0 4px 14px rgba(109, 40, 217, 0.2)',
+            }}
+          >
+            Dismiss Details
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

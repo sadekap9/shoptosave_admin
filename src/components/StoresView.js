@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { storeService } from '../services/storeService';
+import { categoryService } from '../services/categoryService';
 import {
   Card,
   CardContent,
@@ -25,9 +27,10 @@ import {
   Avatar,
   Tabs,
   Tab,
-  Grid,
-  Divider,
   Chip,
+  Autocomplete,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -35,7 +38,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Storefront as StoreIcon,
-  Image as ImageIcon,
   ConfirmationNumber as ConfirmationNumberIcon,
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
@@ -61,115 +63,16 @@ const getAvatarGradient = (name) => {
   return colors[sum % colors.length];
 };
 
-const initialStores = [
-  {
-    id: 'STR-001',
-    name: 'Amazon',
-    image: 'https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=80&auto=format&fit=crop&q=60',
-    category: 'Electronics & Mobiles',
-    status: 'Active',
-    vouchers: [
-      {
-        id: 'VCH-STR-001-1',
-        title: 'Amazon Prime 1-Month',
-        description: 'Get free delivery, early access to deals, and access to Prime Video.',
-        image: 'https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=80&auto=format&fit=crop&q=60',
-        amount: '₹299',
-        terms: 'Valid for new Prime users only. Non-refundable.',
-        expiryDate: '2026-12-31',
-        quantity: 50,
-        stockStatus: 'In Stock'
-      },
-      {
-        id: 'VCH-STR-001-2',
-        title: 'Amazon Pay Gift Card',
-        description: 'Add balance to your Amazon Pay wallet.',
-        image: '',
-        amount: '₹500',
-        terms: 'Can be used for all purchases on Amazon.in.',
-        expiryDate: '2027-06-30',
-        quantity: 100,
-        stockStatus: 'In Stock'
-      }
-    ]
-  },
-  {
-    id: 'STR-002',
-    name: 'Flipkart',
-    image: '',
-    category: 'Electronics & Mobiles',
-    status: 'Active',
-    vouchers: [
-      {
-        id: 'VCH-STR-002-1',
-        title: 'Flipkart Plus Membership',
-        description: 'Get free shipping, double SuperCoins, and early access to sales.',
-        image: '',
-        amount: '₹499',
-        terms: 'SuperCoins value required will be deducted.',
-        expiryDate: '2026-10-31',
-        quantity: 10,
-        stockStatus: 'Limited Stock'
-      }
-    ]
-  },
-  {
-    id: 'STR-003',
-    name: 'Ajio',
-    image: '',
-    category: 'Fashion & Apparel',
-    status: 'Inactive',
-    vouchers: []
-  },
-  {
-    id: 'STR-004',
-    name: 'Nykaa',
-    image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=80&auto=format&fit=crop&q=60',
-    category: 'Beauty & Wellness',
-    status: 'Active',
-    vouchers: [
-      {
-        id: 'VCH-STR-004-1',
-        title: 'Nykaa Pink Friday Coupon',
-        description: 'Get extra 15% off on orders above ₹2000.',
-        image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=80&auto=format&fit=crop&q=60',
-        amount: '₹300',
-        terms: 'Valid on select beauty categories.',
-        expiryDate: '2026-07-15',
-        quantity: 0,
-        stockStatus: 'Out of Stock'
-      }
-    ]
-  },
-  {
-    id: 'STR-005',
-    name: 'Zomato',
-    image: '',
-    category: 'Food & Dining',
-    status: 'Active',
-    vouchers: [
-      {
-        id: 'VCH-STR-005-1',
-        title: 'Zomato Gold 3-Month',
-        description: 'Free delivery, no surge fee, up to 40% off on dining.',
-        image: '',
-        amount: '₹299',
-        terms: 'Applicable in major metropolitan areas only.',
-        expiryDate: '2026-08-30',
-        quantity: 25,
-        stockStatus: 'In Stock'
-      }
-    ]
-  },
-  {
-    id: 'STR-006',
-    name: 'MakeMyTrip',
-    image: '',
-    category: 'Travel & Flights',
-    status: 'Active',
-    vouchers: []
+const getLogoUrl = (logoPath) => {
+  if (!logoPath) return null;
+  if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
+    return logoPath;
   }
-];
+  const baseHost = 'https://api.shoptosave.in';
+  const cleanPath = logoPath.startsWith('/') ? logoPath : `/${logoPath}`;
+  return `${baseHost}${cleanPath}`;
+};
+
 
 const availableCategories = [
   'Electronics & Mobiles',
@@ -182,7 +85,117 @@ const availableCategories = [
 ];
 
 const StoresView = ({ triggerToast }) => {
-  const [stores, setStores] = useState(initialStores);
+  const [stores, setStores] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [storeCategoryId, setStoreCategoryId] = useState('');
+  const [storeLogo, setStoreLogo] = useState(null);
+  const [editCategoryId, setEditCategoryId] = useState('');
+  const [editLogo, setEditLogo] = useState(null);
+
+  const fetchStoresList = async (cats = categoriesList) => {
+    try {
+      const storeResponse = await storeService.getStores();
+      if (storeResponse && storeResponse.success && storeResponse.result && storeResponse.result.data) {
+        const mappedStores = await Promise.all(
+          storeResponse.result.data.map(async (store) => {
+            const matchedCategory = cats.find(
+              (c) => String(c.id) === String(store.category_id)
+            );
+
+            let vouchersList = [];
+            try {
+              const vResponse = await storeService.getStoreVouchers(store.id);
+              if (vResponse && vResponse.success && vResponse.result && vResponse.result.data) {
+                vouchersList = vResponse.result.data.map((item) => ({
+                  id: item.id,
+                  sku: item.sku,
+                  gift_card_name: item.gift_card_name || item.name || '',
+                  featured: item.featured === true || Number(item.featured) === 1 ? 1 : 0
+                }));
+              }
+            } catch (vErr) {
+              console.error(`Failed to fetch vouchers for store ${store.id}:`, vErr);
+            }
+
+            return {
+              id: `STR-${String(store.id).padStart(3, '0')}`,
+              name: store.store_name,
+              image: store.logo || '',
+              category: matchedCategory ? matchedCategory.category_name : 'Unknown',
+              status: store.status === 0 ? 'Inactive' : 'Active',
+              vouchers: vouchersList,
+              rawStore: store,
+            };
+          })
+        );
+        setStores(mappedStores);
+      }
+    } catch (error) {
+      console.error('Fetch stores list error:', error);
+      triggerToast('Failed to load stores list', 'error');
+    }
+  };
+
+  const fetchStoreVouchers = async (storeId) => {
+    try {
+      const response = await storeService.getStoreVouchers(storeId);
+      if (response && response.success && response.result && response.result.data) {
+        const mappedVouchers = response.result.data.map((item) => ({
+          id: item.id,
+          sku: item.sku,
+          gift_card_name: item.gift_card_name || item.name || '',
+          featured: item.featured === true || Number(item.featured) === 1 ? 1 : 0
+        }));
+
+        setStores((prevStores) => prevStores.map((s) => {
+          if (String(s.rawStore?.id || s.id.replace('STR-', '')) === String(storeId)) {
+            return { ...s, vouchers: mappedVouchers };
+          }
+          return s;
+        }));
+
+        setSelectedStore((prevSelected) => {
+          if (prevSelected && String(prevSelected.rawStore?.id || prevSelected.id.replace('STR-', '')) === String(storeId)) {
+            return { ...prevSelected, vouchers: mappedVouchers };
+          }
+          return prevSelected;
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching store vouchers:', error);
+      triggerToast('Failed to load vouchers list for this store', 'error');
+    }
+  };
+
+  // Fetch categories and stores sequentially on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const catResponse = await categoryService.getCategories();
+        let fetchedCategories = [];
+        if (catResponse && catResponse.success && catResponse.result && catResponse.result.data) {
+          fetchedCategories = catResponse.result.data;
+          setCategoriesList(fetchedCategories);
+          if (fetchedCategories.length > 0) {
+            setStoreCategoryId(fetchedCategories[0].id);
+          }
+        }
+        await fetchStoresList(fetchedCategories);
+
+        // Fetch synced products for SKU dropdown
+        const productsResponse = await storeService.getSyncedProducts();
+        if (productsResponse && productsResponse.success && productsResponse.result && productsResponse.result.data) {
+          setSyncedProducts(productsResponse.result.data);
+        }
+      } catch (error) {
+        console.error('Error loading data in StoresView:', error);
+        triggerToast('Failed to load stores or categories data', 'error');
+      }
+    };
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -194,31 +207,21 @@ const StoresView = ({ triggerToast }) => {
 
   // Form input states (Add)
   const [storeName, setStoreName] = useState('');
-  const [storeImage, setStoreImage] = useState('');
-  const [storeCategory, setStoreCategory] = useState(availableCategories[0]);
   const [storeStatus, setStoreStatus] = useState('Active');
 
   // Form input states (Edit)
   const [selectedStore, setSelectedStore] = useState(null);
   const [editName, setEditName] = useState('');
-  const [editImage, setEditImage] = useState('');
-  const [editCategory, setEditCategory] = useState('');
   const [editStatus, setEditStatus] = useState('Active');
 
   // Voucher management states
   const [detailTab, setDetailTab] = useState(0); // 0 = Profile, 1 = Vouchers
   const [voucherFormMode, setVoucherFormMode] = useState(null); // null = List, 'add' = Add, 'edit' = Edit
-  const [selectedVoucher, setSelectedVoucher] = useState(null);
 
   // Voucher form states
-  const [vchTitle, setVchTitle] = useState('');
-  const [vchDescription, setVchDescription] = useState('');
-  const [vchImage, setVchImage] = useState('');
-  const [vchAmount, setVchAmount] = useState('');
-  const [vchTerms, setVchTerms] = useState('');
-  const [vchExpiryDate, setVchExpiryDate] = useState('');
-  const [vchQuantity, setVchQuantity] = useState(100);
-  const [vchStockStatus, setVchStockStatus] = useState('In Stock');
+  const [vchSku, setVchSku] = useState('');
+  const [vchFeatured, setVchFeatured] = useState(1);
+  const [syncedProducts, setSyncedProducts] = useState([]);
 
   const textFieldSx = {
     '& .MuiOutlinedInput-root': {
@@ -249,247 +252,208 @@ const StoresView = ({ triggerToast }) => {
     },
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!storeName.trim()) {
       triggerToast('Please fill in the store name', 'warning');
       return;
     }
-
-    // Auto-generate numeric ID
-    let nextIdNum = 1;
-    if (stores.length > 0) {
-      const ids = stores.map((s) => parseInt(s.id.replace('STR-', ''))).filter((n) => !isNaN(n));
-      if (ids.length > 0) {
-        nextIdNum = Math.max(...ids) + 1;
-      }
+    if (!storeLogo) {
+      triggerToast('Please select a store logo file', 'warning');
+      return;
     }
-    const generatedId = `STR-${String(nextIdNum).padStart(3, '0')}`;
+    if (!storeCategoryId) {
+      triggerToast('Please select a valid category', 'warning');
+      return;
+    }
 
-    const newStore = {
-      id: generatedId,
-      name: storeName.trim(),
-      image: storeImage.trim(),
-      category: storeCategory,
-      status: storeStatus,
-      vouchers: [],
-    };
+    try {
+      const response = await storeService.addStore(
+        storeName.trim(),
+        storeCategoryId,
+        storeLogo
+      );
 
-    setStores([...stores, newStore]);
-    triggerToast(`Store "${newStore.name}" registered successfully!`, 'success');
+      if (response && response.success) {
+        await fetchStoresList(categoriesList);
+        triggerToast(`Store "${storeName.trim()}" registered successfully!`, 'success');
 
-    // Reset fields & close
-    setStoreName('');
-    setStoreImage('');
-    setStoreCategory(availableCategories[0]);
-    setStoreStatus('Active');
-    setOpenAddDialog(false);
+        // Reset fields & close
+        setStoreName('');
+        setStoreLogo(null);
+        if (categoriesList.length > 0) {
+          setStoreCategoryId(categoriesList[0].id);
+        } else {
+          setStoreCategoryId('');
+        }
+        setOpenAddDialog(false);
+      } else {
+        triggerToast(response.message || 'Failed to register store', 'error');
+      }
+    } catch (err) {
+      console.error('Add Store API error:', err);
+      triggerToast(err.message || 'An error occurred while registering the store', 'error');
+    }
   };
 
   const handleOpenEdit = (store) => {
     setSelectedStore(store);
     setEditName(store.name);
-    setEditImage(store.image || '');
-    setEditCategory(store.category);
+
+    // Resolve the category ID from the category name string
+    const matchedCategory = categoriesList.find(
+      (c) => c.category_name === store.category
+    );
+    setEditCategoryId(matchedCategory ? matchedCategory.id : '');
+    setEditLogo(null);
     setEditStatus(store.status);
     setDetailTab(0);
     setVoucherFormMode(null);
-    setSelectedVoucher(null);
+
+    const storeId = store.rawStore?.id || store.id.replace('STR-', '');
+    fetchStoreVouchers(storeId);
+
     setOpenEditDialog(true);
   };
 
   const handleOpenAddVoucherDirectly = (store) => {
     setSelectedStore(store);
     setEditName(store.name);
-    setEditImage(store.image || '');
-    setEditCategory(store.category);
+
+    // Resolve the category ID from the category name string
+    const matchedCategory = categoriesList.find(
+      (c) => c.category_name === store.category
+    );
+    setEditCategoryId(matchedCategory ? matchedCategory.id : '');
+    setEditLogo(null);
     setEditStatus(store.status);
-    
+
     // Switch directly to Vouchers tab (Tab index 1)
     setDetailTab(1);
-    
+
     // Open the Add Voucher form mode immediately
-    setVchTitle('');
-    setVchDescription('');
-    setVchImage('');
-    setVchAmount('');
-    setVchTerms('');
-    const threeMonths = new Date();
-    threeMonths.setMonth(threeMonths.getMonth() + 3);
-    const yyyy = threeMonths.getFullYear();
-    const mm = String(threeMonths.getMonth() + 1).padStart(2, '0');
-    const dd = String(threeMonths.getDate()).padStart(2, '0');
-    setVchExpiryDate(`${yyyy}-${mm}-${dd}`);
-    setVchQuantity(100);
-    setVchStockStatus('In Stock');
+    setVchSku('');
+    setVchFeatured(1);
     setVoucherFormMode('add');
-    setSelectedVoucher(null);
-    
+
+    const storeId = store.rawStore?.id || store.id.replace('STR-', '');
+    fetchStoreVouchers(storeId);
+
     setOpenEditDialog(true);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editName.trim()) {
       triggerToast('Please fill in the store name', 'warning');
       return;
     }
+    if (!editCategoryId) {
+      triggerToast('Please select a valid category', 'warning');
+      return;
+    }
 
-    setStores(
-      stores.map((s) => {
-        if (s.id === selectedStore.id) {
-          return {
-            ...s,
-            name: editName.trim(),
-            image: editImage.trim(),
-            category: editCategory,
-            status: editStatus,
-            vouchers: s.vouchers || [],
-          };
-        }
-        return s;
-      })
-    );
+    try {
+      const databaseId = selectedStore.rawStore?.id || selectedStore.id.replace('STR-', '');
+      const response = await storeService.updateStore(
+        databaseId,
+        editName.trim(),
+        editCategoryId,
+        editLogo,
+        editStatus
+      );
 
-    triggerToast(`Store "${editName}" updated successfully!`, 'success');
-    setOpenEditDialog(false);
+      if (response && response.success) {
+        await fetchStoresList(categoriesList);
+        triggerToast(`Store "${editName.trim()}" updated successfully!`, 'success');
+        setOpenEditDialog(false);
+      } else {
+        triggerToast(response.message || 'Failed to update store', 'error');
+      }
+    } catch (err) {
+      console.error('Update Store API error:', err);
+      triggerToast(err.message || 'An error occurred while updating the store', 'error');
+    }
   };
 
   const handleOpenAddVoucher = () => {
-    setVchTitle('');
-    setVchDescription('');
-    setVchImage('');
-    setVchAmount('');
-    setVchTerms('');
-    // Default expiry date is 3 months from now
-    const threeMonths = new Date();
-    threeMonths.setMonth(threeMonths.getMonth() + 3);
-    const yyyy = threeMonths.getFullYear();
-    const mm = String(threeMonths.getMonth() + 1).padStart(2, '0');
-    const dd = String(threeMonths.getDate()).padStart(2, '0');
-    setVchExpiryDate(`${yyyy}-${mm}-${dd}`);
-    setVchQuantity(100);
-    setVchStockStatus('In Stock');
+    setVchSku('');
+    setVchFeatured(1);
     setVoucherFormMode('add');
   };
 
-  const handleOpenEditVoucher = (voucher) => {
-    setSelectedVoucher(voucher);
-    setVchTitle(voucher.title);
-    setVchDescription(voucher.description || '');
-    setVchImage(voucher.image || '');
-    setVchAmount(voucher.amount);
-    setVchTerms(voucher.terms || '');
-    setVchExpiryDate(voucher.expiryDate);
-    setVchQuantity(voucher.quantity || 0);
-    setVchStockStatus(voucher.stockStatus || 'In Stock');
-    setVoucherFormMode('edit');
-  };
-
-  const handleVoucherSubmit = (e) => {
+  const handleVoucherSubmit = async (e) => {
     e.preventDefault();
-    if (!vchTitle.trim()) {
-      triggerToast('Please enter a voucher title', 'warning');
-      return;
-    }
-    if (!vchAmount.trim()) {
-      triggerToast('Please enter an amount', 'warning');
-      return;
-    }
-    if (!vchExpiryDate) {
-      triggerToast('Please enter an expiry date', 'warning');
+    if (!vchSku.trim()) {
+      triggerToast('Please enter a SKU', 'warning');
       return;
     }
 
-    let updatedVouchers = [];
+    try {
+      if (voucherFormMode === 'add') {
+        const storeId = selectedStore.rawStore?.id || selectedStore.id.replace('STR-', '');
+        const response = await storeService.addVoucher(storeId, vchSku, vchFeatured);
 
-    if (voucherFormMode === 'add') {
-      const currentVouchers = selectedStore.vouchers || [];
-      let nextIdNum = 1;
-      if (currentVouchers.length > 0) {
-        const ids = currentVouchers.map((v) => {
-          const parts = v.id.split('-');
-          const lastNum = parseInt(parts[parts.length - 1]);
-          return isNaN(lastNum) ? 0 : lastNum;
-        });
-        nextIdNum = Math.max(...ids) + 1;
-      }
-      const newVchId = `VCH-${selectedStore.id}-${nextIdNum}`;
+        if (response && response.success) {
+          triggerToast(`Voucher SKU "${vchSku.trim()}" registered successfully!`, 'success');
+          await fetchStoreVouchers(storeId);
+        } else {
+          // Parse potential errors list from return payload
+          const errorsList = response?.errors || [];
+          const hasUniqueError = errorsList.some((err) => err.message && err.message.toLowerCase().includes('unique'));
 
-      const newVoucher = {
-        id: newVchId,
-        title: vchTitle.trim(),
-        description: vchDescription.trim(),
-        image: vchImage.trim(),
-        amount: vchAmount.trim(),
-        terms: vchTerms.trim(),
-        expiryDate: vchExpiryDate,
-        quantity: parseInt(vchQuantity) || 0,
-        stockStatus: vchStockStatus,
-      };
-
-      updatedVouchers = [...currentVouchers, newVoucher];
-      triggerToast(`Voucher "${vchTitle}" registered successfully!`, 'success');
-    } else if (voucherFormMode === 'edit') {
-      updatedVouchers = (selectedStore.vouchers || []).map((v) => {
-        if (v.id === selectedVoucher.id) {
-          return {
-            ...v,
-            title: vchTitle.trim(),
-            description: vchDescription.trim(),
-            image: vchImage.trim(),
-            amount: vchAmount.trim(),
-            terms: vchTerms.trim(),
-            expiryDate: vchExpiryDate,
-            quantity: parseInt(vchQuantity) || 0,
-            stockStatus: vchStockStatus,
-          };
+          if (hasUniqueError) {
+            triggerToast('Gift card already added for this store', 'error');
+          } else {
+            triggerToast(response?.message || 'Failed to register voucher mapping', 'error');
+          }
+          return;
         }
-        return v;
-      });
-      triggerToast(`Voucher "${vchTitle}" updated successfully!`, 'success');
-    }
-
-    const updatedStores = stores.map((s) => {
-      if (s.id === selectedStore.id) {
-        return {
-          ...s,
-          vouchers: updatedVouchers,
-        };
       }
-      return s;
-    });
 
-    setStores(updatedStores);
-    setSelectedStore({
-      ...selectedStore,
-      vouchers: updatedVouchers,
-    });
-
-    setVoucherFormMode(null);
-    setSelectedVoucher(null);
+      setVoucherFormMode(null);
+    } catch (err) {
+      console.error('Voucher Mapping Submission error:', err);
+      // Parse exception errors from axios/fetch responses
+      const errorMsg = err.response?.data?.errors?.[0]?.message || err.response?.data?.message || '';
+      if (errorMsg.toLowerCase().includes('unique')) {
+        triggerToast('Gift card already added for this store', 'error');
+      } else {
+        triggerToast(err.message || 'An error occurred while submitting voucher mapping', 'error');
+      }
+    }
   };
 
-  const handleDeleteVoucher = (voucherId) => {
-    const updatedVouchers = (selectedStore.vouchers || []).filter((v) => v.id !== voucherId);
-    
-    const updatedStores = stores.map((s) => {
-      if (s.id === selectedStore.id) {
-        return {
-          ...s,
+  const handleDeleteVoucher = async (voucherId) => {
+    try {
+      const response = await storeService.deleteVoucher(voucherId);
+      if (response && response.success) {
+        const updatedVouchers = (selectedStore.vouchers || []).filter((v) => v.id !== voucherId);
+
+        const updatedStores = stores.map((s) => {
+          if (s.id === selectedStore.id) {
+            return {
+              ...s,
+              vouchers: updatedVouchers,
+            };
+          }
+          return s;
+        });
+
+        setStores(updatedStores);
+        setSelectedStore({
+          ...selectedStore,
           vouchers: updatedVouchers,
-        };
+        });
+
+        triggerToast('Voucher deleted successfully.', 'error');
+      } else {
+        triggerToast(response?.message || 'Failed to delete voucher', 'error');
       }
-      return s;
-    });
-
-    setStores(updatedStores);
-    setSelectedStore({
-      ...selectedStore,
-      vouchers: updatedVouchers,
-    });
-
-    triggerToast('Voucher deleted successfully.', 'error');
+    } catch (err) {
+      console.error('Delete Voucher API error:', err);
+      triggerToast(err.message || 'An error occurred while deleting the voucher', 'error');
+    }
   };
 
   const handleOpenDelete = (store) => {
@@ -609,11 +573,19 @@ const StoresView = ({ triggerToast }) => {
                   }}
                 >
                   <MenuItem value="All">All Categories</MenuItem>
-                  {availableCategories.map((cat) => (
-                    <MenuItem key={cat} value={cat}>
-                      {cat}
-                    </MenuItem>
-                  ))}
+                  {categoriesList.length > 0 ? (
+                    categoriesList.map((cat) => (
+                      <MenuItem key={cat.id} value={cat.category_name}>
+                        {cat.category_name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    availableCategories.map((cat) => (
+                      <MenuItem key={cat} value={cat}>
+                        {cat}
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
 
@@ -651,6 +623,7 @@ const StoresView = ({ triggerToast }) => {
                   <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pl: 3 }}>ID</TableCell>
                   <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STORE NAME</TableCell>
                   <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>MAPPED CATEGORY</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>VOUCHERS</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STATUS</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pr: 3 }}>ACTIONS</TableCell>
                 </TableRow>
@@ -658,7 +631,7 @@ const StoresView = ({ triggerToast }) => {
               <TableBody>
                 {filteredStores.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                         <StoreIcon sx={{ fontSize: 40, color: 'text.disabled', opacity: 0.5 }} />
                         <Typography variant="body2" color="text.secondary" fontWeight={500}>
@@ -690,7 +663,7 @@ const StoresView = ({ triggerToast }) => {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             {store.image ? (
                               <Avatar
-                                src={store.image}
+                                src={getLogoUrl(store.image)}
                                 sx={{
                                   width: 36,
                                   height: 36,
@@ -726,6 +699,19 @@ const StoresView = ({ triggerToast }) => {
                           <Typography variant="body2" fontWeight={550} color="#475569">
                             {store.category}
                           </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={`${(store.vouchers || []).length} Vouchers`}
+                            size="small"
+                            sx={{
+                              bgcolor: 'rgba(109, 40, 217, 0.08)',
+                              color: '#6D28D9',
+                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                              borderRadius: '6px'
+                            }}
+                          />
                         </TableCell>
                         <TableCell align="center">
                           <Box
@@ -899,37 +885,34 @@ const StoresView = ({ triggerToast }) => {
 
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  STORE IMAGE URL (OPTIONAL)
+                  STORE LOGO *
                 </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="e.g. https://domain.com/logo.png"
-                  value={storeImage}
-                  onChange={(e) => setStoreImage(e.target.value)}
+                <Button
                   variant="outlined"
-                  size="small"
+                  component="label"
+                  fullWidth
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                      bgcolor: '#F8FAFC',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        bgcolor: '#F1F5F9',
-                      },
-                      '&.Mui-focused': {
-                        bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                      },
+                    borderRadius: '12px',
+                    py: 1.2,
+                    textTransform: 'none',
+                    borderColor: 'rgba(226, 232, 240, 0.8)',
+                    color: '#475569',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    '&:hover': {
+                      borderColor: '#CBD5E1',
+                      backgroundColor: '#F1F5F9',
                     },
                   }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <ImageIcon color="action" sx={{ fontSize: 18 }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                >
+                  {storeLogo ? storeLogo.name : 'Choose Logo Image *'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => setStoreLogo(e.target.files[0])}
+                  />
+                </Button>
               </Box>
 
               <Box>
@@ -937,10 +920,11 @@ const StoresView = ({ triggerToast }) => {
                   MAPPED CATEGORY *
                 </Typography>
                 <Select
-                  value={storeCategory}
-                  onChange={(e) => setStoreCategory(e.target.value)}
+                  value={storeCategoryId}
+                  onChange={(e) => setStoreCategoryId(e.target.value)}
                   size="small"
                   fullWidth
+                  required
                   sx={{
                     borderRadius: '12px',
                     bgcolor: '#F8FAFC',
@@ -955,9 +939,9 @@ const StoresView = ({ triggerToast }) => {
                     },
                   }}
                 >
-                  {availableCategories.map((cat) => (
-                    <MenuItem key={cat} value={cat}>
-                      {cat}
+                  {categoriesList.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      {cat.category_name}
                     </MenuItem>
                   ))}
                 </Select>
@@ -994,7 +978,16 @@ const StoresView = ({ triggerToast }) => {
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
             <Button
-              onClick={() => setOpenAddDialog(false)}
+              onClick={() => {
+                setStoreName('');
+                setStoreLogo(null);
+                if (categoriesList.length > 0) {
+                  setStoreCategoryId(categoriesList[0].id);
+                } else {
+                  setStoreCategoryId('');
+                }
+                setOpenAddDialog(false);
+              }}
               color="inherit"
               sx={{ textTransform: 'none', fontWeight: 600 }}
             >
@@ -1056,7 +1049,7 @@ const StoresView = ({ triggerToast }) => {
               Store Manager: {selectedStore?.name}
             </Typography>
           </Box>
-          
+
           <Tabs
             value={detailTab}
             onChange={(e, newValue) => {
@@ -1129,24 +1122,34 @@ const StoresView = ({ triggerToast }) => {
 
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                    STORE IMAGE URL (OPTIONAL)
+                    STORE LOGO (OPTIONAL)
                   </Typography>
-                  <TextField
-                    fullWidth
-                    placeholder="e.g. https://domain.com/logo.png"
-                    value={editImage}
-                    onChange={(e) => setEditImage(e.target.value)}
+                  <Button
                     variant="outlined"
-                    size="small"
-                    sx={textFieldSx}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <ImageIcon color="action" sx={{ fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
+                    component="label"
+                    fullWidth
+                    sx={{
+                      borderRadius: '12px',
+                      py: 1.2,
+                      textTransform: 'none',
+                      borderColor: 'rgba(226, 232, 240, 0.8)',
+                      color: '#475569',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      '&:hover': {
+                        borderColor: '#CBD5E1',
+                        backgroundColor: '#F1F5F9',
+                      },
                     }}
-                  />
+                  >
+                    {editLogo ? editLogo.name : 'Choose New Logo Image'}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={(e) => setEditLogo(e.target.files[0])}
+                    />
+                  </Button>
                 </Box>
 
                 <Box>
@@ -1154,15 +1157,16 @@ const StoresView = ({ triggerToast }) => {
                     MAPPED CATEGORY *
                   </Typography>
                   <Select
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
+                    value={editCategoryId}
+                    onChange={(e) => setEditCategoryId(e.target.value)}
                     size="small"
                     fullWidth
+                    required
                     sx={selectSx}
                   >
-                    {availableCategories.map((cat) => (
-                      <MenuItem key={cat} value={cat}>
-                        {cat}
+                    {categoriesList.map((cat) => (
+                      <MenuItem key={cat.id} value={cat.id}>
+                        {cat.category_name}
                       </MenuItem>
                     ))}
                   </Select>
@@ -1217,7 +1221,7 @@ const StoresView = ({ triggerToast }) => {
               /* Voucher List View */
               <Box>
                 {/* Header Row */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, mt: 3 }}>
                   <Box>
                     <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
                       Active Vouchers
@@ -1269,67 +1273,42 @@ const StoresView = ({ triggerToast }) => {
                     <Table size="small">
                       <TableHead sx={{ bgcolor: '#F8FAFC' }}>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 650, color: '#475569', py: 1.5 }}>VOUCHER</TableCell>
-                          <TableCell sx={{ fontWeight: 650, color: '#475569', py: 1.5 }}>AMOUNT</TableCell>
-                          <TableCell sx={{ fontWeight: 650, color: '#475569', py: 1.5 }}>EXPIRY</TableCell>
-                          <TableCell sx={{ fontWeight: 650, color: '#475569', py: 1.5 }}>STOCK STATUS</TableCell>
+                          <TableCell sx={{ fontWeight: 650, color: '#475569', py: 1.5 }}>GIFT CARD NAME</TableCell>
+                          <TableCell sx={{ fontWeight: 650, color: '#475569', py: 1.5 }}>FEATURED STATUS</TableCell>
                           <TableCell align="right" sx={{ fontWeight: 650, color: '#475569', py: 1.5 }}>ACTIONS</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {selectedStore.vouchers.map((v) => {
-                          const isOutOfStock = v.stockStatus === 'Out of Stock' || v.quantity === 0;
-                          const isLimited = v.stockStatus === 'Limited Stock' || (v.quantity > 0 && v.quantity <= 15);
+                          const isFeatured = v.featured === 1;
                           return (
                             <TableRow key={v.id} hover>
                               <TableCell sx={{ py: 1.5 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                  {v.image ? (
-                                    <Avatar src={v.image} sx={{ width: 32, height: 32, borderRadius: '6px' }} />
-                                  ) : (
-                                    <Avatar sx={{ width: 32, height: 32, borderRadius: '6px', bgcolor: 'rgba(139, 92, 246, 0.1)', color: '#8B5CF6' }}>
-                                      <ConfirmationNumberIcon sx={{ fontSize: 16 }} />
-                                    </Avatar>
-                                  )}
-                                  <Box>
-                                    <Typography variant="subtitle2" fontWeight={700} color="#1E293B">
-                                      {v.title}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {v.description || 'No description'}
-                                    </Typography>
-                                  </Box>
+                                  <Avatar sx={{ width: 32, height: 32, borderRadius: '6px', bgcolor: 'rgba(139, 92, 246, 0.1)', color: '#8B5CF6' }}>
+                                    <ConfirmationNumberIcon sx={{ fontSize: 16 }} />
+                                  </Avatar>
+                                  <Typography variant="subtitle2" fontWeight={700} color="#1E293B">
+                                    {v.gift_card_name || syncedProducts.find((p) => p.sku === v.sku)?.name || v.sku}
+                                  </Typography>
                                 </Box>
                               </TableCell>
                               <TableCell sx={{ py: 1.5 }}>
-                                <Typography variant="subtitle2" fontWeight={800} color="#10B981">
-                                  {v.amount}
-                                </Typography>
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                <Typography variant="body2" color="text.secondary" fontSize="0.75rem">
-                                  {v.expiryDate}
-                                </Typography>
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
                                 <Chip
-                                  label={`${v.quantity} units (${v.stockStatus})`}
+                                  label={isFeatured ? 'Featured' : 'Standard'}
                                   size="small"
                                   sx={{
                                     fontSize: '0.68rem',
                                     fontWeight: 700,
-                                    bgcolor: isOutOfStock ? 'rgba(239, 68, 68, 0.08)' : isLimited ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)',
-                                    color: isOutOfStock ? '#EF4444' : isLimited ? '#F59E0B' : '#10B981',
-                                    border: isOutOfStock ? '1px solid rgba(239, 68, 68, 0.15)' : isLimited ? '1px solid rgba(245, 158, 11, 0.15)' : '1px solid rgba(16, 185, 129, 0.15)',
+                                    bgcolor: isFeatured ? 'rgba(16, 185, 129, 0.08)' : 'rgba(100, 116, 139, 0.08)',
+                                    color: isFeatured ? '#10B981' : '#64748B',
+                                    border: isFeatured ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(100, 116, 139, 0.15)',
                                     height: '22px'
                                   }}
                                 />
                               </TableCell>
                               <TableCell align="right" sx={{ py: 1.5 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
-                                  <IconButton size="small" sx={{ color: '#8B5CF6' }} onClick={() => handleOpenEditVoucher(v)}>
-                                    <EditIcon sx={{ fontSize: 14 }} />
-                                  </IconButton>
                                   <IconButton size="small" sx={{ color: '#EF4444' }} onClick={() => handleDeleteVoucher(v.id)}>
                                     <DeleteIcon sx={{ fontSize: 14 }} />
                                   </IconButton>
@@ -1368,7 +1347,7 @@ const StoresView = ({ triggerToast }) => {
                   >
                     <ArrowBackIcon fontSize="small" />
                   </IconButton>
-                  <Box>
+                  <Box sx={{ mt: 3 }}>
                     <Typography variant="subtitle1" fontWeight={850} color="#0F172A" sx={{ lineHeight: 1.2 }}>
                       {voucherFormMode === 'add' ? 'Register New Voucher' : 'Modify Voucher Details'}
                     </Typography>
@@ -1378,244 +1357,145 @@ const StoresView = ({ triggerToast }) => {
                   </Box>
                 </Box>
 
-                <Grid container spacing={4}>
-                  {/* Left Column: Form Fields */}
-                  <Grid item xs={12} md={7.5}>
-                    <Grid container spacing={2.5}>
-                      <Grid item xs={12}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          VOUCHER TITLE *
-                        </Typography>
-                        <TextField
-                          fullWidth
-                          required
-                          placeholder="e.g. Amazon Prime Annual Subscription"
-                          value={vchTitle}
-                          onChange={(e) => setVchTitle(e.target.value)}
-                          variant="outlined"
-                          size="small"
-                          sx={textFieldSx}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          AMOUNT / VALUE *
-                        </Typography>
-                        <TextField
-                          fullWidth
-                          required
-                          placeholder="e.g. ₹500, Free, 10% Off"
-                          value={vchAmount}
-                          onChange={(e) => setVchAmount(e.target.value)}
-                          variant="outlined"
-                          size="small"
-                          sx={textFieldSx}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          EXPIRY DATE *
-                        </Typography>
-                        <TextField
-                          fullWidth
-                          required
-                          type="date"
-                          value={vchExpiryDate}
-                          onChange={(e) => setVchExpiryDate(e.target.value)}
-                          variant="outlined"
-                          size="small"
-                          InputLabelProps={{ shrink: true }}
-                          sx={textFieldSx}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          STOCK QUANTITY
-                        </Typography>
-                        <TextField
-                          fullWidth
-                          type="number"
-                          placeholder="e.g. 50"
-                          value={vchQuantity}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value) || 0;
-                            setVchQuantity(val);
-                            if (val === 0) {
-                              setVchStockStatus('Out of Stock');
-                            } else if (val <= 15) {
-                              setVchStockStatus('Limited Stock');
-                            } else {
-                              setVchStockStatus('In Stock');
-                            }
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5, mt: 1 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 800, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                      VOUCHER SKU *
+                    </Typography>
+                    <Autocomplete
+                      freeSolo
+                      options={syncedProducts}
+                      getOptionLabel={(option) => {
+                        if (typeof option === 'string') return option;
+                        return option.sku;
+                      }}
+                      value={syncedProducts.find((p) => p.sku === vchSku) || vchSku || null}
+                      onChange={(event, newValue) => {
+                        if (typeof newValue === 'string') {
+                          setVchSku(newValue);
+                        } else if (newValue && newValue.sku) {
+                          setVchSku(newValue.sku);
+                        } else {
+                          setVchSku('');
+                        }
+                      }}
+                      onInputChange={(event, newInputValue) => {
+                        setVchSku(newInputValue);
+                      }}
+                      renderOption={(props, option) => (
+                        <Box
+                          component="li"
+                          {...props}
+                          sx={{
+                            display: 'flex !important',
+                            flexDirection: 'column !important',
+                            alignItems: 'flex-start !important',
+                            textAlign: 'left !important',
+                            width: '100% !important',
+                            py: 1.2,
+                            px: 2,
+                            borderBottom: '1px solid #F1F5F9',
                           }}
-                          variant="outlined"
-                          size="small"
-                          sx={textFieldSx}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          STOCK STATUS *
-                        </Typography>
-                        <Select
-                          value={vchStockStatus}
-                          onChange={(e) => setVchStockStatus(e.target.value)}
-                          size="small"
-                          fullWidth
-                          sx={selectSx}
                         >
-                          <MenuItem value="In Stock">In Stock (Available)</MenuItem>
-                          <MenuItem value="Limited Stock">Limited Stock (Low Inventory)</MenuItem>
-                          <MenuItem value="Out of Stock">Out of Stock (Suspended)</MenuItem>
-                        </Select>
-                      </Grid>
-
-                      <Grid item xs={12}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          VOUCHER IMAGE URL (OPTIONAL)
-                        </Typography>
+                          <Typography variant="subtitle2" fontWeight={750} color="#1E293B" sx={{ fontSize: '0.85rem', mb: 0.2, textAlign: 'left !important', width: '100% !important' }}>
+                            {option.name}
+                          </Typography>
+                          <Typography variant="caption" color="#8B5CF6" fontWeight={700} sx={{ letterSpacing: '0.02em', fontSize: '0.72rem', textAlign: 'left !important', width: '100% !important' }}>
+                            SKU: {option.sku}
+                          </Typography>
+                        </Box>
+                      )}
+                      slotProps={{
+                        paper: {
+                          sx: {
+                            borderRadius: '16px',
+                            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
+                            border: '1px solid rgba(226, 232, 240, 0.8)',
+                            mt: 1,
+                            backgroundColor: '#FFFFFF',
+                            '& .MuiAutocomplete-listbox': {
+                              p: 0,
+                            }
+                          }
+                        }
+                      }}
+                      renderInput={(params) => (
                         <TextField
-                          fullWidth
-                          placeholder="e.g. https://domain.com/voucher.png"
-                          value={vchImage}
-                          onChange={(e) => setVchImage(e.target.value)}
+                          {...params}
+                          placeholder="Search synced products by name, or type custom SKU..."
                           variant="outlined"
                           size="small"
+                          required
                           sx={textFieldSx}
                           InputProps={{
+                            ...(params.InputProps || {}),
                             startAdornment: (
-                              <InputAdornment position="start">
-                                <ImageIcon color="action" sx={{ fontSize: 18 }} />
-                              </InputAdornment>
+                              <>
+                                <InputAdornment position="start" sx={{ pl: 0.5, mr: 0.5 }}>
+                                  <SearchIcon sx={{ fontSize: 18, color: '#8B5CF6' }} />
+                                </InputAdornment>
+                                {params.InputProps?.startAdornment}
+                              </>
                             ),
                           }}
                         />
-                      </Grid>
+                      )}
+                    />
+                  </Box>
 
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          VOUCHER DESCRIPTION
-                        </Typography>
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={2.5}
-                          placeholder="Explain what the voucher gives, e.g. Free shipping..."
-                          value={vchDescription}
-                          onChange={(e) => setVchDescription(e.target.value)}
-                          variant="outlined"
-                          size="small"
-                          sx={textFieldSx}
-                        />
-                      </Grid>
-
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                          TERMS & CONDITIONS
-                        </Typography>
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={2.5}
-                          placeholder="Terms and conditions for usage..."
-                          value={vchTerms}
-                          onChange={(e) => setVchTerms(e.target.value)}
-                          variant="outlined"
-                          size="small"
-                          sx={textFieldSx}
-                        />
-                      </Grid>
-                    </Grid>
-                  </Grid>
-
-                  {/* Right Column: Live Preview Card */}
-                  <Grid item xs={12} md={4.5}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 2, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                        LIVE PREVIEW
+                  <Box sx={{
+                    p: 2.5,
+                    borderRadius: '16px',
+                    bgcolor: '#F8FAFC',
+                    border: '1px solid rgba(226, 232, 240, 0.8)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      borderColor: '#CBD5E1',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.02)',
+                    }
+                  }}>
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight={800} color="#1E293B" sx={{ mb: 0.5 }}>
+                        Featured Status
                       </Typography>
-                      <Box
-                        sx={{
-                          flexGrow: 1,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          borderRadius: '16px',
-                          overflow: 'hidden',
-                          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-                          border: '1px solid rgba(226, 232, 240, 0.8)',
-                          bgcolor: '#FFFFFF',
-                        }}
-                      >
-                        {/* Coupon Header Banner */}
-                        <Box
-                          sx={{
-                            background: 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)',
-                            color: '#FFFFFF',
-                            p: 3,
-                            position: 'relative',
-                            textAlign: 'center',
-                          }}
-                        >
-                          <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.15em', opacity: 0.85, fontSize: '0.62rem', display: 'block', mb: 1 }}>
-                            {selectedStore?.name.toUpperCase()} REWARD VOUCHER
-                          </Typography>
-                          <Typography variant="h5" fontWeight={850} sx={{ letterSpacing: '-0.02em', mb: 1, wordBreak: 'break-word', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                            {vchTitle.trim() || 'Voucher Title'}
-                          </Typography>
-                          <Typography variant="h4" fontWeight={900} sx={{ color: '#FCD34D' }}>
-                            {vchAmount.trim() || '₹0.00'}
-                          </Typography>
-                        </Box>
-
-                        {/* Ticket Edge Punches / Ticket Separator */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', position: 'relative', height: '20px', bgcolor: '#F8FAFC' }}>
-                          <Box sx={{ width: '10px', height: '20px', borderRadius: '0 10px 10px 0', bgcolor: '#FFFFFF', borderRight: '1px solid rgba(226, 232, 240, 0.8)', position: 'absolute', left: 0 }} />
-                          <Box sx={{ width: '100%', height: '1px', borderTop: '2px dashed rgba(226, 232, 240, 0.8)', mx: 2 }} />
-                          <Box sx={{ width: '10px', height: '20px', borderRadius: '10px 0 0 10px', bgcolor: '#FFFFFF', borderLeft: '1px solid rgba(226, 232, 240, 0.8)', position: 'absolute', right: 0 }} />
-                        </Box>
-
-                        {/* Coupon Details Body */}
-                        <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', bgcolor: '#F8FAFC' }}>
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: 'block', mb: 0.5 }}>
-                              DESCRIPTION
-                            </Typography>
-                            <Typography variant="body2" color="#334155" sx={{ wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                              {vchDescription.trim() || 'No description provided yet. Explain details of this reward voucher.'}
-                            </Typography>
-                          </Box>
-
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Box>
-                              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: 'block' }}>
-                                EXPIRES ON
-                              </Typography>
-                              <Typography variant="caption" fontWeight={750} color="#EF4444">
-                                {vchExpiryDate || 'DD-MM-YYYY'}
-                              </Typography>
-                            </Box>
-                            
-                            <Chip
-                              label={vchStockStatus}
-                              size="small"
-                              sx={{
-                                fontWeight: 800,
-                                fontSize: '0.65rem',
-                                bgcolor: vchStockStatus === 'Out of Stock' ? 'rgba(239, 68, 68, 0.08)' : vchStockStatus === 'Limited Stock' ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)',
-                                color: vchStockStatus === 'Out of Stock' ? '#EF4444' : vchStockStatus === 'Limited Stock' ? '#F59E0B' : '#10B981',
-                                border: vchStockStatus === 'Out of Stock' ? '1px solid rgba(239, 68, 68, 0.15)' : vchStockStatus === 'Limited Stock' ? '1px solid rgba(245, 158, 11, 0.15)' : '1px solid rgba(16, 185, 129, 0.15)',
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                      </Box>
+                      <Typography variant="caption" color="#64748B">
+                        Show this voucher in banners and highlighted sections on the store page.
+                      </Typography>
                     </Box>
-                  </Grid>
-                </Grid>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={vchFeatured === 1}
+                          onChange={(e) => setVchFeatured(e.target.checked ? 1 : 0)}
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#8B5CF6',
+                              '& + .MuiSwitch-track': {
+                                backgroundColor: '#8B5CF6',
+                              },
+                            },
+                          }}
+                        />
+                      }
+                      label={vchFeatured === 1 ? 'Featured' : 'Standard'}
+                      labelPlacement="start"
+                      sx={{
+                        mr: 0,
+                        gap: 1.5,
+                        '& .MuiFormControlLabel-label': {
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          color: vchFeatured === 1 ? '#8B5CF6' : '#64748B',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                        }
+                      }}
+                    />
+                  </Box>
+                </Box>
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4, pt: 2, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
                   <Button onClick={() => setVoucherFormMode(null)} color="inherit" sx={{ textTransform: 'none', fontWeight: 600 }}>

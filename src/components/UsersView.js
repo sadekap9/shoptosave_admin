@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -27,7 +27,9 @@ import {
   Tooltip,
   Avatar,
   Divider,
+  CircularProgress,
 } from '@mui/material';
+import { userService } from '../services/userService';
 import {
   Search as SearchIcon,
   Edit as EditIcon,
@@ -45,11 +47,11 @@ import {
   AccountBalance as BankIcon,
   Check as ApproveIcon,
   Clear as RejectIcon,
-  Cancel as CancelIcon,
 } from '@mui/icons-material';
 
 
 // Initial Mock Users List with KYC and Bank Details
+// eslint-disable-next-line no-unused-vars
 const initialUsers = [
   {
     id: 'S2S-001',
@@ -187,10 +189,46 @@ const getAvatarGradient = (name) => {
 };
 
 const UsersView = ({ triggerToast }) => {
-  const [usersList, setUsersList] = useState(initialUsers);
+  const [usersList, setUsersList] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterKyc, setFilterKyc] = useState('All');
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await userService.getUsers();
+      if (response && response.success && response.result && response.result.data) {
+        const mappedUsers = response.result.data.map((user) => {
+          return {
+            id: `S2S-${String(user.id).padStart(3, '0')}`,
+            dbId: user.id,
+            name: user.name || user.phone || 'Unknown User',
+            phone: user.phone,
+            email: user.email || 'N/A',
+            balance: user.balance || 0,
+            status: user.is_active === 1 ? 'Active' : 'Suspended',
+            kycStatus: user.kyc_status || 'Not Submitted',
+            kycDocument: user.kyc_document || null,
+            bankDetails: user.bank_details || null,
+            joinedDate: user.createdAt ? user.createdAt.split('T')[0] : 'N/A',
+          };
+        });
+        setUsersList(mappedUsers);
+      }
+    } catch (error) {
+      console.error('Fetch users error:', error);
+      triggerToast(error.message || 'Failed to fetch users from server', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Selected user for full detail view
   const [selectedUserForView, setSelectedUserForView] = useState(null);
@@ -204,6 +242,7 @@ const UsersView = ({ triggerToast }) => {
   // Status edit modal state
   const [openStatusDialog, setOpenStatusDialog] = useState(false);
   const [targetStatus, setTargetStatus] = useState('Active');
+  const [statusUpdating, setStatusUpdating] = useState(false);
 
   const handleApproveKyc = (userId) => {
     setUsersList(prev =>
@@ -279,50 +318,44 @@ const UsersView = ({ triggerToast }) => {
     setOpenBalanceDialog(false);
   };
 
-  const handleToggleDeactivate = (user) => {
-    const isCurrentlySuspended = user.status === 'Suspended';
-    const nextStatus = isCurrentlySuspended ? 'Active' : 'Suspended';
-    setUsersList((prev) =>
-      prev.map((u) => {
-        if (u.id === user.id) {
-          const updatedUser = { ...u, status: nextStatus };
-          if (selectedUserForView && selectedUserForView.id === u.id) {
-            setSelectedUserForView(updatedUser);
-          }
-          return updatedUser;
-        }
-        return u;
-      })
-    );
-    if (isCurrentlySuspended) {
-      triggerToast(`Account for ${user.name} has been re-activated successfully!`, 'success');
-    } else {
-      triggerToast(`Account for ${user.name} has been deactivated and suspended.`, 'error');
-    }
-  };
+
 
   const handleOpenStatus = (user) => {
     setSelectedUser(user);
-    setTargetStatus(user.status);
+    setTargetStatus(user.status === 'Active' ? 'Active' : 'Suspended');
     setOpenStatusDialog(true);
   };
 
-  const handleStatusSubmit = (e) => {
+  const handleStatusSubmit = async (e) => {
     e.preventDefault();
-    setUsersList(prev =>
-      prev.map((u) => {
-        if (u.id === selectedUser.id) {
-          const updatedUser = { ...u, status: targetStatus };
-          if (selectedUserForView && selectedUserForView.id === u.id) {
-            setSelectedUserForView(updatedUser);
-          }
-          return updatedUser;
-        }
-        return u;
-      })
-    );
-    triggerToast(`Status for ${selectedUser.name} updated to "${targetStatus}"`, 'success');
-    setOpenStatusDialog(false);
+    const isActiveVal = targetStatus === 'Active' ? 1 : 0;
+    setStatusUpdating(true);
+    try {
+      const response = await userService.updateUserStatus(selectedUser.dbId, isActiveVal);
+      if (response && response.success) {
+        setUsersList(prev =>
+          prev.map((u) => {
+            if (u.id === selectedUser.id) {
+              const updatedUser = { ...u, status: targetStatus };
+              if (selectedUserForView && selectedUserForView.id === u.id) {
+                setSelectedUserForView(updatedUser);
+              }
+              return updatedUser;
+            }
+            return u;
+          })
+        );
+        triggerToast(`Status for ${selectedUser.name} updated to "${targetStatus}"`, 'success');
+        setOpenStatusDialog(false);
+      } else {
+        triggerToast(response.message || 'Failed to update user status', 'error');
+      }
+    } catch (err) {
+      console.error('Update status error:', err);
+      triggerToast(err.message || 'An error occurred while updating status', 'error');
+    } finally {
+      setStatusUpdating(false);
+    }
   };
 
   const filteredUsers = usersList.filter((user) => {
@@ -911,7 +944,7 @@ const UsersView = ({ triggerToast }) => {
           </Box>
         </Card>
 
-        {/* KPI 3: Under Review / Hold */}
+        {/* KPI 3: Inactive Accounts */}
         <Card
           sx={{
             border: '1px solid #E2E8F0',
@@ -933,7 +966,7 @@ const UsersView = ({ triggerToast }) => {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <Box>
               <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1 }}>
-                Under Review / Hold
+                Inactive Accounts
               </Typography>
               <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1 }}>
                 {reviewCount}
@@ -955,7 +988,7 @@ const UsersView = ({ triggerToast }) => {
           </Box>
           <Box sx={{ mt: 1.5 }}>
             <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', display: 'block' }}>
-              Requires moderator audit
+              Blocked or suspended profiles
             </Typography>
           </Box>
         </Card>
@@ -1079,8 +1112,7 @@ const UsersView = ({ triggerToast }) => {
                 >
                   <MenuItem value="All">All Statuses</MenuItem>
                   <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Under Review">Under Review</MenuItem>
-                  <MenuItem value="Suspended">Suspended</MenuItem>
+                  <MenuItem value="Suspended">Inactive</MenuItem>
                 </Select>
               </FormControl>
 
@@ -1148,22 +1180,33 @@ const UsersView = ({ triggerToast }) => {
               scrollbarWidth: 'none',
             }}
           >
-            <Table stickyHeader>
+            <Table stickyHeader sx={{ minWidth: 950 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, pl: 3, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>USER ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CUSTOMER</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PHONE</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>EMAIL</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WALLET BALANCE</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ACCOUNT STATUS</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>KYC STATUS</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>JOINED DATE</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, pl: 3, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>USER ID</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>CUSTOMER</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>PHONE</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>EMAIL</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>WALLET BALANCE</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>ACCOUNT STATUS</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>KYC STATUS</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>JOINED DATE</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, pr: 3, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>ACTIONS</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredUsers.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
+                      <Box display="flex" flexDirection="column" alignItems="center" gap={1.5}>
+                        <CircularProgress size={40} color="primary" />
+                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                          Loading registered users...
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredUsers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
                       <Box display="flex" flexDirection="column" alignItems="center" gap={1.5}>
@@ -1181,40 +1224,56 @@ const UsersView = ({ triggerToast }) => {
                       hover
                       sx={{
                         borderBottom: '1px solid #F1F5F9',
-                        transition: 'all 0.2s',
+                        transition: 'all 0.25s ease',
                         '&:hover': {
-                          bgcolor: 'rgba(109, 40, 217, 0.015) !important',
+                          bgcolor: 'rgba(109, 40, 217, 0.02) !important',
+                          boxShadow: 'inset 4px 0 0 0 #6D28D9',
                         },
                       }}
                     >
                       {/* Column 1: User ID */}
-                      <TableCell sx={{ fontWeight: 700, color: '#6D28D9', fontFamily: 'monospace', fontSize: '0.85rem', py: 2.2, pl: 3 }}>
-                        {user.id}
+                      <TableCell sx={{ py: 2.2, pl: 3 }}>
+                        <Box sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          bgcolor: 'rgba(109, 40, 217, 0.04)',
+                          color: '#6D28D9',
+                          fontFamily: 'monospace',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          px: 1.2,
+                          py: 0.5,
+                          borderRadius: '8px',
+                          border: '1px solid rgba(109, 40, 217, 0.1)',
+                          boxShadow: '0 2px 4px rgba(109, 40, 217, 0.02)'
+                        }}>
+                          {user.id}
+                        </Box>
                       </TableCell>
 
                       {/* Column 2: Customer */}
-                      <TableCell sx={{ py: 2.2 }}>
-                        <Box display="flex" alignItems="center" gap={1.5}>
+                      <TableCell sx={{ py: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                           <Avatar
                             sx={{
-                              width: 32,
-                              height: 32,
-                              fontSize: '0.78rem',
+                              width: 36,
+                              height: 36,
+                              fontSize: '0.8rem',
                               fontWeight: 700,
                               background: getAvatarGradient(user.name),
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                             }}
                           >
                             {getInitials(user.name)}
                           </Avatar>
-                          <Typography variant="subtitle2" fontWeight={700} color="#1E293B" sx={{ fontSize: '0.85rem' }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1E293B', fontSize: '0.85rem' }}>
                             {user.name}
                           </Typography>
                         </Box>
                       </TableCell>
 
                       {/* Column 3: Phone */}
-                      <TableCell sx={{ color: '#475569', fontWeight: 550, fontSize: '0.82rem', py: 2.2 }}>
+                      <TableCell sx={{ color: '#475569', fontWeight: 600, fontSize: '0.82rem', py: 2.2 }}>
                         {user.phone}
                       </TableCell>
 
@@ -1224,8 +1283,23 @@ const UsersView = ({ triggerToast }) => {
                       </TableCell>
 
                       {/* Column 5: Wallet Balance */}
-                      <TableCell align="right" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '0.85rem', py: 2.2 }}>
-                        ₹{user.balance.toLocaleString('en-IN')}
+                      <TableCell align="right" sx={{ py: 2.2 }}>
+                        <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.8}>
+                          <Box sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            bgcolor: 'rgba(16, 185, 129, 0.05)',
+                            color: '#10B981',
+                            px: 1.5,
+                            py: 0.6,
+                            borderRadius: '10px',
+                            fontWeight: 800,
+                            fontSize: '0.88rem',
+                            border: '1px solid rgba(16, 185, 129, 0.12)'
+                          }}>
+                            ₹{user.balance.toLocaleString('en-IN')}
+                          </Box>
+                        </Box>
                       </TableCell>
 
                       {/* Column 6: Account Status */}
@@ -1234,33 +1308,27 @@ const UsersView = ({ triggerToast }) => {
                           sx={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 0.6,
-                            px: 1.2,
-                            py: 0.35,
-                            borderRadius: '12px',
-                            fontWeight: 700,
-                            fontSize: '0.7rem',
-                            bgcolor:
-                              user.status === 'Active'
-                                ? 'rgba(16, 185, 129, 0.08)'
-                                : user.status === 'Suspended'
-                                  ? 'rgba(239, 68, 68, 0.08)'
-                                  : 'rgba(245, 158, 11, 0.08)',
-                            color:
-                              user.status === 'Active'
-                                ? '#10B981'
-                                : user.status === 'Suspended'
-                                  ? '#EF4444'
-                                  : '#F59E0B',
-                            border:
-                              user.status === 'Active'
-                                ? '1px solid rgba(16, 185, 129, 0.15)'
-                                : user.status === 'Suspended'
-                                  ? '1px solid rgba(239, 68, 68, 0.15)'
-                                  : '1px solid rgba(245, 158, 11, 0.15)',
+                            gap: 1,
+                            px: 1.6,
+                            py: 0.6,
+                            borderRadius: '20px',
+                            fontWeight: 800,
+                            fontSize: '0.72rem',
+                            bgcolor: user.status === 'Active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                            color: user.status === 'Active' ? '#10B981' : '#EF4444',
+                            border: user.status === 'Active' ? '1px solid rgba(16, 185, 129, 0.18)' : '1px solid rgba(239, 68, 68, 0.18)',
                           }}
                         >
-                          {user.status}
+                          <Box
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              bgcolor: user.status === 'Active' ? '#10B981' : '#EF4444',
+                              boxShadow: user.status === 'Active' ? '0 0 8px #10B981' : '0 0 8px #EF4444',
+                            }}
+                          />
+                          {user.status === 'Active' ? 'Active' : 'Inactive'}
                         </Box>
                       </TableCell>
 
@@ -1270,19 +1338,19 @@ const UsersView = ({ triggerToast }) => {
                           sx={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            px: 1.2,
-                            py: 0.35,
+                            px: 1.5,
+                            py: 0.6,
                             borderRadius: '12px',
-                            fontWeight: 700,
-                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            fontSize: '0.72rem',
                             bgcolor:
                               user.kycStatus === 'Approved'
-                                ? 'rgba(16, 185, 129, 0.08)'
+                                ? 'rgba(16, 185, 129, 0.05)'
                                 : user.kycStatus === 'Pending'
-                                  ? 'rgba(245, 158, 11, 0.08)'
+                                  ? 'rgba(245, 158, 11, 0.05)'
                                   : user.kycStatus === 'Rejected'
-                                    ? 'rgba(239, 68, 68, 0.08)'
-                                    : 'rgba(100, 116, 139, 0.08)',
+                                    ? 'rgba(239, 68, 68, 0.05)'
+                                    : 'rgba(100, 116, 139, 0.05)',
                             color:
                               user.kycStatus === 'Approved'
                                 ? '#10B981'
@@ -1312,7 +1380,7 @@ const UsersView = ({ triggerToast }) => {
 
                       {/* Column 9: Actions */}
                       <TableCell align="right" sx={{ py: 2.2, pr: 3, whiteSpace: 'nowrap' }}>
-                        <Box display="flex" justifyContent="flex-end" gap={1} flexWrap="nowrap">
+                        <Box display="flex" justifyContent="flex-end" gap={1.2} flexWrap="nowrap">
                           <Tooltip title="View Profile Detail">
                             <IconButton
                               size="small"
@@ -1323,43 +1391,17 @@ const UsersView = ({ triggerToast }) => {
                                 '&:hover': {
                                   bgcolor: '#6D28D9',
                                   color: '#FFFFFF',
-                                  transform: 'translateY(-1px)',
-                                  boxShadow: '0 4px 12px rgba(109, 40, 217, 0.15)'
+                                  transform: 'translateY(-1.5px)',
+                                  boxShadow: '0 4px 12px rgba(109, 40, 217, 0.2)'
                                 },
-                                width: 30,
-                                height: 30,
-                                borderRadius: '8px',
+                                width: 34,
+                                height: 34,
+                                borderRadius: '10px',
                                 border: '1px solid rgba(109, 40, 217, 0.08)',
                                 transition: 'all 0.2s ease',
                               }}
                             >
-                              <ViewIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
-                          </Tooltip>
-
-                          <Tooltip title={user.status === 'Suspended' ? 'Re-activate Account' : 'Deactivate Account'}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleToggleDeactivate(user)}
-                              sx={{
-                                color: user.status === 'Suspended' ? '#10B981' : '#EF4444',
-                                bgcolor: user.status === 'Suspended' ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.04)',
-                                '&:hover': {
-                                  bgcolor: user.status === 'Suspended' ? '#10B981' : '#EF4444',
-                                  color: '#FFFFFF',
-                                  transform: 'translateY(-1px)',
-                                  boxShadow: user.status === 'Suspended'
-                                    ? '0 4px 12px rgba(16, 185, 129, 0.15)'
-                                    : '0 4px 12px rgba(239, 68, 68, 0.15)',
-                                },
-                                width: 30,
-                                height: 30,
-                                borderRadius: '8px',
-                                border: `1px solid ${user.status === 'Suspended' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)'}`,
-                                transition: 'all 0.2s ease',
-                              }}
-                            >
-                              <CancelIcon sx={{ fontSize: 14 }} />
+                              <ViewIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           </Tooltip>
 
@@ -1373,17 +1415,18 @@ const UsersView = ({ triggerToast }) => {
                                 '&:hover': {
                                   bgcolor: '#F59E0B',
                                   color: '#FFFFFF',
-                                  transform: 'translateY(-1px)',
-                                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)'
+                                  transform: 'translateY(-1.5px)',
+                                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)'
                                 },
-                                width: 30,
-                                height: 30,
-                                borderRadius: '8px',
+                                width: 34,
+                                height: 34,
+                                borderRadius: '10px',
                                 border: '1px solid rgba(245, 158, 11, 0.08)',
                                 transition: 'all 0.2s ease',
+                                marginLeft: '8px',
                               }}
                             >
-                              <EditIcon sx={{ fontSize: 14 }} />
+                              <EditIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -1694,16 +1737,10 @@ const UsersView = ({ triggerToast }) => {
                     Active (Unrestricted)
                   </Box>
                 </MenuItem>
-                <MenuItem value="Under Review">
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#F59E0B' }} />
-                    Under Review (Hold Transactions)
-                  </Box>
-                </MenuItem>
                 <MenuItem value="Suspended">
                   <Box display="flex" alignItems="center" gap={1}>
                     <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#EF4444' }} />
-                    Suspended (Block Login)
+                    Inactive (Block Login)
                   </Box>
                 </MenuItem>
               </Select>
@@ -1714,6 +1751,7 @@ const UsersView = ({ triggerToast }) => {
             <Button
               onClick={() => setOpenStatusDialog(false)}
               color="inherit"
+              disabled={statusUpdating}
               sx={{ textTransform: 'none', fontWeight: 600 }}
             >
               Cancel
@@ -1722,14 +1760,16 @@ const UsersView = ({ triggerToast }) => {
               type="submit"
               variant="contained"
               color="primary"
+              disabled={statusUpdating}
               sx={{
                 textTransform: 'none',
                 fontWeight: 650,
                 borderRadius: '10px',
                 px: 2.5,
+                minWidth: 120
               }}
             >
-              Save Changes
+              {statusUpdating ? <CircularProgress size={20} color="inherit" /> : 'Save Changes'}
             </Button>
           </DialogActions>
         </form>

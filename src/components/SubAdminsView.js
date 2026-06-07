@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -26,7 +26,9 @@ import {
   Chip,
   Checkbox,
   FormControlLabel,
+  CircularProgress,
 } from '@mui/material';
+import { subadminService } from '../services/subadminService';
 import {
   Search as SearchIcon,
   Add as AddIcon,
@@ -60,12 +62,49 @@ const getAvatarGradient = (name) => {
   return colors[sum % colors.length];
 };
 
-const initialSubAdmins = [
-  { id: 'SADM-001', name: 'Rohan Sharma', email: 'rohan.s@shop2save.in', phone: '+91 99887 76655', menuAccess: ['Dashboard', 'Gift Cards', 'Categories'], status: 'Active', created: '2026-05-10 11:00' },
-  { id: 'SADM-002', name: 'Aditi Patel', email: 'aditi.p@shop2save.in', phone: '+91 88776 65544', menuAccess: ['Dashboard', 'Categories', 'Redeem Orders'], status: 'Active', created: '2026-05-12 15:30' },
-  { id: 'SADM-003', name: 'Vikram Singh', email: 'vikram.s@shop2save.in', phone: '+91 77665 54433', menuAccess: ['Dashboard', 'Partner Stores'], status: 'Inactive', created: '2026-05-15 09:45' },
-  { id: 'SADM-004', name: 'Neha Gupta', email: 'neha.g@shop2save.in', phone: '+91 66554 43322', menuAccess: ['Dashboard', 'User Accounts'], status: 'Active', created: '2026-05-18 14:15' },
-];
+const formatDateTime = (isoString) => {
+  if (!isoString) return 'N/A';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch (e) {
+    return isoString;
+  }
+};
+
+const MENU_ACCESS_STORAGE_KEY = 's2s_subadmin_menu_access';
+
+const getStoredMenuAccess = () => {
+  try {
+    const data = localStorage.getItem(MENU_ACCESS_STORAGE_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch (e) {
+    console.error('Failed to parse sub-admin menu access:', e);
+    return {};
+  }
+};
+
+const saveStoredMenuAccess = (email, menus) => {
+  try {
+    const data = getStoredMenuAccess();
+    data[email.toLowerCase()] = menus;
+    localStorage.setItem(MENU_ACCESS_STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save sub-admin menu access:', e);
+  }
+};
+
+const deleteStoredMenuAccess = (email) => {
+  try {
+    const data = getStoredMenuAccess();
+    delete data[email.toLowerCase()];
+    localStorage.setItem(MENU_ACCESS_STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to delete sub-admin menu access:', e);
+  }
+};
 
 const availableMenus = [
   'Dashboard',
@@ -81,10 +120,46 @@ const availableMenus = [
 ];
 
 const SubAdminsView = ({ triggerToast }) => {
-  const [subAdmins, setSubAdmins] = useState(initialSubAdmins);
+  const [subAdmins, setSubAdmins] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [menuFilter, setMenuFilter] = useState('All');
+
+  const fetchSubAdmins = async () => {
+    setLoading(true);
+    try {
+      const response = await subadminService.getSubAdmins();
+      if (response && response.success && response.result && response.result.data) {
+        const storedAccess = getStoredMenuAccess();
+        const mappedSubAdmins = response.result.data.map((sub) => {
+          const emailKey = sub.email.toLowerCase();
+          const menuAccess = storedAccess[emailKey] || ['Dashboard'];
+          return {
+            id: `SADM-${String(sub.id).padStart(3, '0')}`,
+            dbId: sub.id,
+            name: sub.name,
+            email: sub.email,
+            phone: sub.phone,
+            menuAccess: menuAccess,
+            status: (sub.is_active !== undefined ? sub.is_active === 1 : sub.status === 1) ? 'Active' : 'Inactive',
+            created: formatDateTime(sub.createdAt || sub.created_at),
+          };
+        });
+        setSubAdmins(mappedSubAdmins);
+      }
+    } catch (error) {
+      console.error('Fetch sub-admins error:', error);
+      triggerToast(error.message || 'Failed to fetch sub-admins from server', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubAdmins();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Dialog states
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -113,49 +188,47 @@ const SubAdminsView = ({ triggerToast }) => {
 
 
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!subName.trim() || !subEmail.trim() || !subPhone.trim() || !subPassword.trim()) {
       triggerToast('Please fill in all required fields', 'warning');
       return;
     }
 
-    // Auto-generate numeric ID
-    let nextIdNum = 1;
-    if (subAdmins.length > 0) {
-      const ids = subAdmins.map((s) => parseInt(s.id.replace('SADM-', ''))).filter((n) => !isNaN(n));
-      if (ids.length > 0) {
-        nextIdNum = Math.max(...ids) + 1;
+    try {
+      const response = await subadminService.addSubAdmin(
+        subName.trim(),
+        subEmail.trim(),
+        subPhone.trim(),
+        subPassword.trim(),
+        subStatus
+      );
+
+      if (response && response.success) {
+        // Save static menu access to localStorage mapped by email
+        saveStoredMenuAccess(subEmail.trim(), subMenuAccess);
+
+        triggerToast(`Sub-Admin account for "${subName.trim()}" created successfully!`, 'success');
+
+        // Reset fields & close
+        setSubName('');
+        setSubEmail('');
+        setSubPhone('');
+        setSubPassword('');
+        setSubMenuAccess(['Dashboard']);
+        setSubStatus('Active');
+        setShowPassword(false);
+        setOpenAddDialog(false);
+
+        // Refresh list
+        fetchSubAdmins();
+      } else {
+        triggerToast(response.message || 'Failed to create sub-admin', 'error');
       }
+    } catch (err) {
+      console.error('Add Sub-Admin error:', err);
+      triggerToast(err.message || 'An error occurred while creating the sub-admin', 'error');
     }
-    const generatedId = `SADM-${String(nextIdNum).padStart(3, '0')}`;
-
-    // Format current date
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    const newSubAdmin = {
-      id: generatedId,
-      name: subName.trim(),
-      email: subEmail.trim(),
-      phone: subPhone.trim(),
-      menuAccess: subMenuAccess,
-      status: subStatus,
-      created: formattedDate,
-    };
-
-    setSubAdmins([...subAdmins, newSubAdmin]);
-    triggerToast(`Sub-Admin account for "${newSubAdmin.name}" created successfully!`, 'success');
-
-    // Reset fields & close
-    setSubName('');
-    setSubEmail('');
-    setSubPhone('');
-    setSubPassword('');
-    setSubMenuAccess(['Dashboard']);
-    setSubStatus('Active');
-    setShowPassword(false);
-    setOpenAddDialog(false);
   };
 
   const handleOpenEdit = (sub) => {
@@ -170,35 +243,47 @@ const SubAdminsView = ({ triggerToast }) => {
     setOpenEditDialog(true);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editName.trim() || !editEmail.trim() || !editPhone.trim()) {
       triggerToast('Please fill in all required fields', 'warning');
       return;
     }
 
-    setSubAdmins(
-      subAdmins.map((s) => {
-        if (s.id === selectedSub.id) {
-          return {
-            ...s,
-            name: editName.trim(),
-            email: editEmail.trim(),
-            phone: editPhone.trim(),
-            menuAccess: editMenuAccess,
-            status: editStatus,
-          };
-        }
-        return s;
-      })
-    );
+    try {
+      const dbId = selectedSub.dbId;
+      const response = await subadminService.updateSubAdmin(
+        dbId,
+        editName.trim(),
+        editEmail.trim(),
+        editPhone.trim(),
+        editPassword.trim(),
+        editStatus
+      );
 
-    if (editPassword.trim()) {
-      triggerToast(`Account for "${editName}" updated successfully (including password)!`, 'success');
-    } else {
-      triggerToast(`Account for "${editName}" updated successfully!`, 'success');
+      if (response && response.success) {
+        // If email has changed, we should clean up the old email storage
+        if (selectedSub.email.toLowerCase() !== editEmail.trim().toLowerCase()) {
+          deleteStoredMenuAccess(selectedSub.email);
+        }
+        // Save static menu access to localStorage mapped by email
+        saveStoredMenuAccess(editEmail.trim(), editMenuAccess);
+
+        if (editPassword.trim()) {
+          triggerToast(`Account for "${editName}" updated successfully (including password)!`, 'success');
+        } else {
+          triggerToast(`Account for "${editName}" updated successfully!`, 'success');
+        }
+        setOpenEditDialog(false);
+        // Refresh list
+        fetchSubAdmins();
+      } else {
+        triggerToast(response.message || 'Failed to update sub-admin', 'error');
+      }
+    } catch (err) {
+      console.error('Edit Sub-Admin error:', err);
+      triggerToast(err.message || 'An error occurred while updating the sub-admin', 'error');
     }
-    setOpenEditDialog(false);
   };
 
   const handleOpenDelete = (sub) => {
@@ -206,11 +291,26 @@ const SubAdminsView = ({ triggerToast }) => {
     setOpenDeleteDialog(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (selectedSub) {
-      setSubAdmins(subAdmins.filter((s) => s.id !== selectedSub.id));
-      triggerToast(`Sub-Admin account for "${selectedSub.name}" has been deleted.`, 'error');
-      setOpenDeleteDialog(false);
+      try {
+        const dbId = selectedSub.dbId;
+        const response = await subadminService.deleteSubAdmin(dbId);
+        if (response && response.success) {
+          // Delete static menu access mapping from localStorage
+          deleteStoredMenuAccess(selectedSub.email);
+
+          triggerToast(`Sub-Admin account for "${selectedSub.name}" has been deleted.`, 'error');
+          setOpenDeleteDialog(false);
+          // Refresh list
+          fetchSubAdmins();
+        } else {
+          triggerToast(response.message || 'Failed to delete sub-admin', 'error');
+        }
+      } catch (err) {
+        console.error('Delete Sub-Admin error:', err);
+        triggerToast(err.message || 'An error occurred while deleting the sub-admin', 'error');
+      }
     }
   };
 
@@ -371,7 +471,18 @@ const SubAdminsView = ({ triggerToast }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredSubAdmins.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+                        <CircularProgress size={40} color="primary" />
+                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                          Loading sub-admins...
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredSubAdmins.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>

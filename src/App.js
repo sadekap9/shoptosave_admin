@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -50,6 +50,10 @@ import WalletsView from './components/WalletsView';
 import ProfileView from './components/ProfileView';
 import CategoriesView from './components/CategoriesView';
 import SubAdminsView from './components/SubAdminsView';
+import Login from './components/Login';
+
+// Services & Models import
+import authModel from './models/authModel';
 
 // Initial Mock Orders
 const initialOrders = [
@@ -77,6 +81,9 @@ const initialStores = [
 ];
 
 function App() {
+  // Authentication status state
+  const [isAuthenticated, setIsAuthenticated] = useState(authModel.isAuthenticated());
+
   // Navigation active tab state
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -84,13 +91,51 @@ function App() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Admin Profile state
-  const [adminProfile, setAdminProfile] = useState({
-    name: 'Alex Rivera',
-    email: 'alex.rivera@shop2save.in',
-    phone: '+91 98765 00123',
-    role: 'System Administrator',
-    avatarInitials: 'AR',
+  const [adminProfile, setAdminProfile] = useState(() => {
+    const user = authModel.getUser();
+    if (user) {
+      return {
+        name: user.name || user.email || 'Admin User',
+        email: user.email || '',
+        phone: user.phone || '',
+        role: authModel.getReadableRole(),
+        avatarInitials: authModel.getInitials(),
+      };
+    }
+    return {
+      name: 'Admin User',
+      email: '',
+      phone: '',
+      role: 'Administrator',
+      avatarInitials: 'AD',
+    };
   });
+
+  // Watch for auth changes (token storage edits or session expiration)
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const authState = authModel.isAuthenticated();
+      setIsAuthenticated(authState);
+      if (authState) {
+        const user = authModel.getUser();
+        setAdminProfile({
+          name: user.name || user.email || 'Admin User',
+          email: user.email || '',
+          phone: user.phone || '',
+          role: authModel.getReadableRole(),
+          avatarInitials: authModel.getInitials(),
+        });
+      }
+    };
+
+    window.addEventListener('s2s_auth_change', handleAuthChange);
+    window.addEventListener('s2s_auth_expired', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('s2s_auth_change', handleAuthChange);
+      window.removeEventListener('s2s_auth_expired', handleAuthChange);
+    };
+  }, []);
 
 
 
@@ -230,6 +275,10 @@ function App() {
   };
 
   const sidebarWidth = isCollapsed ? 72 : 260;
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <Box sx={{ position: 'relative', minHeight: '100vh', bgcolor: '#F8FAFC', width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
@@ -666,7 +715,8 @@ function App() {
           <MenuItem
             onClick={() => {
               setAnchorEl(null);
-              triggerToast('Simulating secure administrator logout...', 'info');
+              authModel.clearAuth();
+              triggerToast('Logged out successfully', 'success');
             }}
             sx={{ color: '#EF4444', fontSize: '0.78rem', py: 1, borderRadius: 1.5, '&:hover': { backgroundColor: '#FEF2F2' } }}
           >

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -35,6 +35,8 @@ import {
   QueryStats as StatsIcon,
 } from '@mui/icons-material';
 
+import { categoryService } from '../services/categoryService';
+
 // Helper to get initials
 const getInitials = (name) => {
   return name.substring(0, 2).toUpperCase();
@@ -56,6 +58,28 @@ const getAvatarGradient = (name) => {
   return colors[sum % colors.length];
 };
 
+const formatDateTime = (isoString) => {
+  if (!isoString) return 'N/A';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch (e) {
+    return isoString;
+  }
+};
+
+const getLogoUrl = (logoPath) => {
+  if (!logoPath) return null;
+  if (logoPath.startsWith('http://') || logoPath.startsWith('https://')) {
+    return logoPath;
+  }
+  const baseHost = 'https://api.shoptosave.in';
+  const cleanPath = logoPath.startsWith('/') ? logoPath : `/${logoPath}`;
+  return `${baseHost}${cleanPath}`;
+};
+
 const initialCategories = [
   { id: 'CAT-001', name: 'Electronics & Mobiles', status: 'Active', created: '2026-05-10 14:30' },
   { id: 'CAT-002', name: 'Fashion & Apparel', status: 'Active', created: '2026-05-12 09:15' },
@@ -67,7 +91,7 @@ const initialCategories = [
 ];
 
 const CategoriesView = ({ triggerToast }) => {
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState('All');
@@ -80,10 +104,35 @@ const CategoriesView = ({ triggerToast }) => {
   // Form input states
   const [catName, setCatName] = useState('');
   const [catStatus, setCatStatus] = useState('Active');
+  const [catLogo, setCatLogo] = useState(null);
   
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [editName, setEditName] = useState('');
   const [editStatus, setEditStatus] = useState('Active');
+  const [editLogo, setEditLogo] = useState(null);
+  const fetchCategories = async () => {
+    try {
+      const response = await categoryService.getCategories();
+      if (response && response.success && response.result && response.result.data) {
+        const mappedCategories = response.result.data.map(cat => ({
+          id: cat.id,
+          name: cat.category_name,
+          status: cat.status === 1 ? 'Active' : 'Inactive',
+          created: formatDateTime(cat.created_at),
+          logo: cat.logo
+        }));
+        setCategories(mappedCategories);
+      }
+    } catch (error) {
+      console.error('Fetch categories error:', error);
+      triggerToast(error.message || 'Failed to fetch categories from server', 'error');
+    }
+  };
+
+  // Load categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   // Stats calculation
   const totalCategories = categories.length;
@@ -91,68 +140,78 @@ const CategoriesView = ({ triggerToast }) => {
   const inactiveCount = categories.filter((c) => c.status === 'Inactive').length;
   const lastCreatedName = categories.length > 0 ? categories[categories.length - 1].name : 'N/A';
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!catName.trim()) {
       triggerToast('Please enter a valid category name', 'warning');
       return;
     }
-    
-    // Auto-generate numeric ID based on existing categories
-    let nextIdNum = 1;
-    if (categories.length > 0) {
-      const ids = categories.map(c => parseInt(c.id.replace('CAT-', ''))).filter(n => !isNaN(n));
-      if (ids.length > 0) {
-        nextIdNum = Math.max(...ids) + 1;
-      }
+    if (!catLogo) {
+      triggerToast('Please select a category logo file', 'warning');
+      return;
     }
-    const generatedId = `CAT-${String(nextIdNum).padStart(3, '0')}`;
-    
-    // Format current date & time
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    try {
+      const response = await categoryService.addCategory(
+        catName.trim(),
+        catStatus,
+        catLogo
+      );
 
-    const newCategory = {
-      id: generatedId,
-      name: catName.trim(),
-      status: catStatus,
-      created: formattedDate
-    };
+      if (response && response.success) {
+        triggerToast(`Category "${catName.trim()}" added successfully!`, 'success');
+        
+        // Reset form & close dialog
+        setCatName('');
+        setCatStatus('Active');
+        setCatLogo(null);
+        setOpenAddDialog(false);
 
-    setCategories([...categories, newCategory]);
-    triggerToast(`Category "${newCategory.name}" added successfully!`, 'success');
-    
-    // Reset form & close dialog
-    setCatName('');
-    setCatStatus('Active');
-    setOpenAddDialog(false);
+        // Fetch refreshed categories list
+        fetchCategories();
+      } else {
+        triggerToast(response.message || 'Failed to add category', 'error');
+      }
+    } catch (err) {
+      console.error('Add Category API error:', err);
+      triggerToast(err.message || 'An error occurred while adding the category', 'error');
+    }
   };
 
   const handleOpenEdit = (category) => {
     setSelectedCategory(category);
     setEditName(category.name);
     setEditStatus(category.status);
+    setEditLogo(null);
     setOpenEditDialog(true);
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editName.trim()) {
       triggerToast('Please enter a valid category name', 'warning');
       return;
     }
 
-    setCategories(
-      categories.map((c) => {
-        if (c.id === selectedCategory.id) {
-          return { ...c, name: editName.trim(), status: editStatus };
-        }
-        return c;
-      })
-    );
+    try {
+      const response = await categoryService.updateCategory(
+        selectedCategory.id,
+        editName.trim(),
+        editStatus,
+        editLogo
+      );
 
-    triggerToast(`Category "${editName}" updated successfully!`, 'success');
-    setOpenEditDialog(false);
+      if (response && response.success) {
+        triggerToast(`Category "${editName}" updated successfully!`, 'success');
+        setOpenEditDialog(false);
+        setEditLogo(null);
+        fetchCategories();
+      } else {
+        triggerToast(response.message || 'Failed to update category', 'error');
+      }
+    } catch (err) {
+      console.error('Update Category API error:', err);
+      triggerToast(err.message || 'An error occurred while updating the category', 'error');
+    }
   };
 
   const handleOpenDelete = (category) => {
@@ -160,17 +219,27 @@ const CategoriesView = ({ triggerToast }) => {
     setOpenDeleteDialog(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (selectedCategory) {
-      setCategories(categories.filter((c) => c.id !== selectedCategory.id));
-      triggerToast(`Category "${selectedCategory.name}" has been deleted.`, 'error');
-      setOpenDeleteDialog(false);
+      try {
+        const response = await categoryService.deleteCategory(selectedCategory.id);
+        if (response && response.success) {
+          triggerToast(`Category "${selectedCategory.name}" has been deleted.`, 'error');
+          setOpenDeleteDialog(false);
+          fetchCategories();
+        } else {
+          triggerToast(response.message || 'Failed to delete category', 'error');
+        }
+      } catch (err) {
+        console.error('Delete Category API error:', err);
+        triggerToast(err.message || 'An error occurred while deleting the category', 'error');
+      }
     }
   };
 
   const filteredCategories = categories.filter((cat) => {
-    const matchesSearch = cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          cat.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (cat.name ? cat.name.toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
+                          String(cat.id).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || cat.status === statusFilter;
 
     // Date filtering logic
@@ -450,23 +519,43 @@ const CategoriesView = ({ triggerToast }) => {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Box
-                              sx={{
-                                background: getAvatarGradient(cat.name),
-                                color: '#FFFFFF',
-                                width: 36,
-                                height: 36,
-                                borderRadius: '10px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontWeight: 800,
-                                fontSize: '0.8rem',
-                                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                              }}
-                            >
-                              {getInitials(cat.name)}
-                            </Box>
+                            {cat.logo ? (
+                              <Box
+                                component="img"
+                                src={getLogoUrl(cat.logo)}
+                                alt={cat.name}
+                                sx={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: '10px',
+                                  objectFit: 'cover',
+                                  boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                }}
+                                onError={(e) => {
+                                  // Fallback to initials if image fails to load
+                                  e.target.onerror = null;
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <Box
+                                sx={{
+                                  background: getAvatarGradient(cat.name),
+                                  color: '#FFFFFF',
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: '10px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 800,
+                                  fontSize: '0.8rem',
+                                  boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                }}
+                              >
+                                {getInitials(cat.name)}
+                              </Box>
+                            )}
                             <Typography variant="subtitle2" fontWeight={750} color="#1E293B">
                               {cat.name}
                             </Typography>
@@ -630,6 +719,38 @@ const CategoriesView = ({ triggerToast }) => {
 
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                  CATEGORY LOGO *
+                </Typography>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  fullWidth
+                  sx={{
+                    borderRadius: '12px',
+                    py: 1.2,
+                    textTransform: 'none',
+                    borderColor: 'rgba(226, 232, 240, 0.8)',
+                    color: '#475569',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    '&:hover': {
+                      borderColor: '#CBD5E1',
+                      backgroundColor: '#F1F5F9',
+                    },
+                  }}
+                >
+                  {catLogo ? catLogo.name : 'Choose Logo Image *'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => setCatLogo(e.target.files[0])}
+                  />
+                </Button>
+              </Box>
+
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
                   INITIAL STATUS *
                 </Typography>
                 <Select
@@ -659,7 +780,12 @@ const CategoriesView = ({ triggerToast }) => {
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
             <Button
-              onClick={() => setOpenAddDialog(false)}
+              onClick={() => {
+                setCatName('');
+                setCatStatus('Active');
+                setCatLogo(null);
+                setOpenAddDialog(false);
+              }}
               color="inherit"
               sx={{ textTransform: 'none', fontWeight: 600 }}
             >
@@ -775,6 +901,80 @@ const CategoriesView = ({ triggerToast }) => {
                   }}
                 />
               </Box>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                  CATEGORY LOGO
+                </Typography>
+
+                {editLogo ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <Typography variant="caption" color="primary" fontWeight={700} sx={{ fontSize: '0.68rem' }}>
+                      NEW LOGO PREVIEW
+                    </Typography>
+                    <Box
+                      component="img"
+                      src={URL.createObjectURL(editLogo)}
+                      alt="New Preview"
+                      sx={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: '12px',
+                        objectFit: 'cover',
+                        border: '2px dashed #6D28D9',
+                        boxShadow: '0 4px 12px rgba(109, 40, 217, 0.1)',
+                      }}
+                    />
+                  </Box>
+                ) : (
+                  selectedCategory && selectedCategory.logo && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.68rem' }}>
+                        CURRENT LOGO
+                      </Typography>
+                      <Box
+                        component="img"
+                        src={getLogoUrl(selectedCategory.logo)}
+                        alt={selectedCategory.name}
+                        sx={{
+                          width: 72,
+                          height: 72,
+                          borderRadius: '12px',
+                          objectFit: 'cover',
+                          border: '1px solid rgba(226, 232, 240, 0.8)',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                        }}
+                      />
+                    </Box>
+                  )
+                )}
+
+                <Button
+                  variant="outlined"
+                  component="label"
+                  fullWidth
+                  sx={{
+                    borderRadius: '12px',
+                    py: 1.2,
+                    textTransform: 'none',
+                    borderColor: 'rgba(226, 232, 240, 0.8)',
+                    color: '#475569',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    '&:hover': {
+                      borderColor: '#CBD5E1',
+                      backgroundColor: '#F1F5F9',
+                    },
+                  }}
+                >
+                  {editLogo ? editLogo.name : 'Change Logo Image (Optional)'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) => setEditLogo(e.target.files[0])}
+                  />
+                </Button>
+              </Box>
 
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
@@ -807,7 +1007,10 @@ const CategoriesView = ({ triggerToast }) => {
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
             <Button
-              onClick={() => setOpenEditDialog(false)}
+              onClick={() => {
+                setOpenEditDialog(false);
+                setEditLogo(null);
+              }}
               color="inherit"
               sx={{ textTransform: 'none', fontWeight: 600 }}
             >
