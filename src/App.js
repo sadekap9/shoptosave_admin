@@ -36,6 +36,7 @@ import {
   KeyboardArrowRight as ChevronRightIcon,
   Category as CategoryIcon,
   SupervisorAccount as SubAdminIcon,
+  ViewCarousel as BannersIcon,
 } from '@mui/icons-material';
 
 // Subcomponents import
@@ -51,6 +52,7 @@ import ProfileView from './components/ProfileView';
 import CategoriesView from './components/CategoriesView';
 import SubAdminsView from './components/SubAdminsView';
 import Login from './components/Login';
+import BannersView from './components/BannersView';
 
 // Services & Models import
 import authModel from './models/authModel';
@@ -230,6 +232,8 @@ function App() {
         return <UsersView triggerToast={triggerToast} />;
       case 'categories':
         return <CategoriesView triggerToast={triggerToast} />;
+      case 'banners':
+        return <BannersView triggerToast={triggerToast} />;
       case 'sub-admins':
         return <SubAdminsView triggerToast={triggerToast} />;
       case 'gift-card-catalog':
@@ -434,6 +438,18 @@ function App() {
                   <CategoryIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Categories" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={activeTab === 'banners'}
+                onClick={() => setActiveTab('banners')}
+                className={activeTab === 'banners' ? 'glowing-indicator' : ''}
+              >
+                <ListItemIcon sx={{ color: activeTab === 'banners' ? '#6D28D9' : '#64748B' }}>
+                  <BannersIcon fontSize="small" />
+                </ListItemIcon>
+                {!isCollapsed && <ListItemText primary="Promo Banners" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
