@@ -72,5 +72,39 @@ export const storeService = {
    */
   async deleteVoucher(id) {
     return apiClient.delete(`/gift-cards/delete/${id}`);
+  },
+
+  /**
+   * Fetch Woohoo product catalog details by SKU (requires custom Woohoo Bearer Token)
+   */
+  async getWoohooProductBySku(sku, woohooToken) {
+    return apiClient.get(`/woohoo/catalog/products/${sku}`, {
+      headers: {
+        'Authorization': `Bearer ${woohooToken}`
+      }
+    });
+  },
+
+  /**
+   * Generate Woohoo authorization code
+   */
+  async generateWoohooCode() {
+    return apiClient.post('/woohoo/auth/generate-code');
+  },
+
+  /**
+   * Generate Woohoo bearer token using authorization code
+   */
+  async generateWoohooToken(authorizationCode) {
+    return apiClient.post('/woohoo/auth/generate-token', {
+      authorizationCode
+    });
+  },
+
+  /**
+   * Update gift card status (uses standard admin login token)
+   */
+  async updateGiftCardStatus(id, status) {
+    return apiClient.patch(`/gift-cards/update/${id}`, { status });
   }
 };

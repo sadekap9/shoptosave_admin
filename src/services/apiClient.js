@@ -19,8 +19,9 @@ class ApiClient {
       delete headers['Content-Type'];
     }
 
+    const hasAuthHeader = headers['Authorization'] || headers['authorization'];
     const token = localStorage.getItem('s2s_access_token');
-    if (token) {
+    if (token && !hasAuthHeader) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
@@ -109,7 +110,8 @@ class ApiClient {
       const response = await fetch(url, options);
 
       // Handle token expiration (401 Unauthorized)
-      if (response.status === 401 && localStorage.getItem('s2s_refresh_token')) {
+      // Exclude external integration endpoints starting with /woohoo from automatic admin token refresh
+      if (response.status === 401 && localStorage.getItem('s2s_refresh_token') && !endpoint.includes('/woohoo')) {
         // Queue parallel requests while refreshing
         if (!this.isRefreshing) {
           this.isRefreshing = true;

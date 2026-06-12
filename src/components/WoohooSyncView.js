@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -8,80 +8,144 @@ import {
   Grid,
   TextField,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  InputAdornment,
 } from '@mui/material';
 import {
   Sync as SyncIcon,
-  VpnKey as KeyIcon,
+  Search as SearchIcon,
+  CardGiftcard as GiftCardIcon,
   ChevronRight as ChevronRightIcon,
-  Terminal as TerminalIcon,
-  SettingsInputHdmi as SyncPortIcon,
   Wifi as WifiIcon,
-  Storage as DbIcon,
-  AccessTime as LatencyIcon,
+  SettingsInputHdmi as SyncPortIcon,
 } from '@mui/icons-material';
-
-const initialLogs = [
-  '[12:05:10] SYSTEM: Initializing Woohoo API V3 sync engine...',
-  '[12:05:11] SERVICE: Resolving sandbox endpoints for test integrations...',
-  '[12:05:12] AUTH: Token retrieved successfully. Expiring in 3600 seconds.',
-  '[12:05:13] SYNC: Crawling Woohoo digital card catalogue: found 52 active brands.',
-  '[12:05:15] SYNC: Updating discount metrics for Amazon India - set discount to 3.5%.',
-  '[12:05:16] SYNC: Fetching fresh inventory stock indexes... OK.',
-  '[12:05:18] SYSTEM: Woohoo synchronization completed successfully. 52 listings synced.',
-];
+import { storeService } from '../services/storeService';
 
 const WoohooSyncView = ({ systemStatus, onSyncWoohoo, triggerToast }) => {
-  const [logs, setLogs] = useState(initialLogs);
+  const [syncedProducts, setSyncedProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  
+  // Sync Dialog state
+  const [openSyncDialog, setOpenSyncDialog] = useState(false);
+  const [skuInput, setSkuInput] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
-  const [clientId, setClientId] = useState('shop2save_client_prod_88942');
-  const [clientSecret, setClientSecret] = useState('********************************');
-  const consoleEndRef = useRef(null);
+  
+  // Search query
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const loadData = async () => {
+    setLoadingProducts(true);
+    try {
+      const response = await storeService.getSyncedProducts();
+      if (response && response.success && response.result && response.result.data) {
+        setSyncedProducts(response.result.data);
+      }
+    } catch (error) {
+      console.error('Failed to load synced products:', error);
+      triggerToast('Failed to load synced products catalog', 'error');
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
 
   useEffect(() => {
-    if (consoleEndRef.current) {
-      consoleEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSyncSubmit = async (e) => {
+    e.preventDefault();
+    if (!skuInput.trim()) {
+      triggerToast('Please enter a valid SKU', 'warning');
+      return;
     }
-  }, [logs]);
 
-  const handleSyncTrigger = () => {
     setIsSyncing(true);
-    triggerToast('Initiating catalog synchronizer...', 'info');
+    try {
+      let token = localStorage.getItem('woohoo_bearer_token');
+      let productData = null;
+      let success = false;
+      const sku = skuInput.trim();
 
-    // Add immediate sync log
-    setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] SYNC: Force manual sync requested.`]);
+      // Step 1: Attempt to call product API with current token if it exists
+      if (token) {
+        try {
+          productData = await storeService.getWoohooProductBySku(sku, token);
+          success = true;
+        } catch (err) {
+          const isTokenRejected = err.status === 401 || 
+                                  (err.data && err.data.message && err.data.message.includes('token_rejected')) ||
+                                  (err.message && err.message.includes('token_rejected'));
+          
+          if (!isTokenRejected) {
+            throw err; // Re-throw other errors (e.g. invalid SKU)
+          }
+          console.warn('Woohoo bearer token rejected/expired. Regenerating...');
+        }
+      }
 
-    setTimeout(() => {
-      setLogs((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] AUTH: Regenerating client tokens...`,
-      ]);
-    }, 800);
+      // Step 2: Regenerate token if previous call failed or no token was stored
+      if (!success) {
+        // Generate code
+        const codeRes = await storeService.generateWoohooCode();
+        if (!codeRes || !codeRes.success || !codeRes.result?.authorizationCode) {
+          throw new Error(codeRes?.message || 'Failed to generate authorization code');
+        }
+        const authCode = codeRes.result.authorizationCode;
 
-    setTimeout(() => {
-      setLogs((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] SYNC: Re-indexing 7 cashback categories...`,
-      ]);
-    }, 1500);
+        // Exchange code for token
+        const tokenRes = await storeService.generateWoohooToken(authCode);
+        if (!tokenRes || !tokenRes.success || !tokenRes.result?.token) {
+          throw new Error(tokenRes?.message || 'Failed to exchange token');
+        }
+        const newToken = tokenRes.result.token;
+        localStorage.setItem('woohoo_bearer_token', newToken);
 
-    setTimeout(() => {
-      setLogs((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] SYSTEM: Successfully reconciled API tables. Stock catalogs refreshed.`,
-      ]);
+        // Retry product call
+        productData = await storeService.getWoohooProductBySku(sku, newToken);
+      }
+
+      triggerToast(`Product "${productData?.result?.name || sku}" synced successfully!`, 'success');
+      onSyncWoohoo(); // Update lastSync time in parent App.js state
+      
+      // Reset inputs & close dialog
+      setSkuInput('');
+      setOpenSyncDialog(false);
+      
+      // Reload list of synced products
+      await loadData();
+    } catch (err) {
+      console.error('Woohoo Sync flow error:', err);
+      let errorMsg = err.message || 'An error occurred during synchronization';
+      if (err.data && err.data.message) {
+        errorMsg = err.data.message;
+      }
+      triggerToast(errorMsg, 'error');
+    } finally {
       setIsSyncing(false);
-      onSyncWoohoo(); // Update lastSync time state in App.js
-    }, 2500);
+    }
   };
 
-  const handleClearLogs = () => {
-    setLogs([`[${new Date().toLocaleTimeString()}] SYSTEM: Console log buffers flushed.`]);
-    triggerToast('Sync logs cleared', 'info');
-  };
+  const filteredProducts = syncedProducts.filter((p) => {
+    const nameMatch = p.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const skuMatch = p.sku?.toLowerCase().includes(searchQuery.toLowerCase());
+    return nameMatch || skuMatch;
+  });
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease-out-back', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-      {/* Header section with breadcrumbs */}
+      {/* Header section */}
       <Box sx={{ mb: 4 }} display="flex" justifyContent="space-between" alignItems="center">
         <Box>
           <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
@@ -97,14 +161,32 @@ const WoohooSyncView = ({ systemStatus, onSyncWoohoo, triggerToast }) => {
             Woohoo Integration Sync
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Coordinate manual vendor syncing, monitor API response streams, and manage secure credentials.
+            Sync digital products from Woohoo by SKU and configure cashback store catalogs in the database.
           </Typography>
         </Box>
       </Box>
 
       {/* Sync Telemetry Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
+                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(109, 40, 217, 0.08)', color: '#6D28D9', display: 'flex' }}>
+                  <GiftCardIcon sx={{ fontSize: 18 }} />
+                </Box>
+                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
+                  Synced Products
+                </Typography>
+              </Box>
+              <Typography variant="h5" fontWeight={800} sx={{ mt: 1 }}>
+                {syncedProducts.length} Listings
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={4}>
           <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
             <CardContent sx={{ p: 2.5 }}>
               <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
@@ -112,53 +194,17 @@ const WoohooSyncView = ({ systemStatus, onSyncWoohoo, triggerToast }) => {
                   <WifiIcon sx={{ fontSize: 18 }} />
                 </Box>
                 <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  API Status
+                  Woohoo API Status
                 </Typography>
               </Box>
-              <Typography variant="h6" fontWeight={800} color="#10B981" sx={{ mt: 1 }}>
+              <Typography variant="h5" fontWeight={800} color="#10B981" sx={{ mt: 1 }}>
                 ONLINE
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(109, 40, 217, 0.08)', color: '#6D28D9', display: 'flex' }}>
-                  <DbIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  Synced Products
-                </Typography>
-              </Box>
-              <Typography variant="h6" fontWeight={800} sx={{ mt: 1 }}>
-                52 Listings
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(139, 92, 246, 0.08)', color: '#8B5CF6', display: 'flex' }}>
-                  <LatencyIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  API Latency
-                </Typography>
-              </Box>
-              <Typography variant="h6" fontWeight={800} sx={{ mt: 1 }}>
-                142 ms
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
             <CardContent sx={{ p: 2.5 }}>
               <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
@@ -169,7 +215,7 @@ const WoohooSyncView = ({ systemStatus, onSyncWoohoo, triggerToast }) => {
                   Environment
                 </Typography>
               </Box>
-              <Typography variant="h6" fontWeight={800} color="#0D9488" sx={{ mt: 1 }}>
+              <Typography variant="h5" fontWeight={800} color="#0D9488" sx={{ mt: 1 }}>
                 SANDBOX / BETA
               </Typography>
             </CardContent>
@@ -177,201 +223,246 @@ const WoohooSyncView = ({ systemStatus, onSyncWoohoo, triggerToast }) => {
         </Grid>
       </Grid>
 
-      {/* Main console and settings grid */}
-      <Grid container spacing={3}>
-        {/* Sync Console Screen */}
-        <Grid item xs={12} md={7}>
-          <Card
+      {/* Synced Products Directory Section */}
+      <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', overflow: 'hidden' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            p: 3,
+            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+            bgcolor: '#FFFFFF',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Search synced gift cards..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             sx={{
-              bgcolor: '#0B0F19', // Extremely sleek rich obsidian navy
-              border: '1px solid #1E293B',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.5)',
+              width: '320px',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                bgcolor: '#F8FAFC',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  bgcolor: '#F1F5F9',
+                },
+                '&.Mui-focused': {
+                  bgcolor: '#FFFFFF',
+                  boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" sx={{ fontSize: 20 }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<SyncIcon />}
+            onClick={() => setOpenSyncDialog(true)}
+            sx={{
+              borderRadius: '12px',
+              textTransform: 'none',
+              fontWeight: 650,
+              px: 3,
+              py: 1.2,
+              boxShadow: '0 4px 14px rgba(109, 40, 217, 0.25)',
             }}
           >
-            {/* Console topbar with mac-style buttons */}
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ px: 3, py: 2, bgcolor: '#111827', borderBottom: '1px solid #1E293B' }}
-            >
-              <Box display="flex" alignItems="center" gap={1}>
-                {/* Mac window dots */}
-                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#EF4444' }} />
-                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#F59E0B' }} />
-                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#10B981', mr: 1.5 }} />
-                <TerminalIcon sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }} />
-                <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.05em' }}>
-                  live_event_stream_console.sh
-                </Typography>
-              </Box>
-              <Box display="flex" alignItems="center" gap={1.5}>
-                <Chip
-                  label={isSyncing ? 'SYNCING' : 'IDLE'}
-                  size="small"
-                  sx={{
-                    bgcolor: isSyncing ? '#EF4444' : '#10B981',
-                    color: '#ffffff',
-                    height: 20,
-                    fontWeight: 800,
-                    fontSize: '0.6rem',
-                    letterSpacing: '0.05em',
-                  }}
-                />
-              </Box>
-            </Box>
-            
-            {/* Raw Logs list */}
-            <CardContent sx={{ height: 280, overflowY: 'auto', p: 3 }}>
-              {logs.map((log, index) => {
-                let color = '#E2E8F0';
-                if (log.includes('SYSTEM:')) color = '#38BDF8'; // cyan
-                if (log.includes('AUTH:')) color = '#C084FC'; // purple
-                if (log.includes('SERVICE:')) color = '#F472B6'; // pink
-                if (log.includes('SYNC:')) color = '#FBBF24'; // amber
-                if (log.includes('completed') || log.includes('OK')) color = '#34D399'; // green
+            Sync New Gift Card from Woohoo
+          </Button>
+        </Box>
 
-                return (
-                  <Typography
-                    key={index}
-                    variant="body2"
+        <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0 }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pl: 3 }}>GIFT CARD NAME</TableCell>
+                <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>SKU CODE</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STATUS</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loadingProducts ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 8 }}>
+                    <CircularProgress size={30} sx={{ color: '#6D28D9', mb: 1 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      Loading synced catalogs...
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : filteredProducts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center" sx={{ py: 8 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+                      <GiftCardIcon sx={{ fontSize: 40, color: 'text.disabled', opacity: 0.5 }} />
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        No synced gift card products found.
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredProducts.map((product, idx) => (
+                  <TableRow
+                    key={product.sku || idx}
+                    hover
                     sx={{
-                      fontFamily: 'Consolas, Monaco, monospace',
-                      lineHeight: 1.6,
-                      fontSize: '0.78rem',
-                      color,
-                      mb: 0.8,
-                      opacity: 0.95,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        bgcolor: 'rgba(109, 40, 217, 0.015) !important',
+                      },
                     }}
                   >
-                    {log}
-                  </Typography>
-                );
-              })}
-              <div ref={consoleEndRef} />
-            </CardContent>
-          </Card>
-          
-          <Box display="flex" gap={2} sx={{ mt: 3 }}>
+                    <TableCell sx={{ pl: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '8px',
+                            background: 'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#FFFFFF',
+                          }}
+                        >
+                          <GiftCardIcon sx={{ fontSize: 16 }} />
+                        </Box>
+                        <Typography variant="subtitle2" fontWeight={750} color="#1E293B">
+                          {product.name || 'Digital Gift Card'}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={product.sku}
+                        size="small"
+                        sx={{
+                          bgcolor: 'rgba(109, 40, 217, 0.08)',
+                          color: '#6D28D9',
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          borderRadius: '6px',
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.8,
+                          px: 1.5,
+                          py: 0.6,
+                          borderRadius: '20px',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          bgcolor: 'rgba(16, 185, 129, 0.08)',
+                          color: '#10B981',
+                          border: '1px solid rgba(16, 185, 129, 0.15)',
+                        }}
+                      >
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10B981' }} />
+                        Synced
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Card>
+
+      {/* Sync New Gift Card Dialog */}
+      <Dialog
+        open={openSyncDialog}
+        onClose={() => !isSyncing && setOpenSyncDialog(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            p: 1.5,
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: '#0F172A', pb: 1 }}>
+          Sync New Gift Card
+        </DialogTitle>
+        <form onSubmit={handleSyncSubmit}>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Input a gift card SKU identifier from Woohoo to synchronize the product catalog parameters in the database.
+            </Typography>
+
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                GIFT CARD SKU *
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                required
+                disabled={isSyncing}
+                placeholder="e.g. GCGBFTV001"
+                value={skuInput}
+                onChange={(e) => setSkuInput(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                    bgcolor: '#F8FAFC',
+                  },
+                }}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
             <Button
-              variant="contained"
-              color="primary"
-              startIcon={<SyncIcon />}
+              onClick={() => setOpenSyncDialog(false)}
               disabled={isSyncing}
-              onClick={handleSyncTrigger}
-              className={isSyncing ? '' : 'pulse-primary'}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 650,
-                borderRadius: '10px',
-                px: 3.5,
-                py: 1,
-                boxShadow: '0 4px 10px rgba(109, 40, 217, 0.2)',
-              }}
-            >
-              {isSyncing ? 'Synchronizing API...' : 'Sync Catalog Now'}
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              disabled={isSyncing}
-              onClick={handleClearLogs}
               sx={{
                 textTransform: 'none',
                 fontWeight: 600,
+                color: '#64748B',
                 borderRadius: '10px',
-                px: 2.5,
               }}
             >
-              Clear Buffer
+              Cancel
             </Button>
-          </Box>
-        </Grid>
-
-        {/* Credentials and endpoints configuration */}
-        <Grid item xs={12} md={5}>
-          <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '20px' }}>
-            <Box sx={{ px: 3, pt: 3, pb: 1.5, borderBottom: '1px solid rgba(226, 232, 240, 0.8)' }}>
-              <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
-                API Gateway Configuration
-              </Typography>
-            </Box>
-            <CardContent sx={{ pt: 3 }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Endpoint API Gateway URL"
-                    value="https://api.woohoo.in/v3/merchant/sync"
-                    variant="outlined"
-                    size="small"
-                    disabled
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: '#F8FAFC' } }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Client ID"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    variant="outlined"
-                    size="small"
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                    InputProps={{
-                      startAdornment: <KeyIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 18 }} />,
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Client Secret"
-                    value={clientSecret}
-                    onChange={(e) => setClientSecret(e.target.value)}
-                    type="password"
-                    variant="outlined"
-                    size="small"
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
-                    InputProps={{
-                      startAdornment: <KeyIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 18 }} />,
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Merchant ID / Store Code"
-                    value="SHOP2SAVE-SVR-MCH-994"
-                    variant="outlined"
-                    size="small"
-                    disabled
-                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: '#F8FAFC' } }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => triggerToast('Secure environment configuration parameters saved!', 'success')}
-                    sx={{
-                      textTransform: 'none',
-                      fontWeight: 650,
-                      borderRadius: '10px',
-                      py: 1.2,
-                    }}
-                  >
-                    Save API Environment
-                  </Button>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isSyncing}
+              startIcon={isSyncing ? <CircularProgress size={16} color="inherit" /> : <SyncIcon />}
+              sx={{
+                borderRadius: '10px',
+                textTransform: 'none',
+                fontWeight: 650,
+                px: 3,
+                boxShadow: '0 4px 10px rgba(109, 40, 217, 0.2)',
+              }}
+            >
+              {isSyncing ? 'Syncing...' : 'Sync & Map'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
     </Box>
   );
 };

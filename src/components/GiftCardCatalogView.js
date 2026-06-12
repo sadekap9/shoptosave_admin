@@ -210,17 +210,32 @@ const GiftCardCatalogView = ({ triggerToast }) => {
     setOpenAddDialog(false);
   };
 
-  const handleToggleStatus = (id) => {
-    setCatalog(
-      catalog.map((c) => {
-        if (c.id === id) {
-          const nextStatus = c.status === 'Active' ? 'Disabled' : 'Active';
-          triggerToast(`"${c.brand}" status updated to ${nextStatus}`, 'info');
-          return { ...c, status: nextStatus };
-        }
-        return c;
-      })
-    );
+  const handleToggleStatus = async (id, currentStatus) => {
+    const nextStatusVal = currentStatus === 'Active' ? 0 : 1;
+    const nextStatusText = currentStatus === 'Active' ? 'Disabled' : 'Active';
+    try {
+      const response = await storeService.updateGiftCardStatus(id, nextStatusVal);
+      if (response && response.success) {
+        setCatalog(
+          catalog.map((c) => {
+            if (c.id === id) {
+              triggerToast(`"${c.brand}" status updated to ${nextStatusText}`, 'success');
+              return { ...c, status: nextStatusText };
+            }
+            return c;
+          })
+        );
+      } else {
+        triggerToast(response?.message || 'Failed to update status', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      let errorMsg = err.message || 'An error occurred while updating status';
+      if (err.data && err.data.message) {
+        errorMsg = err.data.message;
+      }
+      triggerToast(errorMsg, 'error');
+    }
   };
 
   const filteredCatalog = catalog.filter((card) => {
@@ -569,7 +584,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                         <Switch
                           size="small"
                           checked={isLive}
-                          onChange={() => handleToggleStatus(card.id)}
+                          onChange={() => handleToggleStatus(card.id, card.status)}
                           color="primary"
                           sx={{
                             '& .MuiSwitch-switchBase.Mui-checked': {
