@@ -37,6 +37,7 @@ import {
   Category as CategoryIcon,
   SupervisorAccount as SubAdminIcon,
   ViewCarousel as BannersIcon,
+  LocalOffer as CouponsIcon,
 } from '@mui/icons-material';
 
 // Subcomponents import
@@ -53,6 +54,7 @@ import CategoriesView from './components/CategoriesView';
 import SubAdminsView from './components/SubAdminsView';
 import Login from './components/Login';
 import BannersView from './components/BannersView';
+import CouponsView from './components/CouponsView';
 
 // Services & Models import
 import authModel from './models/authModel';
@@ -265,6 +267,8 @@ function App() {
       case 'cashback-earnings':
       case 'wallets':
         return <WalletsView triggerToast={triggerToast} />;
+      case 'coupons':
+        return <CouponsView triggerToast={triggerToast} />;
       case 'profile':
         return (
           <ProfileView
@@ -533,6 +537,18 @@ function App() {
                   <WalletsIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="System Wallets" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={activeTab === 'coupons'}
+                onClick={() => setActiveTab('coupons')}
+                className={activeTab === 'coupons' ? 'glowing-indicator' : ''}
+              >
+                <ListItemIcon sx={{ color: activeTab === 'coupons' ? '#6D28D9' : '#64748B' }}>
+                  <CouponsIcon fontSize="small" />
+                </ListItemIcon>
+                {!isCollapsed && <ListItemText primary="Coupons" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
               </ListItemButton>
             </ListItem>
           </List>
