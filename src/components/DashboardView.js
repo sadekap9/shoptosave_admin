@@ -532,48 +532,57 @@ const DashboardView = ({
               <Typography sx={{ color: '#94A3B8', fontSize: '0.78rem', mt: 0.5 }}>No pending requests</Typography>
             </Box>
           ) : (
-            <Box sx={{ divide: 'y' }}>
-              {sellRequests.map((req, i) => (
-                <Box key={req.id}>
-                  <Box sx={{ px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
-                      <Avatar sx={{ width: 36, height: 36, fontSize: '0.72rem', bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 700, flexShrink: 0 }}>
-                        {req.user.substring(0, 2).toUpperCase()}
-                      </Avatar>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.84rem', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {req.user}
-                        </Typography>
-                        <Typography sx={{ fontSize: '0.72rem', color: '#64748B' }}>
-                          {req.brand} · {req.value}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 0.8, flexShrink: 0 }}>
-                      <Tooltip title="Approve">
-                        <IconButton
-                          size="small"
-                          onClick={() => onApproveRequest(req.id)}
-                          sx={{ bgcolor: '#ECFDF5', color: '#059669', width: 30, height: 30, '&:hover': { bgcolor: '#10B981', color: '#FFFFFF' } }}
-                        >
-                          <ApproveIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Reject">
-                        <IconButton
-                          size="small"
-                          onClick={() => onRejectRequest(req.id)}
-                          sx={{ bgcolor: '#FEF2F2', color: '#DC2626', width: 30, height: 30, '&:hover': { bgcolor: '#EF4444', color: '#FFFFFF' } }}
-                        >
-                          <RejectIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
-                  {i < sellRequests.length - 1 && <Divider sx={{ borderColor: '#F1F5F9' }} />}
-                </Box>
-              ))}
-            </Box>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                    <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pl: 3 }}>Customer</TableCell>
+                    <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5 }}>Brand / Value</TableCell>
+                    <TableCell align="center" sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pr: 3 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sellRequests.map((req) => (
+                    <TableRow key={req.id} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
+                      <TableCell sx={{ py: 1.5, pl: 3, borderBottom: '1px solid #F1F5F9' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                          <Avatar sx={{ width: 28, height: 28, fontSize: '0.68rem', bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 700 }}>
+                            {req.user.substring(0, 2).toUpperCase()}
+                          </Avatar>
+                          <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{req.user}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
+                        <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{req.brand}</Typography>
+                        <Typography sx={{ fontSize: '0.72rem', color: '#64748B' }}>{req.value}</Typography>
+                      </TableCell>
+                      <TableCell align="center" sx={{ py: 1.5, pr: 3, borderBottom: '1px solid #F1F5F9' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.8 }}>
+                          <Tooltip title="Approve">
+                            <IconButton
+                              size="small"
+                              onClick={() => onApproveRequest(req.id)}
+                              sx={{ bgcolor: '#ECFDF5', color: '#059669', width: 28, height: 28, '&:hover': { bgcolor: '#10B981', color: '#FFFFFF' } }}
+                            >
+                              <ApproveIcon sx={{ fontSize: 13 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Reject">
+                            <IconButton
+                              size="small"
+                              onClick={() => onRejectRequest(req.id)}
+                              sx={{ bgcolor: '#FEF2F2', color: '#DC2626', width: 28, height: 28, '&:hover': { bgcolor: '#EF4444', color: '#FFFFFF' } }}
+                            >
+                              <RejectIcon sx={{ fontSize: 13 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
 
           <Box sx={{
@@ -621,27 +630,42 @@ const DashboardView = ({
           <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
             <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: '#0F172A' }}>Top Selling Brands</Typography>
           </Box>
-          <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.2 }}>
-            {topSellingBrands.map((b, i) => (
-              <Box key={b.name}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: i === 0 ? '#6D28D9' : i === 1 ? '#2563EB' : i === 2 ? '#0D9488' : i === 3 ? '#D97706' : i === 4 ? '#E11D48' : '#64748B' }} />
-                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#0F172A' }}>{b.name}</Typography>
-                  </Box>
-                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>{b.sales}</Typography>
-                </Box>
-                <Box sx={{ height: 5, borderRadius: 9999, bgcolor: '#F1F5F9', overflow: 'hidden' }}>
-                  <Box sx={{
-                    height: '100%', borderRadius: 9999,
-                    width: `${b.pct}%`,
-                    background: i === 0 ? 'linear-gradient(90deg,#6D28D9,#8B5CF6)' : i === 1 ? 'linear-gradient(90deg,#2563EB,#60A5FA)' : i === 2 ? 'linear-gradient(90deg,#0D9488,#34D399)' : i === 3 ? 'linear-gradient(90deg,#D97706,#FBB94C)' : i === 4 ? 'linear-gradient(90deg,#E11D48,#FDA4AF)' : 'linear-gradient(90deg,#64748B,#94A3B8)',
-                    transition: 'width 0.6s ease',
-                  }} />
-                </Box>
-              </Box>
-            ))}
-          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pl: 3 }}>Brand</TableCell>
+                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5 }}>Sales</TableCell>
+                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pr: 3 }}>Popularity</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {topSellingBrands.map((b, i) => (
+                  <TableRow key={b.name} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
+                    <TableCell sx={{ py: 1.5, pl: 3, borderBottom: '1px solid #F1F5F9' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: i === 0 ? '#6D28D9' : i === 1 ? '#2563EB' : i === 2 ? '#0D9488' : i === 3 ? '#D97706' : i === 4 ? '#E11D48' : '#64748B' }} />
+                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#0F172A' }}>{b.name}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
+                      <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>{b.sales}</Typography>
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, pr: 3, borderBottom: '1px solid #F1F5F9', minWidth: '80px' }}>
+                      <Box sx={{ height: 5, borderRadius: 9999, bgcolor: '#F1F5F9', overflow: 'hidden', width: '100%' }}>
+                        <Box sx={{
+                          height: '100%', borderRadius: 9999,
+                          width: `${b.pct}%`,
+                          background: i === 0 ? 'linear-gradient(90deg,#6D28D9,#8B5CF6)' : i === 1 ? 'linear-gradient(90deg,#2563EB,#60A5FA)' : i === 2 ? 'linear-gradient(90deg,#0D9488,#34D399)' : i === 3 ? 'linear-gradient(90deg,#D97706,#FBB94C)' : i === 4 ? 'linear-gradient(90deg,#E11D48,#FDA4AF)' : 'linear-gradient(90deg,#64748B,#94A3B8)',
+                          transition: 'width 0.6s ease',
+                        }} />
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
 
         {/* Widget 2: Cashback Stores */}
@@ -656,59 +680,71 @@ const DashboardView = ({
               + Add
             </Button>
           </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', divide: 'y' }}>
-            {stores.map((store, i) => {
-              const initials = store.name.substring(0, 1).toUpperCase() + store.name.substring(1, 2).toLowerCase();
-              let badgeBg = '#F1F5F9';
-              let badgeColor = '#475569';
-              const nameLower = store.name.toLowerCase();
-              if (nameLower.includes('amazon')) {
-                badgeBg = '#FFF5E6';
-                badgeColor = '#D97706';
-              } else if (nameLower.includes('flipkart')) {
-                badgeBg = '#E0F2FE';
-                badgeColor = '#0284C7';
-              } else if (nameLower.includes('ajio')) {
-                badgeBg = '#FFF1F2';
-                badgeColor = '#E11D48';
-              } else if (nameLower.includes('nykaa')) {
-                badgeBg = '#F5F3FF';
-                badgeColor = '#7C3AED';
-              }
-
-              return (
-                <Box key={store.id}>
-                  <Box sx={{ px: 3, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: badgeBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: badgeColor }}>
-                          {initials}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{store.name}</Typography>
-                        <Typography sx={{ fontSize: '0.7rem', color: '#94A3B8' }}>{store.cashback} cashback</Typography>
-                      </Box>
-                    </Box>
-                    <Box
-                      onClick={() => onToggleStoreStatus(store.id)}
-                      sx={{
-                        px: 1.5, py: 0.4, borderRadius: '6px', cursor: 'pointer',
-                        bgcolor: store.status === 'Live' ? '#ECFDF5' : '#FEF3C7',
-                        color: store.status === 'Live' ? '#059669' : '#D97706',
-                        fontSize: '0.72rem', fontWeight: 700,
-                        transition: 'all 0.15s',
-                        '&:hover': { opacity: 0.8 },
-                      }}
-                    >
-                      {store.status}
-                    </Box>
-                  </Box>
-                  {i < stores.length - 1 && <Divider sx={{ borderColor: '#F8FAFC' }} />}
-                </Box>
-              );
-            })}
-          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pl: 3 }}>Store</TableCell>
+                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5 }}>Cashback</TableCell>
+                  <TableCell align="center" sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pr: 3 }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {stores.map((store) => {
+                  const initials = store.name.substring(0, 1).toUpperCase() + store.name.substring(1, 2).toLowerCase();
+                  let badgeBg = '#F1F5F9';
+                  let badgeColor = '#475569';
+                  const nameLower = store.name.toLowerCase();
+                  if (nameLower.includes('amazon')) {
+                    badgeBg = '#FFF5E6';
+                    badgeColor = '#D97706';
+                  } else if (nameLower.includes('flipkart')) {
+                    badgeBg = '#E0F2FE';
+                    badgeColor = '#0284C7';
+                  } else if (nameLower.includes('ajio')) {
+                    badgeBg = '#FFF1F2';
+                    badgeColor = '#E11D48';
+                  } else if (nameLower.includes('nykaa')) {
+                    badgeBg = '#F5F3FF';
+                    badgeColor = '#7C3AED';
+                  }
+                  return (
+                    <TableRow key={store.id} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
+                      <TableCell sx={{ py: 1.5, pl: 3, borderBottom: '1px solid #F1F5F9' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                          <Box sx={{ width: 28, height: 28, borderRadius: '8px', bgcolor: badgeBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: badgeColor }}>
+                              {initials}
+                            </Typography>
+                          </Box>
+                          <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{store.name}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
+                        <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', fontWeight: 600 }}>{store.cashback}</Typography>
+                      </TableCell>
+                      <TableCell align="center" sx={{ py: 1.5, pr: 3, borderBottom: '1px solid #F1F5F9' }}>
+                        <Box
+                          onClick={() => onToggleStoreStatus(store.id)}
+                          sx={{
+                            display: 'inline-block',
+                            px: 1.2, py: 0.3, borderRadius: '6px', cursor: 'pointer',
+                            bgcolor: store.status === 'Live' ? '#ECFDF5' : '#FEF3C7',
+                            color: store.status === 'Live' ? '#059669' : '#D97706',
+                            fontSize: '0.7rem', fontWeight: 700,
+                            transition: 'all 0.15s',
+                            '&:hover': { opacity: 0.8 },
+                          }}
+                        >
+                          {store.status}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
 
         {/* Widget 3: System Status */}
@@ -716,36 +752,52 @@ const DashboardView = ({
           <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
             <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: '#0F172A' }}>System Status</Typography>
           </Box>
-          <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.2, flexGrow: 1 }}>
-            {[
-              { name: 'Woohoo API', status: 'Online' },
-              { name: 'Razorpay', status: 'Online' },
-              { name: 'MSG91 OTP', status: 'Online' },
-            ].map(node => (
-              <Box key={node.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{node.name}</Typography>
-                <Box sx={{
-                  display: 'inline-flex', alignItems: 'center', gap: 0.6,
-                  px: 1.5, py: 0.4, borderRadius: '20px', bgcolor: '#ECFDF5', color: '#047857',
-                  fontSize: '0.72rem', fontWeight: 700,
-                }}>
-                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10B981', boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.4)' }} />
-                  {node.status}
-                </Box>
-              </Box>
-            ))}
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pl: 3 }}>Service</TableCell>
+                  <TableCell align="right" sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pr: 3 }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[
+                  { name: 'Woohoo API', status: 'Online' },
+                  { name: 'Razorpay', status: 'Online' },
+                  { name: 'MSG91 OTP', status: 'Online' },
+                ].map(node => (
+                  <TableRow key={node.name} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
+                    <TableCell sx={{ py: 1.5, pl: 3, borderBottom: '1px solid #F1F5F9' }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{node.name}</Typography>
+                    </TableCell>
+                    <TableCell align="right" sx={{ py: 1.5, pr: 3, borderBottom: '1px solid #F1F5F9' }}>
+                      <Box sx={{
+                        display: 'inline-flex', alignItems: 'center', gap: 0.6,
+                        px: 1.2, py: 0.3, borderRadius: '20px', bgcolor: '#ECFDF5', color: '#047857',
+                        fontSize: '0.7rem', fontWeight: 700,
+                      }}>
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10B981', boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.4)' }} />
+                        {node.status}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+          <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2, borderTop: '1px solid #F1F5F9' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography sx={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>Last Sync</Typography>
               <Typography sx={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{systemStatus.lastSync || '2h ago'}</Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography sx={{ fontSize: '0.82rem', color: '#0F172A', fontWeight: 700 }}>SVC Balance</Typography>
               <Typography sx={{ fontSize: '0.95rem', color: '#10B981', fontWeight: 800 }}>₹48,200</Typography>
             </Box>
 
-            <Box sx={{ mt: 0.5 }}>
+            <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
                 <Typography sx={{ fontSize: '0.74rem', color: '#64748B', fontWeight: 600 }}>SVC Balance used (82%)</Typography>
               </Box>
