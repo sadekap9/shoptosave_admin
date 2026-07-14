@@ -90,6 +90,8 @@ const initialCategories = [
   { id: 'CAT-007', name: 'Entertainment & Gaming', status: 'Inactive', created: '2026-05-24 15:30' },
 ];
 
+let lastFetchTime = 0;
+
 const CategoriesView = ({ triggerToast }) => {
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -131,7 +133,11 @@ const CategoriesView = ({ triggerToast }) => {
 
   // Load categories on component mount
   useEffect(() => {
-    fetchCategories();
+    const now = Date.now();
+    if (now - lastFetchTime > 500) {
+      lastFetchTime = now;
+      fetchCategories();
+    }
   }, []);
 
   // Stats calculation
@@ -1041,63 +1047,71 @@ const CategoriesView = ({ triggerToast }) => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
             overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+            maxWidth: 380,
+            width: '100%',
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            pb: 2,
-            pt: 3,
-            px: 3,
-            fontSize: '1.2rem',
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'inline-flex',
-              p: 1,
-              borderRadius: '10px',
-              bgcolor: 'rgba(239, 68, 68, 0.08)',
-              color: '#EF4444',
-            }}
-          >
-            <DeleteIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Delete Category
-        </DialogTitle>
-        <DialogContent sx={{ p: 3, pt: 3 }}>
-          <Typography variant="body2" color="text.primary" sx={{ mb: 2 }}>
+        {/* Header Section */}
+        <Box sx={{ pt: 3.5, px: 3.5, pb: 1.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 750, fontSize: '1.25rem', color: '#EF4444', letterSpacing: '-0.02em' }}>
+            Delete Category
+          </Typography>
+        </Box>
+
+        <DialogContent sx={{ p: 0, px: 3.5, pb: 2 }}>
+          <Typography sx={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.5 }}>
             Are you sure you want to delete category <strong>"{selectedCategory?.name}"</strong>?
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            This action cannot be undone. Any products under this category might lose their classification link.
-          </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+
+        <DialogActions 
+          sx={{ 
+            px: 3.5, 
+            pb: 3.5, 
+            pt: 1.5, 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            gap: 1.5
+          }}
+        >
           <Button
             onClick={() => setOpenDeleteDialog(false)}
-            color="inherit"
-            sx={{ textTransform: 'none', fontWeight: 600 }}
+            sx={{ 
+              textTransform: 'none', 
+              fontWeight: 600, 
+              fontSize: '0.82rem', 
+              color: '#64748B', 
+              '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
+              px: 2,
+              py: 0.8,
+              borderRadius: '6px',
+            }}
           >
             Cancel
           </Button>
           <Button
             onClick={handleDeleteConfirm}
             variant="contained"
-            color="error"
             sx={{
               textTransform: 'none',
-              fontWeight: 650,
-              borderRadius: '10px',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              borderRadius: '6px',
               px: 2.5,
+              py: 0.8,
+              bgcolor: '#EF4444',
+              color: '#FFFFFF',
+              boxShadow: 'none',
+              transition: 'all 0.2s ease',
+              '&:hover': { 
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
+              },
             }}
           >
             Delete

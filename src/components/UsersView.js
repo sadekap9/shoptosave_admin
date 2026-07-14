@@ -52,116 +52,7 @@ import {
 
 // Initial Mock Users List with KYC and Bank Details
 // eslint-disable-next-line no-unused-vars
-const initialUsers = [
-  {
-    id: 'S2S-001',
-    name: 'Ravi Kumar M.',
-    phone: '+91 98765 43210',
-    email: 'ravi.kumar@gmail.com',
-    balance: 1450,
-    status: 'Active',
-    kycStatus: 'Approved',
-    kycDocument: { type: 'Aadhaar Card', number: 'xxxx xxxx 4321', docUrl: 'Aadhaar Card Placeholder' },
-    bankDetails: { holderName: 'Ravi Kumar M.', bankName: 'HDFC Bank', accountNumber: '50100412345678', ifscCode: 'HDFC0000124' },
-    joinedDate: '2026-05-22',
-  },
-  {
-    id: 'S2S-002',
-    name: 'Priya Sharma S.',
-    phone: '+91 98123 45678',
-    email: 'priya.s@yahoo.com',
-    balance: 520,
-    status: 'Active',
-    kycStatus: 'Pending',
-    kycDocument: { type: 'PAN Card', number: 'ABCDE1234F', docUrl: 'PAN Card Placeholder' },
-    bankDetails: { holderName: 'Priya Sharma S.', bankName: 'ICICI Bank', accountNumber: '000401567890', ifscCode: 'ICIC0000004' },
-    joinedDate: '2026-05-20',
-  },
-  {
-    id: 'S2S-003',
-    name: 'Amit Verma K.',
-    phone: '+91 99887 76655',
-    email: 'amit.v@hotmail.com',
-    balance: 2100,
-    status: 'Active',
-    kycStatus: 'Approved',
-    kycDocument: { type: 'Voter ID', number: 'XYZ1234567', docUrl: 'Voter ID Placeholder' },
-    bankDetails: { holderName: 'Amit Verma K.', bankName: 'State Bank of India', accountNumber: '30987654321', ifscCode: 'SBIN0000123' },
-    joinedDate: '2026-05-18',
-  },
-  {
-    id: 'S2S-004',
-    name: 'Kiran Bhatia B.',
-    phone: '+91 91234 56789',
-    email: 'kiran.b@outlook.com',
-    balance: 0,
-    status: 'Under Review',
-    kycStatus: 'Pending',
-    kycDocument: { type: 'Aadhaar Card', number: 'xxxx xxxx 9876', docUrl: 'Aadhaar Card Placeholder' },
-    bankDetails: { holderName: 'Kiran Bhatia B.', bankName: 'Axis Bank', accountNumber: '912010023456789', ifscCode: 'UTIB0000010' },
-    joinedDate: '2026-05-08',
-  },
-  {
-    id: 'S2S-005',
-    name: 'Meera Rawat R.',
-    phone: '+91 95432 10987',
-    email: 'meera.r@gmail.com',
-    balance: 890,
-    status: 'Active',
-    kycStatus: 'Approved',
-    kycDocument: { type: 'PAN Card', number: 'FGHJK5678L', docUrl: 'PAN Card Placeholder' },
-    bankDetails: { holderName: 'Meera Rawat R.', bankName: 'Kotak Mahindra Bank', accountNumber: '4567890123', ifscCode: 'KKBK0000958' },
-    joinedDate: '2026-04-30',
-  },
-  {
-    id: 'S2S-006',
-    name: 'Dev Patel P.',
-    phone: '+91 88776 65544',
-    email: 'dev.patel@gmail.com',
-    balance: 150,
-    status: 'Active',
-    kycStatus: 'Rejected',
-    kycDocument: { type: 'Aadhaar Card', number: 'xxxx xxxx 5544', docUrl: 'Aadhaar Card Placeholder (Invalid Signature)' },
-    bankDetails: { holderName: 'Dev Patel P.', bankName: 'Yes Bank', accountNumber: '0123456789012', ifscCode: 'YESB0000012' },
-    joinedDate: '2026-04-15',
-  },
-  {
-    id: 'S2S-007',
-    name: 'Anjali Trivedi T.',
-    phone: '+91 77665 54433',
-    email: 'anjali.t@gmail.com',
-    balance: 340,
-    status: 'Active',
-    kycStatus: 'Not Submitted',
-    kycDocument: null,
-    bankDetails: null,
-    joinedDate: '2026-03-22',
-  },
-  {
-    id: 'S2S-008',
-    name: 'Rahul Saxena S.',
-    phone: '+91 99112 23344',
-    email: 'rahul.s@outlook.com',
-    balance: 4500,
-    status: 'Suspended',
-    kycStatus: 'Approved',
-    kycDocument: { type: 'PAN Card', number: 'MNPQR9012S', docUrl: 'PAN Card Placeholder' },
-    bankDetails: { holderName: 'Rahul Saxena S.', bankName: 'HDFC Bank', accountNumber: '50100987654321', ifscCode: 'HDFC0000124' },
-    joinedDate: '2026-02-14',
-  },
-  {
-    id: 'S2S-009',
-    name: 'Sneha Reddy R.',
-    phone: '+91 98889 90011',
-    email: 'sneha.r@gmail.com',
-    balance: 75,
-    status: 'Active',
-    kycStatus: 'Approved',
-    kycDocument: { type: 'Aadhaar Card', number: 'xxxx xxxx 0011', docUrl: 'Aadhaar Card Placeholder' },
-    bankDetails: { holderName: 'Sneha Reddy R.', bankName: 'ICICI Bank', accountNumber: '000409876543', ifscCode: 'ICIC0000004' },
-    joinedDate: '2026-01-05',
-  },
-];
+const initialUsers = [];
 
 // Helper to get initials
 const getInitials = (name) => {
@@ -188,6 +79,8 @@ const getAvatarGradient = (name) => {
   return colors[sum % colors.length];
 };
 
+let lastFetchTime = 0;
+
 const UsersView = ({ triggerToast }) => {
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -202,14 +95,14 @@ const UsersView = ({ triggerToast }) => {
       if (response && response.success && response.result && response.result.data) {
         const mappedUsers = response.result.data.map((user) => {
           return {
-            id: `S2S-${String(user.id).padStart(3, '0')}`,
+            id: String(user.id),
             dbId: user.id,
-            name: user.name || user.phone || 'Unknown User',
+            name: user.name || 'NA',
             phone: user.phone,
             email: user.email || 'N/A',
             balance: user.balance || 0,
-            status: user.is_active === 1 ? 'Active' : 'Suspended',
-            kycStatus: user.kyc_status || 'Not Submitted',
+            status: user.is_active === 1 ? 'Active' : 'Inactive',
+            kycStatus: (!user.kyc_status || user.kyc_status === 'Not Submitted') ? 'Pending' : user.kyc_status,
             kycDocument: user.kyc_document || null,
             bankDetails: user.bank_details || null,
             joinedDate: user.createdAt ? user.createdAt.split('T')[0] : 'N/A',
@@ -226,7 +119,11 @@ const UsersView = ({ triggerToast }) => {
   };
 
   useEffect(() => {
-    fetchUsers();
+    const now = Date.now();
+    if (now - lastFetchTime > 500) {
+      lastFetchTime = now;
+      fetchUsers();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -279,7 +176,7 @@ const UsersView = ({ triggerToast }) => {
   // Calculated Dynamic stats
   const totalUsersCount = usersList.length;
   const activeCount = usersList.filter((u) => u.status === 'Active').length;
-  const reviewCount = usersList.filter((u) => u.status === 'Under Review' || u.status === 'Suspended').length;
+  const reviewCount = usersList.filter((u) => u.status === 'Inactive').length;
   const totalWalletSum = usersList.reduce((sum, u) => sum + u.balance, 0);
 
   const handleOpenBalance = (user) => {
@@ -322,7 +219,7 @@ const UsersView = ({ triggerToast }) => {
 
   const handleOpenStatus = (user) => {
     setSelectedUser(user);
-    setTargetStatus(user.status === 'Active' ? 'Active' : 'Suspended');
+    setTargetStatus(user.status === 'Active' ? 'Active' : 'Inactive');
     setOpenStatusDialog(true);
   };
 
@@ -413,7 +310,7 @@ const UsersView = ({ triggerToast }) => {
             <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
               <Box
                 sx={{
-                  p: 4,
+                  p: { xs: 2.5, md: 4 },
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -453,20 +350,14 @@ const UsersView = ({ triggerToast }) => {
                       bgcolor:
                         selectedUserForView.status === 'Active'
                           ? 'rgba(16, 185, 129, 0.08)'
-                          : selectedUserForView.status === 'Suspended'
-                            ? 'rgba(239, 68, 68, 0.08)'
-                            : 'rgba(245, 158, 11, 0.08)',
+                          : 'rgba(239, 68, 68, 0.08)',
                       color:
                         selectedUserForView.status === 'Active'
                           ? '#10B981'
-                          : selectedUserForView.status === 'Suspended'
-                            ? '#EF4444'
-                            : '#F59E0B',
+                          : '#EF4444',
                       border: `1px solid ${selectedUserForView.status === 'Active'
                         ? 'rgba(16, 185, 129, 0.15)'
-                        : selectedUserForView.status === 'Suspended'
-                          ? 'rgba(239, 68, 68, 0.15)'
-                          : 'rgba(245, 158, 11, 0.15)'
+                        : 'rgba(239, 68, 68, 0.15)'
                         }`,
                     }}
                   >
@@ -505,7 +396,7 @@ const UsersView = ({ triggerToast }) => {
                         }`,
                     }}
                   >
-                    KYC: {selectedUserForView.kycStatus || 'Not Submitted'}
+                    KYC: {selectedUserForView.kycStatus || 'Pending'}
                   </Box>
                 </Box>
               </Box>
@@ -527,10 +418,7 @@ const UsersView = ({ triggerToast }) => {
 
                 <Box
                   sx={{
-                    p: 2.2,
-                    borderRadius: '16px',
-                    bgcolor: 'rgba(109, 40, 217, 0.03)',
-                    border: '1px dashed rgba(109, 40, 217, 0.15)',
+                    py: 1.5,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center'
@@ -574,7 +462,7 @@ const UsersView = ({ triggerToast }) => {
               <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
                 <Box
                   sx={{
-                    px: 3.5,
+                    px: { xs: 2.5, md: 3.5 },
                     py: 2.5,
                     borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
                     display: 'flex',
@@ -622,10 +510,10 @@ const UsersView = ({ triggerToast }) => {
                         }`,
                     }}
                   >
-                    {selectedUserForView.kycStatus || 'Not Submitted'}
+                    {selectedUserForView.kycStatus || 'Pending'}
                   </Box>
                 </Box>
-                <CardContent sx={{ p: 3.5 }}>
+                <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
                   {selectedUserForView.kycDocument ? (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       {/* Document Details Grid */}
@@ -693,7 +581,7 @@ const UsersView = ({ triggerToast }) => {
                       <Divider sx={{ my: 1 }} />
 
                       {/* Reject and Approve Action Buttons */}
-                      <Box display="flex" justifyContent="flex-end" gap={2}>
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'flex-end', gap: 2 }}>
                         <Button
                           variant="outlined"
                           color="error"
@@ -707,7 +595,8 @@ const UsersView = ({ triggerToast }) => {
                             px: 3,
                             py: 1,
                             borderWidth: '1.5px',
-                            '&:hover': { borderWidth: '1.5px' }
+                            '&:hover': { borderWidth: '1.5px' },
+                            width: { xs: '100%', sm: 'auto' }
                           }}
                         >
                           Reject KYC Document
@@ -725,7 +614,8 @@ const UsersView = ({ triggerToast }) => {
                             py: 1,
                             bgcolor: '#10B981',
                             '&:hover': { bgcolor: '#059669' },
-                            boxShadow: 'none'
+                            boxShadow: 'none',
+                            width: { xs: '100%', sm: 'auto' }
                           }}
                         >
                           Approve KYC Document
@@ -771,7 +661,7 @@ const UsersView = ({ triggerToast }) => {
                     User Bank Account Details
                   </Typography>
                 </Box>
-                <CardContent sx={{ p: 3.5 }}>
+                <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
                   {selectedUserForView.bankDetails ? (
                     <Box
                       sx={{
@@ -842,56 +732,48 @@ const UsersView = ({ triggerToast }) => {
             sm: 'repeat(2, minmax(0, 1fr))',
             md: 'repeat(4, minmax(0, 1fr))',
           },
-          gap: '24px',
-          mb: 3.5,
+          gap: '20px',
+          mb: 3,
         }}
       >
         {/* KPI 1: Total Customers */}
         <Card
           sx={{
             border: '1px solid #E2E8F0',
-            borderRadius: '16px',
+            borderRadius: '14px',
             bgcolor: '#FFFFFF',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            p: '24px',
-            minHeight: '130px',
+            p: '16px 20px',
             transition: 'all 0.2s ease',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
             '&:hover': {
-              boxShadow: '0 4px 24px 0 rgba(109, 40, 217, 0.12)',
+              boxShadow: '0 4px 20px 0 rgba(109, 40, 217, 0.06)',
               borderColor: '#6D28D9',
               transform: 'translateY(-2px)'
             }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
                 Total Customers
               </Typography>
-              <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 {totalUsersCount}
               </Typography>
             </Box>
             <Box sx={{
-              width: 48,
-              height: 48,
-              borderRadius: '12px',
-              bgcolor: 'rgba(109, 40, 217, 0.08)',
+              width: 40,
+              height: 40,
+              borderRadius: '10px',
+              bgcolor: 'rgba(109, 40, 217, 0.06)',
               color: '#6D28D9',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <UsersIcon sx={{ fontSize: 22 }} />
+              <UsersIcon sx={{ fontSize: 18 }} />
             </Box>
-          </Box>
-          <Box sx={{ mt: 1.5 }}>
-            <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', display: 'block' }}>
-              Registered customer profiles
-            </Typography>
           </Box>
         </Card>
 
@@ -899,48 +781,40 @@ const UsersView = ({ triggerToast }) => {
         <Card
           sx={{
             border: '1px solid #E2E8F0',
-            borderRadius: '16px',
+            borderRadius: '14px',
             bgcolor: '#FFFFFF',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            p: '24px',
-            minHeight: '130px',
+            p: '16px 20px',
             transition: 'all 0.2s ease',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
             '&:hover': {
-              boxShadow: '0 4px 24px 0 rgba(16, 185, 129, 0.12)',
+              boxShadow: '0 4px 20px 0 rgba(16, 185, 129, 0.06)',
               borderColor: '#10B981',
               transform: 'translateY(-2px)'
             }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
                 Active Accounts
               </Typography>
-              <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 {activeCount}
               </Typography>
             </Box>
             <Box sx={{
-              width: 48,
-              height: 48,
-              borderRadius: '12px',
-              bgcolor: 'rgba(16, 185, 129, 0.08)',
+              width: 40,
+              height: 40,
+              borderRadius: '10px',
+              bgcolor: 'rgba(16, 185, 129, 0.06)',
               color: '#10B981',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <ActiveIcon sx={{ fontSize: 22 }} />
+              <ActiveIcon sx={{ fontSize: 18 }} />
             </Box>
-          </Box>
-          <Box sx={{ mt: 1.5 }}>
-            <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', display: 'block' }}>
-              Fully verified active access
-            </Typography>
           </Box>
         </Card>
 
@@ -948,48 +822,40 @@ const UsersView = ({ triggerToast }) => {
         <Card
           sx={{
             border: '1px solid #E2E8F0',
-            borderRadius: '16px',
+            borderRadius: '14px',
             bgcolor: '#FFFFFF',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            p: '24px',
-            minHeight: '130px',
+            p: '16px 20px',
             transition: 'all 0.2s ease',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
             '&:hover': {
-              boxShadow: '0 4px 24px 0 rgba(239, 68, 68, 0.12)',
+              boxShadow: '0 4px 20px 0 rgba(239, 68, 68, 0.06)',
               borderColor: '#EF4444',
               transform: 'translateY(-2px)'
             }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
                 Inactive Accounts
               </Typography>
-              <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 {reviewCount}
               </Typography>
             </Box>
             <Box sx={{
-              width: 48,
-              height: 48,
-              borderRadius: '12px',
-              bgcolor: 'rgba(239, 68, 68, 0.08)',
+              width: 40,
+              height: 40,
+              borderRadius: '10px',
+              bgcolor: 'rgba(239, 68, 68, 0.06)',
               color: '#EF4444',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <BannedIcon sx={{ fontSize: 22 }} />
+              <BannedIcon sx={{ fontSize: 18 }} />
             </Box>
-          </Box>
-          <Box sx={{ mt: 1.5 }}>
-            <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', display: 'block' }}>
-              Blocked or suspended profiles
-            </Typography>
           </Box>
         </Card>
 
@@ -997,48 +863,40 @@ const UsersView = ({ triggerToast }) => {
         <Card
           sx={{
             border: '1px solid #E2E8F0',
-            borderRadius: '16px',
+            borderRadius: '14px',
             bgcolor: '#FFFFFF',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            p: '24px',
-            minHeight: '130px',
+            p: '16px 20px',
             transition: 'all 0.2s ease',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
             '&:hover': {
-              boxShadow: '0 4px 24px 0 rgba(109, 40, 217, 0.12)',
+              boxShadow: '0 4px 20px 0 rgba(109, 40, 217, 0.06)',
               borderColor: '#6D28D9',
               transform: 'translateY(-2px)'
             }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 0.5 }}>
                 Wallet Reserves
               </Typography>
-              <Typography sx={{ fontSize: '2rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              <Typography sx={{ fontSize: '1.75rem', fontWeight: 700, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 ₹{totalWalletSum.toLocaleString('en-IN')}
               </Typography>
             </Box>
             <Box sx={{
-              width: 48,
-              height: 48,
-              borderRadius: '12px',
-              bgcolor: 'rgba(109, 40, 217, 0.08)',
+              width: 40,
+              height: 40,
+              borderRadius: '10px',
+              bgcolor: 'rgba(109, 40, 217, 0.06)',
               color: '#6D28D9',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <MoneyIcon sx={{ fontSize: 22 }} />
+              <MoneyIcon sx={{ fontSize: 18 }} />
             </Box>
-          </Box>
-          <Box sx={{ mt: 1.5 }}>
-            <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', display: 'block' }}>
-              Cumulative active balances
-            </Typography>
           </Box>
         </Card>
       </Box>
@@ -1091,9 +949,18 @@ const UsersView = ({ triggerToast }) => {
             </Box>
 
             {/* Right: Selects & Apply button */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                alignItems: 'center', 
+                gap: 1.5, 
+                width: { xs: '100%', md: 'auto' },
+                justifyContent: { xs: 'stretch', md: 'flex-end' } 
+              }}
+            >
               {/* Dropdown 1: Account Status */}
-              <FormControl size="small" sx={{ minWidth: 130 }}>
+              <FormControl size="small" sx={{ flexGrow: { xs: 1, md: 0 }, minWidth: { xs: '120px', md: 130 } }}>
                 <InputLabel sx={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 500 }}>Status</InputLabel>
                 <Select
                   value={filterStatus}
@@ -1112,33 +979,7 @@ const UsersView = ({ triggerToast }) => {
                 >
                   <MenuItem value="All">All Statuses</MenuItem>
                   <MenuItem value="Active">Active</MenuItem>
-                  <MenuItem value="Suspended">Inactive</MenuItem>
-                </Select>
-              </FormControl>
-
-              {/* Dropdown 2: KYC Status */}
-              <FormControl size="small" sx={{ minWidth: 130 }}>
-                <InputLabel sx={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 500 }}>KYC Status</InputLabel>
-                <Select
-                  value={filterKyc}
-                  label="KYC Status"
-                  onChange={(e) => setFilterKyc(e.target.value)}
-                  sx={{
-                    borderRadius: '10px',
-                    fontSize: '0.82rem',
-                    height: '38px',
-                    bgcolor: '#FFFFFF',
-                    borderColor: '#E2E8F0',
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E2E8F0' },
-                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1' },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#6D28D9' }
-                  }}
-                >
-                  <MenuItem value="All">All KYC Statuses</MenuItem>
-                  <MenuItem value="Approved">Approved</MenuItem>
-                  <MenuItem value="Pending">Pending</MenuItem>
-                  <MenuItem value="Rejected">Rejected</MenuItem>
-                  <MenuItem value="Not Submitted">Not Submitted</MenuItem>
+                  <MenuItem value="Inactive">Inactive</MenuItem>
                 </Select>
               </FormControl>
 
@@ -1154,6 +995,7 @@ const UsersView = ({ triggerToast }) => {
                   fontSize: '0.82rem',
                   height: '38px',
                   px: 3,
+                  flexGrow: { xs: 1, md: 0 },
                   boxShadow: 'none',
                   '&:hover': { bgcolor: '#5B21B6', boxShadow: 'none' }
                 }}
@@ -1189,7 +1031,6 @@ const UsersView = ({ triggerToast }) => {
                   <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>EMAIL</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>WALLET BALANCE</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>ACCOUNT STATUS</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>KYC STATUS</TableCell>
                   <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>JOINED DATE</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.78rem', py: 2, pr: 3, bgcolor: '#F8FAFC', borderBottom: '1px solid #F1F5F9', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>ACTIONS</TableCell>
                 </TableRow>
@@ -1197,7 +1038,7 @@ const UsersView = ({ triggerToast }) => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
                       <Box display="flex" flexDirection="column" alignItems="center" gap={1.5}>
                         <CircularProgress size={40} color="primary" />
                         <Typography variant="body2" color="text.secondary" fontWeight={500}>
@@ -1208,7 +1049,7 @@ const UsersView = ({ triggerToast }) => {
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
                       <Box display="flex" flexDirection="column" alignItems="center" gap={1.5}>
                         <UsersIcon sx={{ fontSize: 40, color: 'text.disabled', opacity: 0.5 }} />
                         <Typography variant="body2" color="text.secondary" fontWeight={500}>
@@ -1233,22 +1074,14 @@ const UsersView = ({ triggerToast }) => {
                     >
                       {/* Column 1: User ID */}
                       <TableCell sx={{ py: 2.2, pl: 3 }}>
-                        <Box sx={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          bgcolor: 'rgba(109, 40, 217, 0.04)',
+                        <Typography sx={{
                           color: '#6D28D9',
                           fontFamily: 'monospace',
-                          fontSize: '0.8rem',
+                          fontSize: '0.85rem',
                           fontWeight: 700,
-                          px: 1.2,
-                          py: 0.5,
-                          borderRadius: '8px',
-                          border: '1px solid rgba(109, 40, 217, 0.1)',
-                          boxShadow: '0 2px 4px rgba(109, 40, 217, 0.02)'
                         }}>
                           {user.id}
-                        </Box>
+                        </Typography>
                       </TableCell>
 
                       {/* Column 2: Customer */}
@@ -1288,14 +1121,9 @@ const UsersView = ({ triggerToast }) => {
                           <Box sx={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            bgcolor: 'rgba(16, 185, 129, 0.05)',
                             color: '#10B981',
-                            px: 1.5,
-                            py: 0.6,
-                            borderRadius: '10px',
-                            fontWeight: 800,
+                            fontWeight: 700,
                             fontSize: '0.88rem',
-                            border: '1px solid rgba(16, 185, 129, 0.12)'
                           }}>
                             ₹{user.balance.toLocaleString('en-IN')}
                           </Box>
@@ -1308,72 +1136,16 @@ const UsersView = ({ triggerToast }) => {
                           sx={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 1,
-                            px: 1.6,
-                            py: 0.6,
-                            borderRadius: '20px',
-                            fontWeight: 800,
-                            fontSize: '0.72rem',
-                            bgcolor: user.status === 'Active' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
                             color: user.status === 'Active' ? '#10B981' : '#EF4444',
-                            border: user.status === 'Active' ? '1px solid rgba(16, 185, 129, 0.18)' : '1px solid rgba(239, 68, 68, 0.18)',
                           }}
                         >
-                          <Box
-                            sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: '50%',
-                              bgcolor: user.status === 'Active' ? '#10B981' : '#EF4444',
-                              boxShadow: user.status === 'Active' ? '0 0 8px #10B981' : '0 0 8px #EF4444',
-                            }}
-                          />
                           {user.status === 'Active' ? 'Active' : 'Inactive'}
                         </Box>
                       </TableCell>
 
-                      {/* Column 7: KYC Status */}
-                      <TableCell align="center" sx={{ py: 2.2 }}>
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            px: 1.5,
-                            py: 0.6,
-                            borderRadius: '12px',
-                            fontWeight: 800,
-                            fontSize: '0.72rem',
-                            bgcolor:
-                              user.kycStatus === 'Approved'
-                                ? 'rgba(16, 185, 129, 0.05)'
-                                : user.kycStatus === 'Pending'
-                                  ? 'rgba(245, 158, 11, 0.05)'
-                                  : user.kycStatus === 'Rejected'
-                                    ? 'rgba(239, 68, 68, 0.05)'
-                                    : 'rgba(100, 116, 139, 0.05)',
-                            color:
-                              user.kycStatus === 'Approved'
-                                ? '#10B981'
-                                : user.kycStatus === 'Pending'
-                                  ? '#F59E0B'
-                                  : user.kycStatus === 'Rejected'
-                                    ? '#EF4444'
-                                    : '#64748B',
-                            border:
-                              user.kycStatus === 'Approved'
-                                ? '1px solid rgba(16, 185, 129, 0.15)'
-                                : user.kycStatus === 'Pending'
-                                  ? '1px solid rgba(245, 158, 11, 0.15)'
-                                  : user.kycStatus === 'Rejected'
-                                    ? '1px solid rgba(239, 68, 68, 0.15)'
-                                    : '1px solid rgba(100, 116, 139, 0.15)',
-                          }}
-                        >
-                          {user.kycStatus || 'Not Submitted'}
-                        </Box>
-                      </TableCell>
-
-                      {/* Column 8: Joined Date */}
+                      {/* Column 7: Joined Date */}
                       <TableCell sx={{ color: '#475569', fontSize: '0.8rem', fontWeight: 500, py: 2.2 }}>
                         {user.joinedDate}
                       </TableCell>
@@ -1448,84 +1220,84 @@ const UsersView = ({ triggerToast }) => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
             overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+            maxWidth: 380,
+            width: '100%',
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            pb: 2,
-            pt: 3,
-            px: 3,
-            fontSize: '1.2rem',
-            letterSpacing: '-0.01em',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-          }}
-        >
-          <Box
-            sx={{
-              display: 'inline-flex',
-              p: 1,
-              borderRadius: '10px',
-              bgcolor: 'rgba(109, 40, 217, 0.08)',
-              color: '#6D28D9',
-            }}
-          >
-            <WalletIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Adjust Wallet Balance
-        </DialogTitle>
         <form onSubmit={handleBalanceSubmit}>
-          <DialogContent sx={{ p: 3, pt: 3 }}>
+          {/* Header Section */}
+          <Box sx={{ pt: 3.5, px: 3.5, pb: 1.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 750, fontSize: '1.2rem', color: '#0F172A', letterSpacing: '-0.02em' }}>
+              Adjust Balance
+            </Typography>
+          </Box>
+
+          <DialogContent sx={{ p: 0, px: 3.5, pb: 2 }}>
             {selectedUser && (
               <Box
                 sx={{
-                  mb: 3,
-                  p: 2,
-                  bgcolor: '#F8FAFC',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(226, 232, 240, 0.8)',
+                  mb: 2.5,
+                  p: 2.5,
+                  bgcolor: '#FFFFFF',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
                 }}
               >
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600, textTransform: 'uppercase' }}>
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
                   Customer Profile
                 </Typography>
-                <Typography variant="subtitle2" color="#0F172A" fontWeight={700}>
-                  {selectedUser.name} ({selectedUser.id})
+                <Typography sx={{ fontSize: '0.88rem', fontWeight: 600, color: '#0F172A', mb: 1 }}>
+                  {selectedUser.name} <span style={{ color: '#64748B', fontWeight: 500 }}>({selectedUser.id})</span>
                 </Typography>
-                <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 1.5 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Current Wallet Balance
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography sx={{ fontSize: '0.82rem', color: '#64748B' }}>
+                    Current Balance:
                   </Typography>
-                  <Typography variant="subtitle2" fontWeight={850} color="#1E293B">
+                  <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, color: '#10B981', fontFamily: 'monospace' }}>
                     ₹{selectedUser.balance.toLocaleString('en-IN')}
                   </Typography>
                 </Box>
               </Box>
             )}
 
-            <Grid container spacing={2.5}>
+            <Grid container spacing={2}>
               <Grid item xs={12}>
-                <Box display="flex" gap={1} sx={{ mb: 2 }}>
+                <Box display="flex" gap={1.2}>
                   <Button
                     type="button"
                     fullWidth
                     variant={adjustmentType === 'Add' ? 'contained' : 'outlined'}
                     onClick={() => setAdjustmentType('Add')}
-                    color="primary"
                     startIcon={<AddIcon />}
                     sx={{
-                      borderRadius: '10px',
+                      borderRadius: '6px',
                       textTransform: 'none',
-                      py: 1,
-                      fontWeight: 650,
-                      boxShadow: adjustmentType === 'Add' ? '0 4px 10px rgba(109, 40, 217, 0.2)' : 'none',
+                      py: 0.8,
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      bgcolor: adjustmentType === 'Add' ? '#6D28D9' : 'transparent',
+                      color: adjustmentType === 'Add' ? '#FFFFFF' : '#475569',
+                      borderColor: adjustmentType === 'Add' ? '#6D28D9' : '#E5E7EB',
+                      boxShadow: 'none',
+                      '&:hover': {
+                        bgcolor: adjustmentType === 'Add' ? '#5B21B6' : '#F1F5F9',
+                        borderColor: adjustmentType === 'Add' ? '#5B21B6' : '#CBD5E1',
+                        boxShadow: 'none',
+                      }
                     }}
                   >
                     Credit (Add)
@@ -1535,14 +1307,22 @@ const UsersView = ({ triggerToast }) => {
                     fullWidth
                     variant={adjustmentType === 'Deduct' ? 'contained' : 'outlined'}
                     onClick={() => setAdjustmentType('Deduct')}
-                    color="primary"
                     startIcon={<RemoveIcon />}
                     sx={{
-                      borderRadius: '10px',
+                      borderRadius: '6px',
                       textTransform: 'none',
-                      py: 1,
-                      fontWeight: 650,
-                      boxShadow: adjustmentType === 'Deduct' ? '0 4px 10px rgba(109, 40, 217, 0.2)' : 'none',
+                      py: 0.8,
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      bgcolor: adjustmentType === 'Deduct' ? '#6D28D9' : 'transparent',
+                      color: adjustmentType === 'Deduct' ? '#FFFFFF' : '#475569',
+                      borderColor: adjustmentType === 'Deduct' ? '#6D28D9' : '#E5E7EB',
+                      boxShadow: 'none',
+                      '&:hover': {
+                        bgcolor: adjustmentType === 'Deduct' ? '#5B21B6' : '#F1F5F9',
+                        borderColor: adjustmentType === 'Deduct' ? '#5B21B6' : '#CBD5E1',
+                        boxShadow: 'none',
+                      }
                     }}
                   >
                     Debit (Deduct)
@@ -1552,8 +1332,17 @@ const UsersView = ({ triggerToast }) => {
 
               <Grid item xs={12}>
                 <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                    ADJUSTMENT VALUE (INR) *
+                  <Typography 
+                    sx={{ 
+                      fontSize: '0.68rem', 
+                      fontWeight: 700, 
+                      color: '#64748B', 
+                      letterSpacing: '0.06em', 
+                      textTransform: 'uppercase',
+                      mb: 1
+                    }}
+                  >
+                    Adjustment Value (INR) *
                   </Typography>
                   <TextField
                     fullWidth
@@ -1567,29 +1356,42 @@ const UsersView = ({ triggerToast }) => {
                     required
                     sx={{
                       '& .MuiOutlinedInput-root': {
-                        borderRadius: '12px',
-                        bgcolor: '#F8FAFC',
+                        height: '42px',
+                        borderRadius: '8px',
+                        bgcolor: '#FFFFFF',
                         transition: 'all 0.2s',
-                        '&:hover': {
-                          bgcolor: '#F1F5F9',
+                        '& fieldset': {
+                          borderColor: '#E5E7EB',
                         },
-                        '&.Mui-focused': {
-                          bgcolor: '#FFFFFF',
-                          boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                        '&:hover fieldset': {
+                          borderColor: '#CBD5E1',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#6D28D9',
+                          borderWidth: '2px',
                         },
                       },
                     }}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                      startAdornment: <InputAdornment position="start" sx={{ '& .MuiTypography-root': { fontWeight: 600, color: '#64748B' } }}>₹</InputAdornment>,
                     }}
                   />
                 </Box>
               </Grid>
 
-              {/* Stripe preset chips */}
+              {/* Preset chips */}
               <Grid item xs={12}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 600 }}>
-                  QUICK PRESETS
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Quick Presets
                 </Typography>
                 <Box display="flex" gap={1} flexWrap="wrap">
                   {[250, 500, 1000, 2000, 5000].map((preset) => (
@@ -1598,16 +1400,17 @@ const UsersView = ({ triggerToast }) => {
                       label={`₹${preset}`}
                       onClick={() => setAdjustmentAmount(preset.toString())}
                       sx={{
-                        borderRadius: '8px',
+                        borderRadius: '6px',
                         fontWeight: 600,
+                        fontSize: '0.78rem',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        border: '1px solid rgba(226, 232, 240, 0.8)',
-                        bgcolor: adjustmentAmount === preset.toString() ? 'rgba(109, 40, 217, 0.08)' : '#FFFFFF',
+                        border: '1px solid #E5E7EB',
+                        bgcolor: adjustmentAmount === preset.toString() ? '#F5F3FF' : '#FFFFFF',
                         color: adjustmentAmount === preset.toString() ? '#6D28D9' : '#475569',
-                        borderColor: adjustmentAmount === preset.toString() ? '#6D28D9' : 'rgba(226, 232, 240, 0.8)',
+                        borderColor: adjustmentAmount === preset.toString() ? '#6D28D9' : '#E5E7EB',
                         '&:hover': {
-                          bgcolor: 'rgba(109, 40, 217, 0.04)',
+                          bgcolor: '#F5F3FF',
                           borderColor: '#6D28D9',
                         },
                       }}
@@ -1618,23 +1421,52 @@ const UsersView = ({ triggerToast }) => {
             </Grid>
           </DialogContent>
 
-          <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+          <DialogActions 
+            sx={{ 
+              px: 3.5, 
+              pb: 3.5, 
+              pt: 1.5, 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: 1.5
+            }}
+          >
             <Button
               onClick={() => setOpenBalanceDialog(false)}
-              color="inherit"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
+              sx={{ 
+                textTransform: 'none', 
+                fontWeight: 600, 
+                fontSize: '0.82rem', 
+                color: '#64748B', 
+                '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
+                px: 2,
+                py: 0.8,
+                borderRadius: '6px',
+              }}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="contained"
-              color="primary"
               sx={{
                 textTransform: 'none',
-                fontWeight: 650,
-                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                borderRadius: '6px',
                 px: 2.5,
+                py: 0.8,
+                bgcolor: '#6D28D9',
+                color: '#FFFFFF',
+                boxShadow: 'none',
+                transition: 'all 0.2s ease',
+                '&:hover': { 
+                  bgcolor: '#5B21B6',
+                  boxShadow: 'none',
+                },
+                '&:active': {
+                  transform: 'translateY(0)',
+                },
               }}
             >
               Confirm Adjustment
@@ -1651,125 +1483,130 @@ const UsersView = ({ triggerToast }) => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
             overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+            maxWidth: 380,
+            width: '100%',
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            pb: 2,
-            pt: 3,
-            px: 3,
-            fontSize: '1.2rem',
-            letterSpacing: '-0.01em',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-          }}
-        >
-          <Box
-            sx={{
-              display: 'inline-flex',
-              p: 1,
-              borderRadius: '10px',
-              bgcolor: 'rgba(139, 92, 246, 0.08)',
-              color: '#8B5CF6',
-            }}
-          >
-            <ShieldIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Update Account Status
-        </DialogTitle>
         <form onSubmit={handleStatusSubmit}>
-          <DialogContent sx={{ p: 3, pt: 3 }}>
-            {selectedUser && (
-              <Box
-                sx={{
-                  mb: 3,
-                  p: 2,
-                  bgcolor: '#F8FAFC',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(226, 232, 240, 0.8)',
+          {/* Header Section */}
+          <Box sx={{ pt: 3.5, px: 3.5, pb: 1.5 }}>
+            <Typography variant="h6" sx={{ fontWeight: 750, fontSize: '1.2rem', color: '#0F172A', letterSpacing: '-0.02em' }}>
+              Update Status
+            </Typography>
+          </Box>
+
+          <DialogContent sx={{ p: 0, px: 3.5, pb: 2 }}>
+            <Box>
+              <Typography 
+                sx={{ 
+                  fontSize: '0.68rem', 
+                  fontWeight: 700, 
+                  color: '#64748B', 
+                  letterSpacing: '0.06em', 
+                  textTransform: 'uppercase',
+                  mb: 1
                 }}
               >
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
-                  CUSTOMER PROFILE
-                </Typography>
-                <Typography variant="subtitle2" color="#0F172A" fontWeight={700}>
-                  {selectedUser.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                  Current Status: <strong>{selectedUser.status}</strong>
-                </Typography>
-              </Box>
-            )}
-
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                NEW ACCOUNT STATUS *
+                Status
               </Typography>
               <Select
                 value={targetStatus}
                 onChange={(e) => setTargetStatus(e.target.value)}
-                size="small"
                 fullWidth
                 sx={{
-                  borderRadius: '12px',
-                  bgcolor: '#F8FAFC',
+                  height: '42px',
+                  borderRadius: '8px',
+                  bgcolor: '#FFFFFF',
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(226, 232, 240, 0.8)',
+                    borderColor: '#E5E7EB',
+                    borderWidth: '1px',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
                     borderColor: '#CBD5E1',
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                     borderColor: '#6D28D9',
+                    borderWidth: '2px',
                   },
+                  '& .MuiSelect-select': {
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    color: '#0F172A',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }
                 }}
               >
-                <MenuItem value="Active">
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10B981' }} />
-                    Active (Unrestricted)
-                  </Box>
+                <MenuItem value="Active" sx={{ py: 1, fontSize: '0.85rem', fontWeight: 500 }}>
+                  Active
                 </MenuItem>
-                <MenuItem value="Suspended">
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#EF4444' }} />
-                    Inactive (Block Login)
-                  </Box>
+                <MenuItem value="Inactive" sx={{ py: 1, fontSize: '0.85rem', fontWeight: 500 }}>
+                  Inactive
                 </MenuItem>
               </Select>
             </Box>
           </DialogContent>
 
-          <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+          <DialogActions 
+            sx={{ 
+              px: 3.5, 
+              pb: 3.5, 
+              pt: 1.5, 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: 1.5
+            }}
+          >
             <Button
               onClick={() => setOpenStatusDialog(false)}
-              color="inherit"
               disabled={statusUpdating}
-              sx={{ textTransform: 'none', fontWeight: 600 }}
+              sx={{ 
+                textTransform: 'none', 
+                fontWeight: 600, 
+                fontSize: '0.82rem', 
+                color: '#64748B', 
+                '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
+                px: 2,
+                py: 0.8,
+                borderRadius: '6px',
+              }}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="contained"
-              color="primary"
               disabled={statusUpdating}
               sx={{
                 textTransform: 'none',
-                fontWeight: 650,
-                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                borderRadius: '6px',
                 px: 2.5,
-                minWidth: 120
+                py: 0.8,
+                bgcolor: '#6D28D9',
+                color: '#FFFFFF',
+                boxShadow: 'none',
+                transition: 'all 0.2s ease',
+                '&:hover': { 
+                  bgcolor: '#5B21B6',
+                  boxShadow: 'none',
+                },
+                '&:active': {
+                  transform: 'translateY(0)',
+                },
+                '&.Mui-disabled': {
+                  bgcolor: '#E2E8F0',
+                  color: '#94A3B8',
+                },
               }}
             >
-              {statusUpdating ? <CircularProgress size={20} color="inherit" /> : 'Save Changes'}
+              {statusUpdating ? <CircularProgress size={16} color="inherit" /> : 'Update Status'}
             </Button>
           </DialogActions>
         </form>
@@ -1779,4 +1616,3 @@ const UsersView = ({ triggerToast }) => {
 };
 
 export default UsersView;
-

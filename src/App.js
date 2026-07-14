@@ -17,6 +17,8 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -88,11 +90,42 @@ function App() {
   // Authentication status state
   const [isAuthenticated, setIsAuthenticated] = useState(authModel.isAuthenticated());
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   // Navigation active tab state
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, _setActiveTab] = useState('dashboard');
+  const setActiveTab = (tab) => {
+    _setActiveTab(tab);
+    setIsMobileSidebarOpen(false);
+  };
 
   // Collapsible sidebar state
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const getSidebarItemSx = (tabName) => {
+    const isSelected = activeTab === tabName;
+    return {
+      borderRadius: '8px',
+      margin: '2px 8px',
+      padding: '8px 12px',
+      color: isSelected ? '#6D28D9' : '#475569',
+      bgcolor: isSelected ? '#F5F3FF !important' : 'transparent',
+      transition: 'all 0.2s ease',
+      '& .MuiListItemIcon-root': {
+        color: isSelected ? '#6D28D9' : '#64748B',
+        minWidth: 32,
+      },
+      '&:hover': {
+        bgcolor: isSelected ? '#EDE9FE !important' : '#F1F5F9',
+        color: isSelected ? '#6D28D9' : '#0F172A',
+        '& .MuiListItemIcon-root': {
+          color: isSelected ? '#6D28D9' : '#0F172A',
+        },
+      },
+    };
+  };
 
   // Admin Profile state
   const [adminProfile, setAdminProfile] = useState(() => {
@@ -290,16 +323,33 @@ function App() {
 
   return (
     <Box sx={{ position: 'relative', minHeight: '100vh', bgcolor: '#F8FAFC', width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {isMobile && isMobileSidebarOpen && (
+        <Box
+          onClick={() => setIsMobileSidebarOpen(false)}
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            bgcolor: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1250,
+          }}
+        />
+      )}
+
       {/* 1. Sidebar Nav */}
       <Box
         className="sidebar-container"
         sx={{
-          width: sidebarWidth,
+          width: isMobile ? 260 : sidebarWidth,
+          transform: isMobile ? (isMobileSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           borderRight: '1px solid rgba(226, 232, 240, 0.8)',
           backgroundColor: '#FFFFFF',
           display: 'flex',
           flexDirection: 'column',
-          zIndex: 1200,
+          zIndex: 1300,
+          boxShadow: isMobile && isMobileSidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
         }}
       >
         {/* Brand Header */}
@@ -310,41 +360,48 @@ function App() {
             boxSizing: 'border-box',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: isCollapsed ? 'center' : 'space-between',
+            justifyContent: (isCollapsed && !isMobile) ? 'center' : 'space-between',
             borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
           }}
         >
-          {!isCollapsed && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 2.5,
-                  background: 'linear-gradient(135deg, #6D28D9 0%, #A855F7 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#FFFFFF',
-                  fontWeight: 800,
-                  fontSize: '1rem',
-                  boxShadow: '0 4px 10px rgba(109, 40, 217, 0.25)',
-                }}
-              >
-                S
+          {(!isCollapsed || isMobile) && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 2.5,
+                    background: 'linear-gradient(135deg, #6D28D9 0%, #A855F7 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '1rem',
+                    boxShadow: '0 4px 10px rgba(109, 40, 217, 0.25)',
+                  }}
+                >
+                  S
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1, color: '#0F172A', letterSpacing: '-0.02em' }}>
+                    Shop2Save
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 600 }}>
+                    PRO ENTERPRISE
+                  </Typography>
+                </Box>
               </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1, color: '#0F172A', letterSpacing: '-0.02em' }}>
-                  Shop2Save
-                </Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 600 }}>
-                  PRO ENTERPRISE
-                </Typography>
-              </Box>
+              {isMobile && (
+                <IconButton size="small" onClick={() => setIsMobileSidebarOpen(false)} sx={{ color: '#64748B' }}>
+                  <MenuOpenIcon fontSize="small" style={{ transform: 'rotate(180deg)' }} />
+                </IconButton>
+              )}
             </Box>
           )}
 
-          {isCollapsed && (
+          {isCollapsed && !isMobile && (
             <Box
               sx={{
                 width: 38,
@@ -369,7 +426,7 @@ function App() {
         <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 2, px: 1 }}>
           {/* Main Category */}
           {!isCollapsed && (
-            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#94A3B8', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
+            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#475569', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
               OVERVIEW
             </Typography>
           )}
@@ -379,8 +436,9 @@ function App() {
                 selected={activeTab === 'dashboard'}
                 onClick={() => setActiveTab('dashboard')}
                 className={activeTab === 'dashboard' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('dashboard')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'dashboard' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <DashboardIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Dashboard" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -391,12 +449,13 @@ function App() {
                 selected={activeTab === 'users'}
                 onClick={() => setActiveTab('users')}
                 className={activeTab === 'users' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('users')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'users' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <UsersIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="User Accounts" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-                {!isCollapsed && <Badge badgeContent="1.2k" color="primary" sx={{ mr: 1, '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16, fontWeight: 700, backgroundColor: 'rgba(109, 40, 217, 0.1)', color: '#6D28D9' } }} />}
+                {!isCollapsed && <Badge badgeContent="1.2k" color="primary" sx={{ mr: 1, '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16, fontWeight: 700, backgroundColor: 'rgba(109, 40, 217, 0.2)', color: '#A855F7' } }} />}
               </ListItemButton>
             </ListItem>
             <ListItem disablePadding>
@@ -404,8 +463,9 @@ function App() {
                 selected={activeTab === 'sub-admins'}
                 onClick={() => setActiveTab('sub-admins')}
                 className={activeTab === 'sub-admins' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('sub-admins')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'sub-admins' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <SubAdminIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Sub-Admins" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -415,7 +475,7 @@ function App() {
 
           {/* Catalog Category */}
           {!isCollapsed && (
-            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#94A3B8', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
+            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#475569', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
               GIFT INVENTORY
             </Typography>
           )}
@@ -425,8 +485,9 @@ function App() {
                 selected={activeTab === 'gift-card-catalog'}
                 onClick={() => setActiveTab('gift-card-catalog')}
                 className={activeTab === 'gift-card-catalog' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('gift-card-catalog')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'gift-card-catalog' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <GiftCardIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Gift Cards" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -437,8 +498,9 @@ function App() {
                 selected={activeTab === 'categories'}
                 onClick={() => setActiveTab('categories')}
                 className={activeTab === 'categories' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('categories')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'categories' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <CategoryIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Categories" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -449,8 +511,9 @@ function App() {
                 selected={activeTab === 'banners'}
                 onClick={() => setActiveTab('banners')}
                 className={activeTab === 'banners' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('banners')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'banners' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <BannersIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Promo Banners" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -461,8 +524,9 @@ function App() {
                 selected={activeTab === 'orders'}
                 onClick={() => setActiveTab('orders')}
                 className={activeTab === 'orders' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('orders')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'orders' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <OrdersIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Redeem Orders" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -474,8 +538,9 @@ function App() {
                 selected={activeTab === 'sell-requests'}
                 onClick={() => setActiveTab('sell-requests')}
                 className={activeTab === 'sell-requests' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('sell-requests')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'sell-requests' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <SellRequestsIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Sell Requests" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -487,8 +552,9 @@ function App() {
                 selected={activeTab === 'woohoo-sync'}
                 onClick={() => setActiveTab('woohoo-sync')}
                 className={activeTab === 'woohoo-sync' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('woohoo-sync')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'woohoo-sync' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <WoohooSyncIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Sync Woohoo" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -498,7 +564,7 @@ function App() {
 
           {/* Cashback Category */}
           {!isCollapsed && (
-            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#94A3B8', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
+            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#475569', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
               OFFERS & FINANCES
             </Typography>
           )}
@@ -508,8 +574,9 @@ function App() {
                 selected={activeTab === 'stores'}
                 onClick={() => setActiveTab('stores')}
                 className={activeTab === 'stores' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('stores')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'stores' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <StoresIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Stores" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -520,8 +587,9 @@ function App() {
                 selected={activeTab === 'cashback-earnings'}
                 onClick={() => setActiveTab('cashback-earnings')}
                 className={activeTab === 'cashback-earnings' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('cashback-earnings')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'cashback-earnings' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <EarningsIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Earnings Ledger" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -532,8 +600,9 @@ function App() {
                 selected={activeTab === 'wallets'}
                 onClick={() => setActiveTab('wallets')}
                 className={activeTab === 'wallets' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('wallets')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'wallets' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <WalletsIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="System Wallets" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -544,8 +613,9 @@ function App() {
                 selected={activeTab === 'coupons'}
                 onClick={() => setActiveTab('coupons')}
                 className={activeTab === 'coupons' ? 'glowing-indicator' : ''}
+                sx={getSidebarItemSx('coupons')}
               >
-                <ListItemIcon sx={{ color: activeTab === 'coupons' ? '#6D28D9' : '#64748B' }}>
+                <ListItemIcon>
                   <CouponsIcon fontSize="small" />
                 </ListItemIcon>
                 {!isCollapsed && <ListItemText primary="Coupons" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
@@ -555,25 +625,28 @@ function App() {
         </Box>
 
         {/* Collapsible toggle */}
-        <Box sx={{ borderTop: '1px solid rgba(226, 232, 240, 0.8)', p: 1, display: 'flex', justifyContent: 'center' }}>
-          <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} sx={{ color: '#64748B', '&:hover': { color: '#6D28D9' } }}>
-            {isCollapsed ? <ChevronRightIcon fontSize="small" /> : <MenuOpenIcon fontSize="small" />}
-          </IconButton>
-        </Box>
+        {!isMobile && (
+          <Box sx={{ borderTop: '1px solid rgba(226, 232, 240, 0.8)', p: 1, display: 'flex', justifyContent: 'center' }}>
+            <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} sx={{ color: '#64748B', '&:hover': { color: '#6D28D9', bgcolor: '#F1F5F9' } }}>
+              {isCollapsed ? <ChevronRightIcon fontSize="small" /> : <MenuOpenIcon fontSize="small" />}
+            </IconButton>
+          </Box>
+        )}
 
       </Box>
 
       {/* 2. Main Content Wrapper */}
       <Box
         sx={{
-          marginLeft: `${sidebarWidth}px`,
-          width: `calc(100% - ${sidebarWidth}px)`,
+          marginLeft: isMobile ? '0px' : `${sidebarWidth}px`,
+          width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`,
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
           bgcolor: '#F8FAFC',
           boxSizing: 'border-box',
           overflow: 'hidden',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {/* Sticky top navbar */}
@@ -594,8 +667,12 @@ function App() {
         >
           {/* Left: Breadcrumbs / Collapsed menu toggler */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {isCollapsed && (
-              <IconButton size="small" onClick={() => setIsCollapsed(false)} sx={{ mr: 1, color: '#64748B' }}>
+            {(isMobile || isCollapsed) && (
+              <IconButton 
+                size="small" 
+                onClick={() => isMobile ? setIsMobileSidebarOpen(true) : setIsCollapsed(false)} 
+                sx={{ mr: 1, color: '#64748B' }}
+              >
                 <MenuIcon fontSize="small" />
               </IconButton>
             )}
@@ -619,11 +696,12 @@ function App() {
                 display: { xs: 'none', md: 'flex' },
                 alignItems: 'center',
                 width: 320,
-                transition: 'all 0.2s',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:focus-within': {
                   bgcolor: '#FFFFFF',
                   borderColor: '#6D28D9',
-                  boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                  boxShadow: '0 4px 16px rgba(109, 40, 217, 0.08)',
+                  width: 360,
                 },
               }}
             >
@@ -758,7 +836,7 @@ function App() {
         </Menu>
 
         {/* 3. Screen Viewport rendering */}
-        <Box sx={{ p: 3, flexGrow: 1, boxSizing: 'border-box', width: '100%' }}>
+        <Box sx={{ p: { xs: 2, md: 3 }, flexGrow: 1, boxSizing: 'border-box', width: '100%' }}>
           {renderContent()}
         </Box>
       </Box>

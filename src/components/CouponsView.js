@@ -82,6 +82,8 @@ const INITIAL_FORM = {
   status: 1,
 };
 
+let lastFetchTime = 0;
+
 const CouponsView = ({ triggerToast }) => {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -129,7 +131,11 @@ const CouponsView = ({ triggerToast }) => {
   };
 
   useEffect(() => {
-    fetchCoupons(page, rowsPerPage);
+    const now = Date.now();
+    if (now - lastFetchTime > 500) {
+      lastFetchTime = now;
+      fetchCoupons(page, rowsPerPage);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage]);
 
@@ -1011,21 +1017,53 @@ const CouponsView = ({ triggerToast }) => {
         onClose={() => !deleting && setDeleteTarget(null)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: '20px' } }}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
+            overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+            maxWidth: 380,
+            width: '100%',
+          },
+        }}
       >
-        <DialogTitle sx={{ fontWeight: 800, pb: 1 }}>Delete Coupon?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Are you sure you want to delete <strong>"{deleteTarget?.offer_name}"</strong>?
-            This action cannot be undone.
+        {/* Header Section */}
+        <Box sx={{ pt: 3.5, px: 3.5, pb: 1.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 750, fontSize: '1.25rem', color: '#EF4444', letterSpacing: '-0.02em' }}>
+            Delete Coupon
+          </Typography>
+        </Box>
+
+        <DialogContent sx={{ p: 0, px: 3.5, pb: 2 }}>
+          <Typography sx={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.5 }}>
+            Are you sure you want to delete coupon <strong>"{deleteTarget?.offer_name}"</strong>?
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+
+        <DialogActions 
+          sx={{ 
+            px: 3.5, 
+            pb: 3.5, 
+            pt: 1.5, 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            gap: 1.5
+          }}
+        >
           <Button
             onClick={() => setDeleteTarget(null)}
-            color="inherit"
             disabled={deleting}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '10px' }}
+            sx={{ 
+              textTransform: 'none', 
+              fontWeight: 600, 
+              fontSize: '0.82rem', 
+              color: '#64748B', 
+              '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
+              px: 2,
+              py: 0.8,
+              borderRadius: '6px',
+            }}
           >
             Cancel
           </Button>
@@ -1033,8 +1071,22 @@ const CouponsView = ({ triggerToast }) => {
             onClick={handleDeleteConfirm}
             variant="contained"
             disabled={deleting}
-            startIcon={deleting ? <CircularProgress size={14} color="inherit" /> : <DeleteIcon />}
-            sx={{ textTransform: 'none', fontWeight: 650, px: 3, borderRadius: '10px', bgcolor: '#EF4444', '&:hover': { bgcolor: '#DC2626' }, boxShadow: 'none' }}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              borderRadius: '6px',
+              px: 2.5,
+              py: 0.8,
+              bgcolor: '#EF4444',
+              color: '#FFFFFF',
+              boxShadow: 'none',
+              transition: 'all 0.2s ease',
+              '&:hover': { 
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
+              },
+            }}
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>

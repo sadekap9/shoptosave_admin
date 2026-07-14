@@ -119,6 +119,8 @@ const availableMenus = [
   'System Wallets',
 ];
 
+let lastFetchTime = 0;
+
 const SubAdminsView = ({ triggerToast }) => {
   const [subAdmins, setSubAdmins] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -157,7 +159,11 @@ const SubAdminsView = ({ triggerToast }) => {
   };
 
   useEffect(() => {
-    fetchSubAdmins();
+    const now = Date.now();
+    if (now - lastFetchTime > 500) {
+      lastFetchTime = now;
+      fetchSubAdmins();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -660,52 +666,45 @@ const SubAdminsView = ({ triggerToast }) => {
       <Dialog
         open={openAddDialog}
         onClose={() => setOpenAddDialog(false)}
-        maxWidth="xs"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
             overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+            maxWidth: 600,
+            width: '100%',
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            pb: 2,
-            pt: 3,
-            px: 3,
-            fontSize: '1.2rem',
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'inline-flex',
-              p: 1,
-              borderRadius: '10px',
-              bgcolor: 'rgba(109, 40, 217, 0.08)',
-              color: '#6D28D9',
-            }}
-          >
-            <SubAdminIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Create Sub-Admin
-        </DialogTitle>
+        {/* Header Section */}
+        <Box sx={{ pt: 4, px: 4, pb: 1.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#0F172A', letterSpacing: '-0.02em' }}>
+            Create Sub-Admin
+          </Typography>
+        </Box>
+
         <form onSubmit={handleAddSubmit}>
-          <DialogContent sx={{ p: 3, pt: 3 }}>
+          <DialogContent sx={{ p: 0, px: 4, pb: 2 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  NAME *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Name
                 </Typography>
                 <TextField
                   fullWidth
-                  placeholder="e.g. Rahul Verma"
+                  placeholder="Rahul Verma"
                   value={subName}
                   onChange={(e) => setSubName(e.target.value)}
                   variant="outlined"
@@ -713,28 +712,52 @@ const SubAdminsView = ({ triggerToast }) => {
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
+                      height: '42px',
+                      borderRadius: '8px',
                       bgcolor: '#F8FAFC',
                       transition: 'all 0.2s',
+                      '& fieldset': {
+                        borderColor: '#E2E8F0',
+                      },
                       '&:hover': {
                         bgcolor: '#F1F5F9',
                       },
+                      '&:hover fieldset': {
+                        borderColor: '#CBD5E1',
+                      },
                       '&.Mui-focused': {
                         bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6D28D9',
+                        borderWidth: '2px',
                       },
                     },
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                 />
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  EMAIL ADDRESS *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Email Address
                 </Typography>
                 <TextField
                   fullWidth
-                  placeholder="e.g. rahul@shop2save.in"
+                  placeholder="abc@gmail.com"
                   type="email"
                   value={subEmail}
                   onChange={(e) => setSubEmail(e.target.value)}
@@ -743,24 +766,48 @@ const SubAdminsView = ({ triggerToast }) => {
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
+                      height: '42px',
+                      borderRadius: '8px',
                       bgcolor: '#F8FAFC',
                       transition: 'all 0.2s',
+                      '& fieldset': {
+                        borderColor: '#E2E8F0',
+                      },
                       '&:hover': {
                         bgcolor: '#F1F5F9',
                       },
+                      '&:hover fieldset': {
+                        borderColor: '#CBD5E1',
+                      },
                       '&.Mui-focused': {
                         bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6D28D9',
+                        borderWidth: '2px',
                       },
                     },
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                 />
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  PHONE NUMBER *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Phone Number
                 </Typography>
                 <TextField
                   fullWidth
@@ -772,24 +819,48 @@ const SubAdminsView = ({ triggerToast }) => {
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
+                      height: '42px',
+                      borderRadius: '8px',
                       bgcolor: '#F8FAFC',
                       transition: 'all 0.2s',
+                      '& fieldset': {
+                        borderColor: '#E2E8F0',
+                      },
                       '&:hover': {
                         bgcolor: '#F1F5F9',
                       },
+                      '&:hover fieldset': {
+                        borderColor: '#CBD5E1',
+                      },
                       '&.Mui-focused': {
                         bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6D28D9',
+                        borderWidth: '2px',
                       },
                     },
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                 />
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  ACCESS PASSWORD *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Password
                 </Typography>
                 <TextField
                   fullWidth
@@ -802,17 +873,32 @@ const SubAdminsView = ({ triggerToast }) => {
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
+                      height: '42px',
+                      borderRadius: '8px',
                       bgcolor: '#F8FAFC',
                       transition: 'all 0.2s',
+                      '& fieldset': {
+                        borderColor: '#E2E8F0',
+                      },
                       '&:hover': {
                         bgcolor: '#F1F5F9',
                       },
+                      '&:hover fieldset': {
+                        borderColor: '#CBD5E1',
+                      },
                       '&.Mui-focused': {
                         bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6D28D9',
+                        borderWidth: '2px',
                       },
                     },
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                   InputProps={{
                     endAdornment: (
@@ -832,46 +918,84 @@ const SubAdminsView = ({ triggerToast }) => {
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  MENU ACCESS PERMISSIONS
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1.2
+                  }}
+                >
+                  Menu Access
                 </Typography>
-                <Box sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '12px', p: 2, bgcolor: '#F8FAFC' }}>
-                  <Grid container spacing={1}>
-                    {availableMenus.map((menu) => {
-                      const isChecked = subMenuAccess.includes(menu);
-                      return (
-                        <Grid item xs={6} key={menu}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSubMenuAccess([...subMenuAccess, menu]);
-                                  } else {
-                                    setSubMenuAccess(subMenuAccess.filter((m) => m !== menu));
-                                  }
-                                }}
-                                color="primary"
-                                size="small"
-                              />
+                <Grid container spacing={1.2}>
+                  {availableMenus.map((menu) => {
+                    const isChecked = subMenuAccess.includes(menu);
+                    return (
+                      <Grid item xs={6} sm={4} key={menu}>
+                        <Box
+                          onClick={() => {
+                            if (isChecked) {
+                              setSubMenuAccess(subMenuAccess.filter((m) => m !== menu));
+                            } else {
+                              setSubMenuAccess([...subMenuAccess, menu]);
                             }
-                            label={
-                              <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 550, color: '#475569' }}>
-                                {menu}
-                              </Typography>
+                          }}
+                          sx={{
+                            p: '10px 14px',
+                            borderRadius: '8px',
+                            border: '1px solid',
+                            borderColor: isChecked ? '#6D28D9' : '#E2E8F0',
+                            bgcolor: isChecked ? 'rgba(109, 40, 217, 0.04)' : '#F8FAFC',
+                            color: isChecked ? '#6D28D9' : '#475569',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.2,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            userSelect: 'none',
+                            '&:hover': {
+                              borderColor: '#6D28D9',
+                              bgcolor: isChecked ? 'rgba(109, 40, 217, 0.08)' : '#F1F5F9',
                             }
+                          }}
+                        >
+                          <Checkbox
+                            checked={isChecked}
+                            size="small"
+                            disableRipple
+                            sx={{
+                              p: 0,
+                              color: '#CBD5E1',
+                              '&.Mui-checked': {
+                                color: '#6D28D9',
+                              },
+                            }}
                           />
-                        </Grid>
-                      );
-                    })}
-                  </Grid>
-                </Box>
+                          <Typography sx={{ fontSize: '0.76rem', fontWeight: 600 }}>
+                            {menu}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  VISIBILITY STATUS *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Status *
                 </Typography>
                 <Select
                   value={subStatus}
@@ -879,42 +1003,84 @@ const SubAdminsView = ({ triggerToast }) => {
                   size="small"
                   fullWidth
                   sx={{
-                    borderRadius: '12px',
+                    height: '42px',
+                    borderRadius: '8px',
                     bgcolor: '#F8FAFC',
+                    transition: 'all 0.2s',
                     '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
+                      borderColor: '#E2E8F0',
+                      borderWidth: '1px',
+                    },
+                    '&:hover': {
+                      bgcolor: '#F1F5F9',
                     },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#CBD5E1',
                     },
+                    '&.Mui-focused': {
+                      bgcolor: '#FFFFFF',
+                    },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#6D28D9',
+                      borderWidth: '2px',
                     },
+                    '& .MuiSelect-select': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                 >
-                  <MenuItem value="Active">Active (Permitted)</MenuItem>
-                  <MenuItem value="Inactive">Inactive (Suspended)</MenuItem>
+                  <MenuItem value="Active">Active</MenuItem>
+                  <MenuItem value="Inactive">Inactive</MenuItem>
                 </Select>
               </Box>
             </Box>
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+          
+          <DialogActions 
+            sx={{ 
+              px: 4, 
+              pb: 4, 
+              pt: 2, 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: 1.5
+            }}
+          >
             <Button
               onClick={() => setOpenAddDialog(false)}
-              color="inherit"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
+              sx={{ 
+                textTransform: 'none', 
+                fontWeight: 600, 
+                fontSize: '0.82rem', 
+                color: '#64748B', 
+                '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
+                px: 2.2,
+                py: 0.8,
+                borderRadius: '6px',
+              }}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="contained"
-              color="primary"
               sx={{
                 textTransform: 'none',
-                fontWeight: 650,
-                borderRadius: '10px',
-                px: 2.5,
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                borderRadius: '6px',
+                px: 3,
+                py: 0.8,
+                bgcolor: '#6D28D9',
+                color: '#FFFFFF',
+                boxShadow: 'none',
+                transition: 'all 0.2s ease',
+                '&:hover': { 
+                  bgcolor: '#5B21B6',
+                  boxShadow: 'none',
+                },
               }}
             >
               Register Account
@@ -927,74 +1093,76 @@ const SubAdminsView = ({ triggerToast }) => {
       <Dialog
         open={openEditDialog}
         onClose={() => setOpenEditDialog(false)}
-        maxWidth="xs"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
             overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+            maxWidth: 600,
+            width: '100%',
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            pb: 2,
-            pt: 3,
-            px: 3,
-            fontSize: '1.2rem',
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'inline-flex',
-              p: 1,
-              borderRadius: '10px',
-              bgcolor: 'rgba(139, 92, 246, 0.08)',
-              color: '#8B5CF6',
-            }}
-          >
-            <EditIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Modify Sub-Admin Account
-        </DialogTitle>
+        {/* Header Section */}
+        <Box sx={{ pt: 4, px: 4, pb: 1.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#0F172A', letterSpacing: '-0.02em' }}>
+            Modify Sub-Admin Account
+          </Typography>
+        </Box>
+
         <form onSubmit={handleEditSubmit}>
-          <DialogContent sx={{ p: 3, pt: 3 }}>
+          <DialogContent sx={{ p: 0, px: 4, pb: 2 }}>
             {selectedSub && (
               <Box
                 sx={{
-                  mb: 3,
-                  p: 2,
+                  mb: 2.5,
+                  p: 2.2,
                   bgcolor: '#F8FAFC',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(226, 232, 240, 0.8)',
+                  borderRadius: '10px',
+                  border: '1px solid #E2E8F0',
                 }}
               >
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
-                  ACCOUNT IDENTIFIER
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 0.8
+                  }}
+                >
+                  Account Identifier
                 </Typography>
-                <Typography variant="subtitle2" color="#0F172A" fontWeight={750}>
+                <Typography sx={{ fontSize: '0.88rem', fontWeight: 700, color: '#0F172A', mb: 0.5 }}>
                   ID: {selectedSub.id}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                  Registered on: <strong>{selectedSub.created}</strong>
+                <Typography sx={{ fontSize: '0.78rem', color: '#64748B' }}>
+                  Registered on: <strong style={{ color: '#475569', fontWeight: 600 }}>{selectedSub.created}</strong>
                 </Typography>
               </Box>
             )}
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  NAME *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Name
                 </Typography>
                 <TextField
                   fullWidth
-                  placeholder="e.g. Rahul Verma"
+                  placeholder="Rahul Verma"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   variant="outlined"
@@ -1002,28 +1170,52 @@ const SubAdminsView = ({ triggerToast }) => {
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
+                      height: '42px',
+                      borderRadius: '8px',
                       bgcolor: '#F8FAFC',
                       transition: 'all 0.2s',
+                      '& fieldset': {
+                        borderColor: '#E2E8F0',
+                      },
                       '&:hover': {
                         bgcolor: '#F1F5F9',
                       },
+                      '&:hover fieldset': {
+                        borderColor: '#CBD5E1',
+                      },
                       '&.Mui-focused': {
                         bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6D28D9',
+                        borderWidth: '2px',
                       },
                     },
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                 />
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  EMAIL ADDRESS *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Email Address
                 </Typography>
                 <TextField
                   fullWidth
-                  placeholder="e.g. rahul@shop2save.in"
+                  placeholder="abc@gmail.com"
                   type="email"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
@@ -1032,24 +1224,48 @@ const SubAdminsView = ({ triggerToast }) => {
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
+                      height: '42px',
+                      borderRadius: '8px',
                       bgcolor: '#F8FAFC',
                       transition: 'all 0.2s',
+                      '& fieldset': {
+                        borderColor: '#E2E8F0',
+                      },
                       '&:hover': {
                         bgcolor: '#F1F5F9',
                       },
+                      '&:hover fieldset': {
+                        borderColor: '#CBD5E1',
+                      },
                       '&.Mui-focused': {
                         bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6D28D9',
+                        borderWidth: '2px',
                       },
                     },
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                 />
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  PHONE NUMBER *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Phone Number 
                 </Typography>
                 <TextField
                   fullWidth
@@ -1061,46 +1277,85 @@ const SubAdminsView = ({ triggerToast }) => {
                   required
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
+                      height: '42px',
+                      borderRadius: '8px',
                       bgcolor: '#F8FAFC',
                       transition: 'all 0.2s',
+                      '& fieldset': {
+                        borderColor: '#E2E8F0',
+                      },
                       '&:hover': {
                         bgcolor: '#F1F5F9',
                       },
+                      '&:hover fieldset': {
+                        borderColor: '#CBD5E1',
+                      },
                       '&.Mui-focused': {
                         bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6D28D9',
+                        borderWidth: '2px',
                       },
                     },
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                 />
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  RESET PASSWORD (OPTIONAL)
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Reset Password
                 </Typography>
                 <TextField
                   fullWidth
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Leave blank to keep current password"
+                  placeholder="optional"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
                   variant="outlined"
                   size="small"
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
+                      height: '42px',
+                      borderRadius: '8px',
                       bgcolor: '#F8FAFC',
                       transition: 'all 0.2s',
+                      '& fieldset': {
+                        borderColor: '#E2E8F0',
+                      },
                       '&:hover': {
                         bgcolor: '#F1F5F9',
                       },
+                      '&:hover fieldset': {
+                        borderColor: '#CBD5E1',
+                      },
                       '&.Mui-focused': {
                         bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#6D28D9',
+                        borderWidth: '2px',
                       },
                     },
+                    '& .MuiOutlinedInput-input': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                   InputProps={{
                     endAdornment: (
@@ -1120,46 +1375,84 @@ const SubAdminsView = ({ triggerToast }) => {
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  MENU ACCESS PERMISSIONS
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1.2
+                  }}
+                >
+                  Menu Access
                 </Typography>
-                <Box sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '12px', p: 2, bgcolor: '#F8FAFC' }}>
-                  <Grid container spacing={1}>
-                    {availableMenus.map((menu) => {
-                      const isChecked = editMenuAccess.includes(menu);
-                      return (
-                        <Grid item xs={6} key={menu}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={isChecked}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setEditMenuAccess([...editMenuAccess, menu]);
-                                  } else {
-                                    setEditMenuAccess(editMenuAccess.filter((m) => m !== menu));
-                                  }
-                                }}
-                                color="primary"
-                                size="small"
-                              />
+                <Grid container spacing={1.2}>
+                  {availableMenus.map((menu) => {
+                    const isChecked = editMenuAccess.includes(menu);
+                    return (
+                      <Grid item xs={6} sm={4} key={menu}>
+                        <Box
+                          onClick={() => {
+                            if (isChecked) {
+                              setEditMenuAccess(editMenuAccess.filter((m) => m !== menu));
+                            } else {
+                              setEditMenuAccess([...editMenuAccess, menu]);
                             }
-                            label={
-                              <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 550, color: '#475569' }}>
-                                {menu}
-                              </Typography>
+                          }}
+                          sx={{
+                            p: '10px 14px',
+                            borderRadius: '8px',
+                            border: '1px solid',
+                            borderColor: isChecked ? '#6D28D9' : '#E2E8F0',
+                            bgcolor: isChecked ? 'rgba(109, 40, 217, 0.04)' : '#F8FAFC',
+                            color: isChecked ? '#6D28D9' : '#475569',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.2,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            userSelect: 'none',
+                            '&:hover': {
+                              borderColor: '#6D28D9',
+                              bgcolor: isChecked ? 'rgba(109, 40, 217, 0.08)' : '#F1F5F9',
                             }
+                          }}
+                        >
+                          <Checkbox
+                            checked={isChecked}
+                            size="small"
+                            disableRipple
+                            sx={{
+                              p: 0,
+                              color: '#CBD5E1',
+                              '&.Mui-checked': {
+                                color: '#6D28D9',
+                              },
+                            }}
                           />
-                        </Grid>
-                      );
-                    })}
-                  </Grid>
-                </Box>
+                          <Typography sx={{ fontSize: '0.76rem', fontWeight: 600 }}>
+                            {menu}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
               </Box>
 
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  VISIBILITY STATUS *
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.68rem', 
+                    fontWeight: 700, 
+                    color: '#64748B', 
+                    letterSpacing: '0.06em', 
+                    textTransform: 'uppercase',
+                    mb: 1
+                  }}
+                >
+                  Status
                 </Typography>
                 <Select
                   value={editStatus}
@@ -1167,42 +1460,84 @@ const SubAdminsView = ({ triggerToast }) => {
                   size="small"
                   fullWidth
                   sx={{
-                    borderRadius: '12px',
+                    height: '42px',
+                    borderRadius: '8px',
                     bgcolor: '#F8FAFC',
+                    transition: 'all 0.2s',
                     '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
+                      borderColor: '#E2E8F0',
+                      borderWidth: '1px',
+                    },
+                    '&:hover': {
+                      bgcolor: '#F1F5F9',
                     },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#CBD5E1',
                     },
+                    '&.Mui-focused': {
+                      bgcolor: '#FFFFFF',
+                    },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#6D28D9',
+                      borderWidth: '2px',
                     },
+                    '& .MuiSelect-select': {
+                      fontSize: '0.85rem',
+                      fontWeight: 550,
+                      color: '#0F172A',
+                    }
                   }}
                 >
-                  <MenuItem value="Active">Active (Permitted)</MenuItem>
-                  <MenuItem value="Inactive">Inactive (Suspended)</MenuItem>
+                  <MenuItem value="Active">Active </MenuItem>
+                  <MenuItem value="Inactive">Inactive </MenuItem>
                 </Select>
               </Box>
             </Box>
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+          
+          <DialogActions 
+            sx={{ 
+              px: 4, 
+              pb: 4, 
+              pt: 2, 
+              display: 'flex', 
+              justifyContent: 'flex-end', 
+              gap: 1.5
+            }}
+          >
             <Button
               onClick={() => setOpenEditDialog(false)}
-              color="inherit"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
+              sx={{ 
+                textTransform: 'none', 
+                fontWeight: 600, 
+                fontSize: '0.82rem', 
+                color: '#64748B', 
+                '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
+                px: 2.2,
+                py: 0.8,
+                borderRadius: '6px',
+              }}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="contained"
-              color="primary"
               sx={{
                 textTransform: 'none',
-                fontWeight: 650,
-                borderRadius: '10px',
-                px: 2.5,
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                borderRadius: '6px',
+                px: 3,
+                py: 0.8,
+                bgcolor: '#6D28D9',
+                color: '#FFFFFF',
+                boxShadow: 'none',
+                transition: 'all 0.2s ease',
+                '&:hover': { 
+                  bgcolor: '#5B21B6',
+                  boxShadow: 'none',
+                },
               }}
             >
               Save Details
@@ -1219,66 +1554,74 @@ const SubAdminsView = ({ triggerToast }) => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
             overflow: 'hidden',
+            bgcolor: '#FFFFFF',
+            maxWidth: 380,
+            width: '100%',
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            pb: 2,
-            pt: 3,
-            px: 3,
-            fontSize: '1.2rem',
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'inline-flex',
-              p: 1,
-              borderRadius: '10px',
-              bgcolor: 'rgba(239, 68, 68, 0.08)',
-              color: '#EF4444',
-            }}
-          >
-            <DeleteIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Remove Credentials
-        </DialogTitle>
-        <DialogContent sx={{ p: 3, pt: 3 }}>
-          <Typography variant="body2" color="text.primary" sx={{ mb: 2 }}>
-            Are you sure you want to revoke sub-admin credentials for <strong>"{selectedSub?.name}"</strong>?
+        {/* Header Section */}
+        <Box sx={{ pt: 3.5, px: 3.5, pb: 1.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 750, fontSize: '1.25rem', color: '#EF4444', letterSpacing: '-0.02em' }}>
+            Delete SubAdmin
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Revoking credentials will block their dashboard session immediately. They will not be able to log in to perform administrative tasks.
+        </Box>
+
+        <DialogContent sx={{ p: 0, px: 3.5, pb: 2 }}>
+          <Typography sx={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.5 }}>
+            Are you sure you want to Delete SubAdmin?
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+
+        <DialogActions 
+          sx={{ 
+            px: 3.5, 
+            pb: 3.5, 
+            pt: 1.5, 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            gap: 1.5
+          }}
+        >
           <Button
             onClick={() => setOpenDeleteDialog(false)}
-            color="inherit"
-            sx={{ textTransform: 'none', fontWeight: 600 }}
+            sx={{ 
+              textTransform: 'none', 
+              fontWeight: 600, 
+              fontSize: '0.82rem', 
+              color: '#64748B', 
+              '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
+              px: 2,
+              py: 0.8,
+              borderRadius: '6px',
+            }}
           >
             Cancel
           </Button>
           <Button
             onClick={handleDeleteConfirm}
             variant="contained"
-            color="error"
             sx={{
               textTransform: 'none',
-              fontWeight: 650,
-              borderRadius: '10px',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              borderRadius: '6px',
               px: 2.5,
+              py: 0.8,
+              bgcolor: '#EF4444',
+              color: '#FFFFFF',
+              boxShadow: 'none',
+              transition: 'all 0.2s ease',
+              '&:hover': { 
+                bgcolor: '#DC2626',
+                boxShadow: 'none',
+              },
             }}
           >
-            Revoke Access
+            Delete SubAdmin
           </Button>
         </DialogActions>
       </Dialog>

@@ -142,6 +142,54 @@ code {
   animation: pulse-violet 2s infinite;
 }
 
+@keyframes pulse-green-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.pulse-dot-green {
+  animation: pulse-green-glow 2s infinite;
+}
+
+@keyframes pulse-orange-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+.pulse-dot-orange {
+  animation: pulse-orange-glow 2s infinite;
+}
+
+@keyframes pulse-red-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.pulse-dot-red {
+  animation: pulse-red-glow 2s infinite;
+}
+
 /* Layout Utilities */
 .sidebar-container {
   background-color: #FFFFFF;

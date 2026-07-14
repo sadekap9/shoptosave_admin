@@ -40,24 +40,37 @@ import {
 // ─── Status Chip ────────────────────────────────────────────────────────────
 const StatusChip = ({ status }) => {
   const map = {
-    Complete:   { bg: '#ECFDF5', color: '#059669', label: 'Complete' },
-    Processing: { bg: '#FEF3C7', color: '#D97706', label: 'Processing' },
-    Failed:     { bg: '#FEF2F2', color: '#DC2626', label: 'Failed' },
-    Live:       { bg: '#ECFDF5', color: '#059669', label: 'Live' },
-    Paused:     { bg: '#FEF3C7', color: '#D97706', label: 'Paused' },
-    Active:     { bg: '#ECFDF5', color: '#059669', label: 'Active' },
-    Pending:    { bg: '#F5F3FF', color: '#7C3AED', label: 'Pending' },
-    Unverified: { bg: '#FFF7ED', color: '#C2410C', label: 'Unverified' },
-    Blocked:    { bg: '#FEF2F2', color: '#DC2626', label: 'Blocked' },
-    Paid:       { bg: '#ECFDF5', color: '#059669', label: 'Paid' },
+    Complete:   { bg: '#ECFDF5', color: '#059669', label: 'Complete', pulseClass: 'pulse-dot-green' },
+    Processing: { bg: '#FEF3C7', color: '#D97706', label: 'Processing', pulseClass: 'pulse-dot-orange' },
+    Failed:     { bg: '#FEF2F2', color: '#DC2626', label: 'Failed', pulseClass: 'pulse-dot-red' },
+    Live:       { bg: '#ECFDF5', color: '#059669', label: 'Live', pulseClass: 'pulse-dot-green' },
+    Paused:     { bg: '#FEF3C7', color: '#D97706', label: 'Paused', pulseClass: 'pulse-dot-orange' },
+    Active:     { bg: '#ECFDF5', color: '#059669', label: 'Active', pulseClass: 'pulse-dot-green' },
+    Pending:    { bg: '#F5F3FF', color: '#7C3AED', label: 'Pending', pulseClass: 'pulse-dot-orange' },
+    Unverified: { bg: '#FFF7ED', color: '#C2410C', label: 'Unverified', pulseClass: 'pulse-dot-orange' },
+    Blocked:    { bg: '#FEF2F2', color: '#DC2626', label: 'Blocked', pulseClass: 'pulse-dot-red' },
+    Paid:       { bg: '#ECFDF5', color: '#059669', label: 'Paid', pulseClass: 'pulse-dot-green' },
   };
-  const cfg = map[status] || { bg: '#F1F5F9', color: '#475569', label: status };
+  const cfg = map[status] || { bg: '#F1F5F9', color: '#475569', label: status, pulseClass: '' };
   return (
     <Box component="span" sx={{
       display: 'inline-flex', alignItems: 'center', px: 1.5, py: 0.4,
-      borderRadius: '6px', bgcolor: cfg.bg, color: cfg.color,
-      fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.01em',
+      borderRadius: '20px', bgcolor: cfg.bg, color: cfg.color,
+      fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.01em',
+      gap: 0.8,
+      border: `1px solid ${cfg.color}18`,
     }}>
+      {cfg.pulseClass && (
+        <Box 
+          className={cfg.pulseClass}
+          sx={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            bgcolor: cfg.color,
+          }}
+        />
+      )}
       {cfg.label}
     </Box>
   );
@@ -71,11 +84,13 @@ const QuickActionCard = ({ icon, label, desc, color, onClick }) => (
       display: 'flex', flexDirection: 'column', gap: 1,
       p: 2.5, borderRadius: '14px', border: '1px solid #E2E8F0',
       bgcolor: '#FFFFFF', cursor: 'pointer',
-      transition: 'all 0.2s ease',
+      position: 'relative',
+      overflow: 'hidden',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       '&:hover': {
         borderColor: color,
-        boxShadow: `0 4px 20px 0 ${color}22`,
-        transform: 'translateY(-2px)',
+        boxShadow: `0 12px 24px -8px ${color}20`,
+        transform: 'translateY(-4px)',
       },
     }}
   >
@@ -105,8 +120,26 @@ const KpiCard = ({ icon, label, value, badge, badgeColor, sub, iconColor }) => (
   <Box sx={{
     bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px',
     p: '24px', display: 'flex', flexDirection: 'column', gap: 2,
-    transition: 'all 0.2s ease',
-    '&:hover': { borderColor: iconColor, boxShadow: `0 4px 24px 0 ${iconColor}18`, transform: 'translateY(-2px)' },
+    position: 'relative',
+    overflow: 'hidden',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0, left: 0, right: 0,
+      height: '4px',
+      bgcolor: iconColor,
+      opacity: 0,
+      transition: 'opacity 0.3s ease',
+    },
+    '&:hover': { 
+      borderColor: iconColor, 
+      boxShadow: `0 12px 30px -10px ${iconColor}25, 0 4px 12px -5px ${iconColor}15`, 
+      transform: 'translateY(-4px)',
+      '&::before': {
+        opacity: 1,
+      }
+    },
   }}>
     <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
       <Box>
@@ -257,7 +290,11 @@ const DashboardView = ({
       {/* ── KPI ROW  (4 × 3 cols = 12) ──────────────────────────── */}
       <Box sx={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+        gridTemplateColumns: {
+          xs: 'repeat(1, minmax(0, 1fr))',
+          sm: 'repeat(2, minmax(0, 1fr))',
+          md: 'repeat(4, minmax(0, 1fr))'
+        },
         gap: '24px',
         mb: 4,
       }}>
@@ -306,7 +343,11 @@ const DashboardView = ({
         </Typography>
         <Box sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gridTemplateColumns: {
+            xs: 'repeat(1, minmax(0, 1fr))',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            md: 'repeat(4, minmax(0, 1fr))'
+          },
           gap: '16px',
         }}>
           {quickActions.map((a, i) => (
@@ -325,7 +366,10 @@ const DashboardView = ({
       {/* ── TABLES ROW  (65% + 35%) ───────────────────────────────── */}
       <Box sx={{
         display: 'grid',
-        gridTemplateColumns: '65fr 35fr',
+        gridTemplateColumns: {
+          xs: 'repeat(1, minmax(0, 1fr))',
+          md: '65fr 35fr'
+        },
         gap: '24px',
         mb: 4,
         alignItems: 'start',
@@ -401,8 +445,9 @@ const DashboardView = ({
             py: 1.8,
             bgcolor: '#F8FAFC',
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
-            gap: 4,
+            gap: { xs: 2.5, sm: 4 },
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{
@@ -422,7 +467,7 @@ const DashboardView = ({
               </Box>
             </Box>
 
-            <Divider orientation="vertical" flexItem sx={{ borderColor: '#E2E8F0', my: 0.5 }} />
+            <Divider orientation="vertical" flexItem sx={{ borderColor: '#E2E8F0', my: 0.5, display: { xs: 'none', sm: 'block' } }} />
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{
@@ -442,7 +487,7 @@ const DashboardView = ({
               </Box>
             </Box>
 
-            <Divider orientation="vertical" flexItem sx={{ borderColor: '#E2E8F0', my: 0.5 }} />
+            <Divider orientation="vertical" flexItem sx={{ borderColor: '#E2E8F0', my: 0.5, display: { xs: 'none', sm: 'block' } }} />
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{

@@ -78,6 +78,8 @@ const initialCards = [
   { id: 8, brand: 'Ajio', category: 'Lifestyle', allowBuy: true, allowSell: true, buyDiscount: '7.0%', sellPayout: '86.0%', status: 'Disabled', stock: 0, bg: 'linear-gradient(135deg, #2d3e50 0%, #1e293b 100%)' },
 ];
 
+let lastFetchTime = 0;
+
 const GiftCardCatalogView = ({ triggerToast }) => {
   const [catalog, setCatalog] = useState(initialCards);
   const [categories, setCategories] = useState([]);
@@ -123,7 +125,9 @@ const GiftCardCatalogView = ({ triggerToast }) => {
 
       const response = await storeService.getGiftCards();
       if (response && response.success && response.result && response.result.data) {
-        const fetchedCards = response.result.data.giftCards || [];
+        const fetchedCards = Array.isArray(response.result.data)
+          ? response.result.data
+          : (response.result.data.giftCards || []);
         const mappedCards = fetchedCards.map((card) => {
           const catNames = (card.categories || []).map(catId => {
             const matchedCat = categoriesList.find(c => String(c.id) === String(catId));
@@ -160,7 +164,11 @@ const GiftCardCatalogView = ({ triggerToast }) => {
   };
 
   useEffect(() => {
-    fetchData();
+    const now = Date.now();
+    if (now - lastFetchTime > 500) {
+      lastFetchTime = now;
+      fetchData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
