@@ -530,21 +530,47 @@ const CouponsView = ({ triggerToast }) => {
                           )}
                         </TableCell>
                         <TableCell align="center">
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                            <Switch checked={isActive} onChange={() => handleToggleStatus(coupon)} color="primary" size="small" />
-                            <Chip
-                              label={isActive ? 'Active' : 'Inactive'}
-                              size="small"
+                          <Button
+                            onClick={() => handleToggleStatus(coupon)}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderRadius: '24px',
+                              textTransform: 'none',
+                              fontWeight: 750,
+                              fontSize: '0.72rem',
+                              px: 1.8,
+                              py: 0.4,
+                              minWidth: '95px',
+                              color: isActive ? '#10B981' : '#EF4444',
+                              bgcolor: isActive ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                              borderColor: isActive ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                              transition: 'all 0.15s ease-in-out',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 0.8,
+                              '&:hover': {
+                                bgcolor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                borderColor: isActive ? '#10B981' : '#EF4444',
+                                transform: 'translateY(-1px)',
+                              },
+                              '&:active': {
+                                transform: 'translateY(0)',
+                              }
+                            }}
+                          >
+                            <Box
                               sx={{
-                                bgcolor: isActive ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                                color: isActive ? '#10B981' : '#EF4444',
-                                fontWeight: 700,
-                                fontSize: '0.7rem',
-                                borderRadius: '6px',
-                                border: isActive ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(239,68,68,0.15)',
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                bgcolor: isActive ? '#10B981' : '#EF4444',
+                                display: 'inline-block',
                               }}
                             />
-                          </Box>
+                            {isActive ? 'Active' : 'Inactive'}
+                          </Button>
                         </TableCell>
                         <TableCell align="center">
                           <Tooltip title="Delete coupon">

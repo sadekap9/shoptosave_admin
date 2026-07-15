@@ -11,10 +11,9 @@ export const storeService = {
   /**
    * Register a new store (multipart/form-data)
    */
-  async addStore(name, categoryId, logoFile) {
+  async addStore(name, logoFile) {
     const formData = new FormData();
     formData.append('store_name', name);
-    formData.append('category_id', categoryId);
     if (logoFile) {
       formData.append('logo', logoFile);
     }
@@ -24,10 +23,9 @@ export const storeService = {
   /**
    * Update store details (multipart/form-data)
    */
-  async updateStore(id, name, categoryId, logoFile, status) {
+  async updateStore(id, name, logoFile, status) {
     const formData = new FormData();
     formData.append('store_name', name);
-    formData.append('category_id', categoryId);
     formData.append('status', status === 'Active' ? 1 : 0);
     if (logoFile) {
       formData.append('logo', logoFile);
@@ -38,11 +36,12 @@ export const storeService = {
   /**
    * Add a voucher/gift card mapping to a store
    */
-  async addVoucher(storeId, sku, featured) {
+  async addVoucher(storeId, sku, featured, categoryId) {
     return apiClient.post('/gift-cards/add', {
       store_id: Number(storeId),
       sku: sku.trim(),
-      featured: Number(featured)
+      featured: Number(featured),
+      category_id: Number(categoryId)
     });
   },
 

@@ -141,7 +141,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
             return matchedCat ? matchedCat.category_name : null;
           }).filter(Boolean);
 
-          const mainCategory = catNames.length > 0 ? catNames[0] : 'General';
+          const mainCategory = card.category_name || (catNames.length > 0 ? catNames[0] : 'General');
 
           return {
             id: card.id,
@@ -359,10 +359,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                     <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pl: 3 }}>GIFT CARD BRAND</TableCell>
                     <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>CATEGORY</TableCell>
                     {activeTab === 0 ? (
-                      <>
-                        <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>MAX CASHBACK OFFER</TableCell>
-                        <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STOCK LEVEL</TableCell>
-                      </>
+                      <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>MAX CASHBACK OFFER</TableCell>
                     ) : (
                       <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>PLATFORM PAYOUT RATE</TableCell>
                     )}
@@ -420,42 +417,56 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                           />
                         </TableCell>
                         {activeTab === 0 ? (
-                          <>
-                            <TableCell sx={{ fontWeight: 700, color: '#6D28D9' }}>
-                              {card.buyDiscount} OFF
-                            </TableCell>
-                            <TableCell>
-                              <Typography variant="body2" fontWeight={650} color={card.stock > 20 ? 'success.main' : card.stock > 0 ? 'warning.main' : 'error.main'}>
-                                {card.stock} units
-                              </Typography>
-                            </TableCell>
-                          </>
+                          <TableCell sx={{ fontWeight: 700, color: '#6D28D9' }}>
+                            {card.buyDiscount} OFF
+                          </TableCell>
                         ) : (
                           <TableCell sx={{ fontWeight: 800, color: '#10B981' }}>
                             {card.sellPayout} Payout
                           </TableCell>
                         )}
                         <TableCell align="center">
-                          <Box sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                            <Switch
-                              size="small"
-                              checked={isLive}
-                              onChange={() => handleToggleStatus(card.id, card.status)}
-                              color="primary"
-                            />
-                            <Chip
-                              label={isLive ? 'Active' : 'Inactive'}
-                              size="small"
+                          <Button
+                            onClick={() => handleToggleStatus(card.id, card.status)}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderRadius: '24px',
+                              textTransform: 'none',
+                              fontWeight: 750,
+                              fontSize: '0.72rem',
+                              px: 1.8,
+                              py: 0.4,
+                              minWidth: '95px',
+                              color: isLive ? '#10B981' : '#EF4444',
+                              bgcolor: isLive ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                              borderColor: isLive ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                              transition: 'all 0.15s ease-in-out',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 0.8,
+                              '&:hover': {
+                                bgcolor: isLive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                borderColor: isLive ? '#10B981' : '#EF4444',
+                                transform: 'translateY(-1px)',
+                              },
+                              '&:active': {
+                                transform: 'translateY(0)',
+                              }
+                            }}
+                          >
+                            <Box
                               sx={{
-                                bgcolor: isLive ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                                color: isLive ? '#10B981' : '#EF4444',
-                                fontWeight: 700,
-                                fontSize: '0.7rem',
-                                borderRadius: '6px',
-                                border: isLive ? '1px solid rgba(16,185,129,0.15)' : '1px solid rgba(239,68,68,0.15)',
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                bgcolor: isLive ? '#10B981' : '#EF4444',
+                                display: 'inline-block',
                               }}
                             />
-                          </Box>
+                            {isLive ? 'Active' : 'Inactive'}
+                          </Button>
                         </TableCell>
                         <TableCell align="center" sx={{ pr: 3 }}>
                           <Button

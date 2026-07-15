@@ -74,24 +74,14 @@ const getLogoUrl = (logoPath) => {
 };
 
 
-const availableCategories = [
-  'Electronics & Mobiles',
-  'Fashion & Apparel',
-  'Food & Dining',
-  'Travel & Flights',
-  'Beauty & Wellness',
-  'Home Decor & Furniture',
-  'Entertainment & Gaming',
-];
+
 
 let lastFetchTime = 0;
 
 const StoresView = ({ triggerToast }) => {
   const [stores, setStores] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
-  const [storeCategoryId, setStoreCategoryId] = useState('');
   const [storeLogo, setStoreLogo] = useState(null);
-  const [editCategoryId, setEditCategoryId] = useState('');
   const [editLogo, setEditLogo] = useState(null);
 
   const fetchStoresList = async (cats = categoriesList) => {
@@ -177,9 +167,6 @@ const StoresView = ({ triggerToast }) => {
         if (catResponse && catResponse.success && catResponse.result && catResponse.result.data) {
           fetchedCategories = catResponse.result.data;
           setCategoriesList(fetchedCategories);
-          if (fetchedCategories.length > 0) {
-            setStoreCategoryId(fetchedCategories[0].id);
-          }
         }
         await fetchStoresList(fetchedCategories);
 
@@ -204,7 +191,6 @@ const StoresView = ({ triggerToast }) => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [categoryFilter, setCategoryFilter] = useState('All');
 
   // Dialog States
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -227,6 +213,7 @@ const StoresView = ({ triggerToast }) => {
   // Voucher form states
   const [vchSku, setVchSku] = useState('');
   const [vchFeatured, setVchFeatured] = useState(1);
+  const [vchCategoryId, setVchCategoryId] = useState('');
   const [syncedProducts, setSyncedProducts] = useState([]);
 
   const textFieldSx = {
@@ -268,15 +255,9 @@ const StoresView = ({ triggerToast }) => {
       triggerToast('Please select a store logo file', 'warning');
       return;
     }
-    if (!storeCategoryId) {
-      triggerToast('Please select a valid category', 'warning');
-      return;
-    }
-
     try {
       const response = await storeService.addStore(
         storeName.trim(),
-        storeCategoryId,
         storeLogo
       );
 
@@ -287,11 +268,6 @@ const StoresView = ({ triggerToast }) => {
         // Reset fields & close
         setStoreName('');
         setStoreLogo(null);
-        if (categoriesList.length > 0) {
-          setStoreCategoryId(categoriesList[0].id);
-        } else {
-          setStoreCategoryId('');
-        }
         setOpenAddDialog(false);
       } else {
         triggerToast(response.message || 'Failed to register store', 'error');
@@ -305,12 +281,6 @@ const StoresView = ({ triggerToast }) => {
   const handleOpenEdit = (store) => {
     setSelectedStore(store);
     setEditName(store.name);
-
-    // Resolve the category ID from the category name string
-    const matchedCategory = categoriesList.find(
-      (c) => c.category_name === store.category
-    );
-    setEditCategoryId(matchedCategory ? matchedCategory.id : '');
     setEditLogo(null);
     setEditStatus(store.status);
     setDetailTab(0);
@@ -325,12 +295,6 @@ const StoresView = ({ triggerToast }) => {
   const handleOpenAddVoucherDirectly = (store) => {
     setSelectedStore(store);
     setEditName(store.name);
-
-    // Resolve the category ID from the category name string
-    const matchedCategory = categoriesList.find(
-      (c) => c.category_name === store.category
-    );
-    setEditCategoryId(matchedCategory ? matchedCategory.id : '');
     setEditLogo(null);
     setEditStatus(store.status);
 
@@ -340,6 +304,7 @@ const StoresView = ({ triggerToast }) => {
     // Open the Add Voucher form mode immediately
     setVchSku('');
     setVchFeatured(1);
+    setVchCategoryId(categoriesList.length > 0 ? categoriesList[0].id : '');
     setVoucherFormMode('add');
 
     const storeId = store.rawStore?.id || store.id.replace('STR-', '');
@@ -354,17 +319,11 @@ const StoresView = ({ triggerToast }) => {
       triggerToast('Please fill in the store name', 'warning');
       return;
     }
-    if (!editCategoryId) {
-      triggerToast('Please select a valid category', 'warning');
-      return;
-    }
-
     try {
       const databaseId = selectedStore.rawStore?.id || selectedStore.id.replace('STR-', '');
       const response = await storeService.updateStore(
         databaseId,
         editName.trim(),
-        editCategoryId,
         editLogo,
         editStatus
       );
@@ -385,6 +344,7 @@ const StoresView = ({ triggerToast }) => {
   const handleOpenAddVoucher = () => {
     setVchSku('');
     setVchFeatured(1);
+    setVchCategoryId(categoriesList.length > 0 ? categoriesList[0].id : '');
     setVoucherFormMode('add');
   };
 
@@ -398,7 +358,7 @@ const StoresView = ({ triggerToast }) => {
     try {
       if (voucherFormMode === 'add') {
         const storeId = selectedStore.rawStore?.id || selectedStore.id.replace('STR-', '');
-        const response = await storeService.addVoucher(storeId, vchSku, vchFeatured);
+        const response = await storeService.addVoucher(storeId, vchSku, vchFeatured, vchCategoryId);
 
         if (response && response.success) {
           triggerToast(`Voucher SKU "${vchSku.trim()}" registered successfully!`, 'success');
@@ -480,9 +440,8 @@ const StoresView = ({ triggerToast }) => {
       store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       store.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || store.status === statusFilter;
-    const matchesCategory = categoryFilter === 'All' || store.category === categoryFilter;
 
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -559,41 +518,6 @@ const StoresView = ({ triggerToast }) => {
             />
 
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              <FormControl size="small" sx={{ width: '180px' }}>
-                <Select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  displayEmpty
-                  sx={{
-                    borderRadius: '12px',
-                    bgcolor: '#F8FAFC',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#CBD5E1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6D28D9',
-                    },
-                  }}
-                >
-                  <MenuItem value="All">All Categories</MenuItem>
-                  {categoriesList.length > 0 ? (
-                    categoriesList.map((cat) => (
-                      <MenuItem key={cat.id} value={cat.category_name}>
-                        {cat.category_name}
-                      </MenuItem>
-                    ))
-                  ) : (
-                    availableCategories.map((cat) => (
-                      <MenuItem key={cat} value={cat}>
-                        {cat}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-              </FormControl>
 
               <FormControl size="small" sx={{ width: '180px' }}>
                 <Select
@@ -628,7 +552,6 @@ const StoresView = ({ triggerToast }) => {
                 <TableRow sx={{ bgcolor: '#F8FAFC' }}>
                   <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pl: 3 }}>ID</TableCell>
                   <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STORE NAME</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>MAPPED CATEGORY</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>VOUCHERS</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STATUS</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pr: 3 }}>ACTIONS</TableCell>
@@ -637,7 +560,7 @@ const StoresView = ({ triggerToast }) => {
               <TableBody>
                 {filteredStores.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                         <StoreIcon sx={{ fontSize: 40, color: 'text.disabled', opacity: 0.5 }} />
                         <Typography variant="body2" color="text.secondary" fontWeight={500}>
@@ -700,11 +623,6 @@ const StoresView = ({ triggerToast }) => {
                               {store.name}
                             </Typography>
                           </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight={550} color="#475569">
-                            {store.category}
-                          </Typography>
                         </TableCell>
                         <TableCell align="center">
                           <Chip
@@ -921,37 +839,7 @@ const StoresView = ({ triggerToast }) => {
                 </Button>
               </Box>
 
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  MAPPED CATEGORY *
-                </Typography>
-                <Select
-                  value={storeCategoryId}
-                  onChange={(e) => setStoreCategoryId(e.target.value)}
-                  size="small"
-                  fullWidth
-                  required
-                  sx={{
-                    borderRadius: '12px',
-                    bgcolor: '#F8FAFC',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#CBD5E1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6D28D9',
-                    },
-                  }}
-                >
-                  {categoriesList.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      {cat.category_name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </Box>
+              {/* Category selector removed from store creation */}
 
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
@@ -987,11 +875,6 @@ const StoresView = ({ triggerToast }) => {
               onClick={() => {
                 setStoreName('');
                 setStoreLogo(null);
-                if (categoriesList.length > 0) {
-                  setStoreCategoryId(categoriesList[0].id);
-                } else {
-                  setStoreCategoryId('');
-                }
                 setOpenAddDialog(false);
               }}
               color="inherit"
@@ -1158,25 +1041,7 @@ const StoresView = ({ triggerToast }) => {
                   </Button>
                 </Box>
 
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                    MAPPED CATEGORY *
-                  </Typography>
-                  <Select
-                    value={editCategoryId}
-                    onChange={(e) => setEditCategoryId(e.target.value)}
-                    size="small"
-                    fullWidth
-                    required
-                    sx={selectSx}
-                  >
-                    {categoriesList.map((cat) => (
-                      <MenuItem key={cat.id} value={cat.id}>
-                        {cat.category_name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </Box>
+                {/* Category selector removed from store editing */}
 
                 <Box>
                   <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
@@ -1447,6 +1312,38 @@ const StoresView = ({ triggerToast }) => {
                         />
                       )}
                     />
+                  </Box>
+
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+                      MAPPED CATEGORY *
+                    </Typography>
+                    <Select
+                      value={vchCategoryId}
+                      onChange={(e) => setVchCategoryId(e.target.value)}
+                      size="small"
+                      fullWidth
+                      required
+                      sx={{
+                        borderRadius: '12px',
+                        bgcolor: '#F8FAFC',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'rgba(226, 232, 240, 0.8)',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#CBD5E1',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#8B5CF6',
+                        },
+                      }}
+                    >
+                      {categoriesList.map((cat) => (
+                        <MenuItem key={cat.id} value={cat.id}>
+                          {cat.category_name}
+                        </MenuItem>
+                      ))}
+                    </Select>
                   </Box>
 
                   <Box sx={{
