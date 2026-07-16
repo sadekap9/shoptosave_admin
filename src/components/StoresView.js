@@ -53,6 +53,7 @@ const StoresView = ({ triggerToast }) => {
   const [categoriesList, setCategoriesList] = useState([]);
   const [storeLogo, setStoreLogo] = useState(null);
   const [editLogo, setEditLogo] = useState(null);
+  const [mappedSkus, setMappedSkus] = useState([]);
 
   const fetchStoresList = async (cats = categoriesList) => {
     try {
@@ -134,6 +135,13 @@ const StoresView = ({ triggerToast }) => {
         const productsResponse = await storeService.getSyncedProducts();
         if (productsResponse && productsResponse.success && productsResponse.result && productsResponse.result.data) {
           setSyncedProducts(productsResponse.result.data);
+        }
+
+        // Fetch all currently mapped gift card SKUs to hide them from the dropdown
+        const giftCardsRes = await storeService.getGiftCards();
+        if (giftCardsRes && giftCardsRes.success && giftCardsRes.result && giftCardsRes.result.data) {
+          const skus = giftCardsRes.result.data.map(gc => gc.sku).filter(Boolean);
+          setMappedSkus(skus);
         }
       } catch (error) {
         console.error('Error loading data in StoresView:', error);
@@ -319,6 +327,7 @@ const StoresView = ({ triggerToast }) => {
 
         if (response && response.success) {
           triggerToast(`Voucher SKU "${vchSku.trim()}" registered successfully!`, 'success');
+          setMappedSkus((prev) => [...prev, vchSku.trim()]);
           await fetchStoreVouchers(storeId);
         } else {
           // Parse potential errors list from return payload
@@ -338,6 +347,10 @@ const StoresView = ({ triggerToast }) => {
 
         if (response && response.success) {
           triggerToast(`Voucher SKU "${vchSku.trim()}" updated successfully!`, 'success');
+          setMappedSkus((prev) => {
+            const filtered = prev.filter((sku) => sku !== selectedVoucher.sku);
+            return [...filtered, vchSku.trim()];
+          });
           await fetchStoreVouchers(storeId);
         } else {
           triggerToast(response?.message || 'Failed to update voucher', 'error');
@@ -366,7 +379,12 @@ const StoresView = ({ triggerToast }) => {
     try {
       const response = await storeService.deleteVoucher(voucherId);
       if (response && response.success) {
+        const deletedVoucher = (selectedStore.vouchers || []).find((v) => v.id === voucherId);
         const updatedVouchers = (selectedStore.vouchers || []).filter((v) => v.id !== voucherId);
+
+        if (deletedVoucher) {
+          setMappedSkus((prev) => prev.filter((sku) => sku !== deletedVoucher.sku));
+        }
 
         const updatedStores = stores.map((s) => {
           if (s.id === selectedStore.id) {
@@ -430,7 +448,7 @@ const StoresView = ({ triggerToast }) => {
 
   const filteredProducts = syncedProducts.filter(
     (p) =>
-      (!selectedStore?.vouchers?.some((v) => v.sku === p.sku) ||
+      (!mappedSkus.includes(p.sku) ||
         (voucherFormMode === 'edit' && selectedVoucher?.sku === p.sku)) &&
       (p.name.toLowerCase().includes(vchSku.toLowerCase()) || p.sku.toLowerCase().includes(vchSku.toLowerCase()))
   );
@@ -751,12 +769,20 @@ const StoresView = ({ triggerToast }) => {
                   <label className="w-full py-4 px-4 flex flex-col items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#8B5CF6] hover:bg-violet-50/20 border border-dashed border-slate-250 hover:border-[#8B5CF6]/50 bg-slate-50/50 rounded-xl cursor-pointer transition-all duration-200">
                     <PlusCircle className="w-5 h-5 text-slate-400" />
                     <span>{vchImage ? vchImage.name : 'Select Gift Card Image'}</span>
-                    <span className="text-[9px] text-slate-400 font-normal">PNG, JPG or WEBP up to 2MB</span>
+                    <span className="text-[9px] text-slate-400 font-normal">PNG, JPG or WEBP up to 20MB</span>
                     <input
                       type="file"
                       hidden
                       accept="image/*"
-                      onChange={(e) => setVchImage(e.target.files[0])}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file && file.size > 20 * 1024 * 1024) {
+                          triggerToast('Image size exceeds 20MB limit. Please choose a smaller file.', 'error');
+                          e.target.value = '';
+                          return;
+                        }
+                        setVchImage(file);
+                      }}
                     />
                   </label>
                 </div>
@@ -1079,13 +1105,21 @@ const StoresView = ({ triggerToast }) => {
                     <span className="text-xs font-semibold text-slate-700 truncate max-w-[250px]">
                       {storeLogo ? storeLogo.name : 'Choose Logo Image'}
                     </span>
-                    <span className="text-[9px] text-slate-455 mt-1 font-semibold">PNG, JPG, SVG up to 2MB</span>
+                    <span className="text-[9px] text-slate-455 mt-1 font-semibold">PNG, JPG, SVG up to 20MB</span>
                     <input
                       type="file"
                       required
                       hidden
                       accept="image/*"
-                      onChange={(e) => setStoreLogo(e.target.files[0])}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file && file.size > 20 * 1024 * 1024) {
+                          triggerToast('Image size exceeds 20MB limit. Please choose a smaller file.', 'error');
+                          e.target.value = '';
+                          return;
+                        }
+                        setStoreLogo(file);
+                      }}
                     />
                   </label>
                 </div>
@@ -1134,7 +1168,7 @@ const StoresView = ({ triggerToast }) => {
       {/* DIALOG 2: Edit Store Profile */}
       {openEditDialog && (
         <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[4px]">
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn relative flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-xl overflow-hidden animate-fadeIn relative flex flex-col max-h-[90vh]">
             {/* Close Button */}
             <button
               onClick={() => setOpenEditDialog(false)}
@@ -1158,25 +1192,7 @@ const StoresView = ({ triggerToast }) => {
             <div className="flex-1 overflow-y-auto">
               <form onSubmit={handleEditSubmit} className="flex flex-col h-full justify-between">
                 <div className="p-6 space-y-5">
-                  {selectedStore && (
-                    <div className="p-3 bg-slate-50/50 border border-slate-150 rounded-xl flex items-center justify-between">
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-450 block tracking-wider uppercase mb-0.5">
-                          Store Identifier
-                        </span>
-                        <span className="text-xs font-extrabold text-slate-700">
-                          ID: {selectedStore.id}
-                        </span>
-                      </div>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-extrabold border ${
-                        selectedStore.status === 'Active'
-                          ? 'bg-emerald-50 text-emerald-600 border-emerald-500/10'
-                          : 'bg-red-50 text-red-600 border-red-500/10'
-                      }`}>
-                        {selectedStore.status}
-                      </span>
-                    </div>
-                  )}
+                  
 
                   {/* Store Name Input */}
                   <div className="flex flex-col gap-1.5">
@@ -1216,12 +1232,20 @@ const StoresView = ({ triggerToast }) => {
                         <span className="text-xs font-semibold text-slate-700 truncate max-w-[200px]">
                           {editLogo ? editLogo.name : 'Upload New Logo'}
                         </span>
-                        <span className="text-[9px] text-slate-455 mt-1 font-semibold">PNG, JPG, SVG up to 2MB</span>
+                        <span className="text-[9px] text-slate-455 mt-1 font-semibold">PNG, JPG, SVG up to 20MB</span>
                         <input
                           type="file"
                           hidden
                           accept="image/*"
-                          onChange={(e) => setEditLogo(e.target.files[0])}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file && file.size > 20 * 1024 * 1024) {
+                              triggerToast('Image size exceeds 20MB limit. Please choose a smaller file.', 'error');
+                              e.target.value = '';
+                              return;
+                            }
+                            setEditLogo(file);
+                          }}
                         />
                       </label>
                     </div>
