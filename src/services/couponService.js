@@ -31,6 +31,8 @@ export const couponService = {
       start_date: data.start_date,
       end_date: data.end_date,
       status: Number(data.status),
+      store_id: data.store_id ? Number(data.store_id) : null,
+      gift_card_id: data.gift_card_id ? Number(data.gift_card_id) : null,
     });
   },
 

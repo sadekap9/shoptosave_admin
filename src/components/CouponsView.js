@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { couponService } from '../services/couponService';
+import { storeService } from '../services/storeService';
 import {
   Search,
   Plus,
@@ -48,6 +49,8 @@ const INITIAL_FORM = {
   start_date: '',
   end_date: '',
   status: 1,
+  store_id: '',
+  gift_card_id: '',
 };
 
 let lastFetchTime = 0;
@@ -57,6 +60,8 @@ const CouponsView = ({ triggerToast }) => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [stores, setStores] = useState([]);
+  const [giftCards, setGiftCards] = useState([]);
 
   // View mode state: 'list' or 'create'
   const [viewMode, setViewMode] = useState('list');
@@ -104,6 +109,27 @@ const CouponsView = ({ triggerToast }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage]);
+
+  useEffect(() => {
+    const fetchSelectData = async () => {
+      try {
+        const storeRes = await storeService.getStores();
+        if (storeRes && storeRes.success && storeRes.result && storeRes.result.data) {
+          setStores(storeRes.result.data);
+        }
+        const giftRes = await storeService.getGiftCards();
+        if (giftRes && giftRes.success && giftRes.result && giftRes.result.data) {
+          const fetchedCards = Array.isArray(giftRes.result.data)
+            ? giftRes.result.data
+            : (giftRes.result.data.giftCards || []);
+          setGiftCards(fetchedCards);
+        }
+      } catch (err) {
+        console.error('Error fetching stores/giftcards for coupons:', err);
+      }
+    };
+    fetchSelectData();
+  }, []);
 
   const handleFormChange = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? (e.target.checked ? 1 : 0) : e.target.value;
@@ -570,6 +596,43 @@ const CouponsView = ({ triggerToast }) => {
                     >
                       <option value={1}>Instant Discount</option>
                       <option value={2}>Cashback</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Apply to Store (Optional)
+                    </label>
+                    <select
+                      value={formData.store_id}
+                      onChange={handleFormChange('store_id')}
+                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                    >
+                      <option value="">All Stores (Global Offer)</option>
+                      {stores.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.store_name} (ID: {s.id})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Apply to Gift Card (Optional)
+                    </label>
+                    <select
+                      value={formData.gift_card_id}
+                      onChange={handleFormChange('gift_card_id')}
+                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                    >
+                      <option value="">All Gift Cards (Global Offer)</option>
+                      {giftCards.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.gift_card_name || g.brand_name} (SKU: {g.sku})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
