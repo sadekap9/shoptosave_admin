@@ -1,24 +1,11 @@
 import React from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  Button,
-  IconButton,
-  InputAdornment,
-  CircularProgress,
-  Alert,
-  Fade,
-} from '@mui/material';
-import {
-  Email as EmailIcon,
-  Lock as LockIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-  AdminPanelSettings as AdminIcon,
-} from '@mui/icons-material';
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck
+} from 'lucide-react';
 import useLoginViewModel from '../viewmodels/useLoginViewModel';
 
 export default function Login({ onLoginSuccess }) {
@@ -37,314 +24,131 @@ export default function Login({ onLoginSuccess }) {
   } = useLoginViewModel(onLoginSuccess);
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        width: '100vw',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'radial-gradient(circle at 10% 20%, rgba(109, 40, 217, 0.08) 0%, rgba(139, 92, 246, 0.05) 50%, rgba(248, 250, 252, 1) 100%)',
-        position: 'relative',
-        overflow: 'hidden',
-        px: 2,
-      }}
-    >
+    <div className="min-h-screen w-full flex items-center justify-center bg-[radial-gradient(circle_at_10%_20%,rgba(109,40,217,0.08)_0%,rgba(139,92,246,0.05)_50%,rgba(248,250,252,1)_100%)] relative overflow-hidden px-4">
       {/* Decorative background shapes */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '10%',
-          left: '15%',
-          width: '300px',
-          height: '300px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, rgba(109, 40, 217, 0.06) 0%, rgba(168, 85, 247, 0.06) 100%)',
-          filter: 'blur(80px)',
-          zIndex: 0,
-        }}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: '10%',
-          right: '15%',
-          width: '350px',
-          height: '350px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, rgba(236, 72, 153, 0.06) 100%)',
-          filter: 'blur(100px)',
-          zIndex: 0,
-        }}
-      />
+      <div className="absolute top-[10%] left-[15%] w-[300px] h-[300px] rounded-full bg-gradient-to-br from-purple-700/5 to-purple-500/5 blur-[80px] z-0 pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[15%] w-[350px] h-[350px] rounded-full bg-gradient-to-br from-violet-500/5 to-pink-500/5 blur-[100px] z-0 pointer-events-none" />
 
-      <Fade in={true} timeout={800}>
-        <Card
-          sx={{
-            width: '100%',
-            maxWidth: 440,
-            zIndex: 10,
-            borderRadius: '24px',
-            boxShadow: '0 20px 40px -15px rgba(109, 40, 217, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05)',
-            border: '1px solid rgba(226, 232, 240, 0.8)',
-            backdropFilter: 'blur(20px)',
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            '&:hover': {
-              boxShadow: '0 30px 60px -20px rgba(109, 40, 217, 0.15), 0 2px 5px rgba(0, 0, 0, 0.05)',
-              transform: 'translateY(-2px)',
-            },
-          }}
-        >
-          <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
-            {/* Header / Brand Logo */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
-              <Box
-                sx={{
-                  width: 54,
-                  height: 54,
-                  borderRadius: 4,
-                  background: 'linear-gradient(135deg, #6D28D9 0%, #A855F7 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#FFFFFF',
-                  boxShadow: '0 8px 20px rgba(109, 40, 217, 0.3)',
-                  mb: 2,
-                }}
-              >
-                <AdminIcon sx={{ fontSize: 30 }} />
-              </Box>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 850,
-                  color: '#0F172A',
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1.1,
-                  textAlign: 'center',
-                }}
-              >
-                Shop2Save
-              </Typography>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  color: '#64748B',
-                  fontWeight: 600,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  fontSize: '0.72rem',
-                  mt: 0.8,
-                }}
-              >
-                Admin Management Portal
-              </Typography>
-            </Box>
+      <div className="w-full max-w-[440px] z-10 rounded-[24px] shadow-[0_20px_40px_-15px_rgba(109,40,217,0.1),0_1px_3px_rgba(0,0,0,0.05)] border border-slate-200/80 backdrop-blur-xl bg-white/95 transition-all duration-300 hover:shadow-[0_30px_60px_-20px_rgba(109,40,217,0.15),0_2px_5px_rgba(0,0,0,0.05)] hover:-translate-y-0.5 p-8 sm:p-10 animate-fadeIn">
+        {/* Header / Brand Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-[54px] h-[54px] rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-[0_8px_20px_rgba(109,40,217,0.3)] mb-4">
+            <ShieldCheck className="w-[30px] h-[30px]" />
+          </div>
+          <h1 className="text-[2rem] font-[850] text-[#0F172A] tracking-tight leading-none text-center">
+            Shop2Save
+          </h1>
+          <p className="text-[#64748B] font-semibold tracking-wider uppercase text-[0.72rem] mt-2">
+            Admin Management Portal
+          </p>
+        </div>
 
-            {/* Error alerts */}
-            {apiError && (
-              <Fade in={!!apiError}>
-                <Alert
-                  severity="error"
-                  variant="outlined"
-                  sx={{
-                    mb: 3,
-                    borderRadius: 2,
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    backgroundColor: '#FEF2F2',
-                    borderColor: 'rgba(239, 68, 68, 0.2)',
-                    color: '#EF4444',
-                    '& .MuiAlert-icon': {
-                      color: '#EF4444',
-                    },
-                  }}
-                >
-                  {apiError}
-                </Alert>
-              </Fade>
-            )}
+        {/* Error alerts */}
+        {apiError && (
+          <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 text-red-500 text-[0.78rem] font-semibold flex items-start gap-2">
+            <span className="mt-0.5 text-base leading-none">⚠️</span>
+            <div>{apiError}</div>
+          </div>
+        )}
 
-            {/* Login Form */}
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.8 }}>
-                {/* Email Address */}
-                <TextField
-                  fullWidth
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="flex flex-col gap-6">
+            {/* Email Address */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="email" className="text-[0.875rem] font-medium text-[#64748B]">
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Mail className={`w-5 h-5 ${emailError ? 'text-red-500' : 'text-slate-400'}`} />
+                </div>
+                <input
+                  type="email"
                   id="email"
-                  label="Email Address"
-                  variant="outlined"
+                  className={`w-full pl-11 pr-4 py-3 rounded-xl border bg-white outline-none transition-all duration-200 text-sm ${
+                    emailError
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                      : 'border-slate-200 hover:border-accent focus:border-primary focus:ring-2 focus:ring-primary/20'
+                  }`}
+                  placeholder="Enter your email"
                   value={email}
                   onChange={handleEmailChange}
-                  error={!!emailError}
-                  helperText={emailError}
                   disabled={isLoading}
-                  autoComplete="email"
                   autoFocus
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <EmailIcon sx={{ color: emailError ? '#EF4444' : '#94A3B8', fontSize: 20 }} />
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 3,
-                      transition: 'all 0.2s',
-                      backgroundColor: '#FFFFFF',
-                      '&:hover fieldset': {
-                        borderColor: '#A855F7',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#6D28D9',
-                        borderWidth: '2px',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      color: '#64748B',
-                      '&.Mui-focused': {
-                        color: '#6D28D9',
-                      },
-                    },
-                    '& .MuiFormHelperText-root': {
-                      mx: 1,
-                      fontWeight: 500,
-                      fontSize: '0.7rem',
-                    },
-                  }}
                 />
+              </div>
+              {emailError && (
+                <span className="text-[0.7rem] font-medium text-red-500 mx-2 mt-1">
+                  {emailError}
+                </span>
+              )}
+            </div>
 
-                {/* Password Field */}
-                <TextField
-                  fullWidth
-                  id="password"
-                  label="Password"
+            {/* Password Field */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="password" className="text-[0.875rem] font-medium text-[#64748B]">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className={`w-5 h-5 ${passwordError ? 'text-red-500' : 'text-slate-400'}`} />
+                </div>
+                <input
                   type={showPassword ? 'text' : 'password'}
-                  variant="outlined"
+                  id="password"
+                  className={`w-full pl-11 pr-11 py-3 rounded-xl border bg-white outline-none transition-all duration-200 text-sm ${
+                    passwordError
+                      ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+                      : 'border-slate-200 hover:border-accent focus:border-primary focus:ring-2 focus:ring-primary/20'
+                  }`}
+                  placeholder="Enter your password"
                   value={password}
                   onChange={handlePasswordChange}
-                  error={!!passwordError}
-                  helperText={passwordError}
                   disabled={isLoading}
-                  autoComplete="current-password"
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockIcon sx={{ color: passwordError ? '#EF4444' : '#94A3B8', fontSize: 20 }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            aria-label="toggle password visibility"
-                            onClick={toggleShowPassword}
-                            edge="end"
-                            disabled={isLoading}
-                            sx={{ color: '#94A3B8' }}
-                          >
-                            {showPassword ? <VisibilityOffIcon sx={{ fontSize: 20 }} /> : <VisibilityIcon sx={{ fontSize: 20 }} />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 3,
-                      transition: 'all 0.2s',
-                      backgroundColor: '#FFFFFF',
-                      '&:hover fieldset': {
-                        borderColor: '#A855F7',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#6D28D9',
-                        borderWidth: '2px',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      color: '#64748B',
-                      '&.Mui-focused': {
-                        color: '#6D28D9',
-                      },
-                    },
-                    '& .MuiFormHelperText-root': {
-                      mx: 1,
-                      fontWeight: 500,
-                      fontSize: '0.7rem',
-                    },
-                  }}
                 />
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
+                <button
+                  type="button"
+                  onClick={toggleShowPassword}
                   disabled={isLoading}
-                  sx={{
-                    py: 1.8,
-                    borderRadius: 3,
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    background: 'linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%)',
-                    boxShadow: '0 4px 14px rgba(109, 40, 217, 0.2)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)',
-                      boxShadow: '0 6px 20px rgba(109, 40, 217, 0.3)',
-                      transform: 'translateY(-1px)',
-                    },
-                    '&:active': {
-                      transform: 'translateY(0)',
-                    },
-                    '&.Mui-disabled': {
-                      background: '#E2E8F0',
-                      color: '#94A3B8',
-                    },
-                  }}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 outline-none"
                 >
-                  {isLoading ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <CircularProgress size={18} color="inherit" thickness={5} />
-                      <Typography variant="button" sx={{ fontWeight: 700 }}>
-                        Signing In...
-                      </Typography>
-                    </Box>
-                  ) : (
-                    'Sign In to Admin Portal'
-                  )}
-                </Button>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
-      </Fade>
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {passwordError && (
+                <span className="text-[0.7rem] font-medium text-red-500 mx-2 mt-1">
+                  {passwordError}
+                </span>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-primary to-secondary shadow-[0_4px_14px_rgba(109,40,217,0.2)] transition-all duration-300 hover:from-[#7C3AED] hover:to-[#8B5CF6] hover:shadow-[0_6px_20px_rgba(109,40,217,0.3)] hover:-translate-y-0.5 active:translate-y-0 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:pointer-events-none flex items-center justify-center gap-2 mt-2"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>Signing In...</span>
+                </div>
+              ) : (
+                'Sign In to Admin Portal'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Footer copyright */}
-      <Typography
-        variant="caption"
-        sx={{
-          position: 'absolute',
-          bottom: 24,
-          color: '#94A3B8',
-          fontWeight: 600,
-          zIndex: 10,
-          textAlign: 'center',
-          width: '100%',
-        }}
-      >
+      <div className="absolute bottom-6 left-0 right-0 text-center text-[0.7rem] font-semibold text-slate-400 pointer-events-none">
         &copy; {new Date().getFullYear()} Shop2Save. All rights reserved.
-      </Typography>
-    </Box>
+      </div>
+    </div>
   );
 }

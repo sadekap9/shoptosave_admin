@@ -1,55 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Button,
-  Grid,
-  TextField,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  InputAdornment,
-  MenuItem,
-  FormControl,
-  Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Switch,
-  Tooltip,
-  IconButton,
-  Checkbox,
-  TablePagination,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  LocalOffer as CouponIcon,
-  CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon,
-  ChevronRight as ChevronRightIcon,
-  Delete as DeleteIcon,
-  ContentCopy as CopyIcon,
-  Tag as TagIcon,
-  Percent as PercentIcon,
-  AttachMoney as MoneyIcon,
-} from '@mui/icons-material';
 import { couponService } from '../services/couponService';
+import {
+  Search,
+  Plus,
+  Tag,
+  CheckCircle2,
+  Ban,
+  ChevronRight,
+  Trash2,
+  Copy,
+  Percent,
+  Coins,
+  X,
+  ArrowLeft
+} from 'lucide-react';
 
-// Helpers
 const OFFER_TYPE_LABELS = {
   1: 'Instant Discount',
   2: 'Cashback',
-  3: 'Promo Code',
+  // 3: 'Promo Code',
 };
 
 const formatDate = (isoStr) => {
@@ -76,7 +45,6 @@ const INITIAL_FORM = {
   total_usage_limit: '',
   per_user_limit: 1,
   unique_users_only: 0,
-  priority: 1,
   start_date: '',
   end_date: '',
   status: 1,
@@ -90,8 +58,8 @@ const CouponsView = ({ triggerToast }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  // Add dialog state
-  const [openAddDialog, setOpenAddDialog] = useState(false);
+  // View mode state: 'list' or 'create'
+  const [viewMode, setViewMode] = useState('list');
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [formErrors, setFormErrors] = useState({});
@@ -100,16 +68,14 @@ const CouponsView = ({ triggerToast }) => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // ─── Pagination state ──────────────────────────────────────────────────────
-  const [page, setPage] = useState(0);               // MUI TablePagination is 0-based
+  // Pagination state
+  const [page, setPage] = useState(0); // 0-based index
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [paginationMeta, setPaginationMeta] = useState({ total: 0, totalPages: 1 });
 
-  // ─── Fetch ─────────────────────────────────────────────────────────────────
   const fetchCoupons = async (pageNum = page, limitNum = rowsPerPage) => {
     setLoading(true);
     try {
-      // API is 1-based; MUI TablePagination is 0-based
       const response = await couponService.getCoupons(pageNum + 1, limitNum);
       if (response && response.success && response.result && response.result.data) {
         setCoupons(response.result.data);
@@ -139,7 +105,6 @@ const CouponsView = ({ triggerToast }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage]);
 
-  // ─── Form helpers ──────────────────────────────────────────────────────────
   const handleFormChange = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? (e.target.checked ? 1 : 0) : e.target.value;
     setFormData((prev) => ({ ...prev, [field]: val }));
@@ -151,7 +116,6 @@ const CouponsView = ({ triggerToast }) => {
   const validateForm = () => {
     const errors = {};
     if (!formData.offer_name.trim()) errors.offer_name = 'Offer name is required';
-    if (!formData.promo_code.trim()) errors.promo_code = 'Promo code is required';
     if (!formData.value || Number(formData.value) <= 0) errors.value = 'Value must be > 0';
     if (!formData.min_order_amount || Number(formData.min_order_amount) < 0)
       errors.min_order_amount = 'Minimum order amount is required';
@@ -169,7 +133,6 @@ const CouponsView = ({ triggerToast }) => {
     setFormErrors({});
   };
 
-  // ─── Submit ────────────────────────────────────────────────────────────────
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     const errors = validateForm();
@@ -190,13 +153,14 @@ const CouponsView = ({ triggerToast }) => {
         start_date: toIso(formData.start_date),
         end_date: toIso(formData.end_date),
       };
+      delete payload.priority;
 
       const response = await couponService.addCoupon(payload);
       if (response && response.success) {
         triggerToast('Coupon created successfully!', 'success');
         resetForm();
-        setOpenAddDialog(false);
-        setPage(0);           // go back to page 1 after adding
+        setViewMode('list');
+        setPage(0);
         fetchCoupons(0, rowsPerPage);
       } else {
         triggerToast(response?.message || 'Failed to create coupon', 'error');
@@ -209,7 +173,6 @@ const CouponsView = ({ triggerToast }) => {
     }
   };
 
-  // ─── Toggle Status ─────────────────────────────────────────────────────────
   const handleToggleStatus = async (coupon) => {
     const newStatus = coupon.status === 1 ? 0 : 1;
     setCoupons((prev) =>
@@ -229,7 +192,6 @@ const CouponsView = ({ triggerToast }) => {
     }
   };
 
-  // ─── Delete ────────────────────────────────────────────────────────────────
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -238,7 +200,6 @@ const CouponsView = ({ triggerToast }) => {
       setCoupons((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       triggerToast(`Coupon "${deleteTarget.offer_name}" deleted`, 'success');
       setDeleteTarget(null);
-      // If we deleted the last item on a non-first page, go back one page
       if (coupons.length === 1 && page > 0) {
         setPage((p) => p - 1);
       } else {
@@ -251,19 +212,16 @@ const CouponsView = ({ triggerToast }) => {
     }
   };
 
-  // ─── Copy promo code ───────────────────────────────────────────────────────
   const handleCopyCode = (code) => {
     navigator.clipboard.writeText(code).then(() => {
       triggerToast(`Copied "${code}" to clipboard`, 'success');
     });
   };
 
-  // ─── Stats — use API total for all coupons, local page slice for active/inactive
   const totalCoupons = paginationMeta.total;
   const activeCoupons = coupons.filter((c) => c.status === 1).length;
   const inactiveCoupons = coupons.filter((c) => c.status === 0).length;
 
-  // ─── Filters ───────────────────────────────────────────────────────────────
   const filteredCoupons = coupons.filter((c) => {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
@@ -276,849 +234,612 @@ const CouponsView = ({ triggerToast }) => {
     return matchesSearch && matchesStatus;
   });
 
-  // ─── Shared field label style ──────────────────────────────────────────────
-  const labelSx = { fontWeight: 700, color: '#1E293B', mb: 0.5, display: 'block' };
-  const inputSx = { '& .MuiOutlinedInput-root': { borderRadius: '10px', bgcolor: '#F8FAFC' } };
+  // Pagination calculation
+  const startRow = page * rowsPerPage + 1;
+  const endRow = Math.min((page + 1) * rowsPerPage, paginationMeta.total);
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <Box sx={{ animation: 'fadeIn 0.5s ease-out-back', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-
-      {/* ── Header ── */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Offers &amp; Finances
-            </Typography>
-            <ChevronRightIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Coupons
-            </Typography>
-          </Box>
-          <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em', color: '#0F172A', mb: 0.5 }}>
-            Coupons &amp; Offers
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Create and manage discount coupons, promo codes, and limited-time offers for your customers.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenAddDialog(true)}
-          sx={{
-            borderRadius: '12px',
-            textTransform: 'none',
-            fontWeight: 650,
-            px: 3,
-            py: 1.2,
-            boxShadow: '0 4px 14px rgba(109, 40, 217, 0.25)',
-          }}
-        >
-          Add New Coupon
-        </Button>
-      </Box>
-
-      {/* ── Stats Cards ── */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(109, 40, 217, 0.08)', color: '#6D28D9', display: 'flex' }}>
-                  <CouponIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  Total Coupons
-                </Typography>
-              </Box>
-              <Typography variant="h5" fontWeight={850} sx={{ mt: 1 }}>{totalCoupons}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.08)', color: '#10B981', display: 'flex' }}>
-                  <ActiveIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  Active Coupons
-                </Typography>
-              </Box>
-              <Typography variant="h5" fontWeight={850} color="#10B981" sx={{ mt: 1 }}>{activeCoupons}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(239, 68, 68, 0.08)', color: '#EF4444', display: 'flex' }}>
-                  <InactiveIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  Inactive Coupons
-                </Typography>
-              </Box>
-              <Typography variant="h5" fontWeight={850} color="#EF4444" sx={{ mt: 1 }}>{inactiveCoupons}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* ── Main Table Card ── */}
-      <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', overflow: 'hidden' }}>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            p: 3,
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            bgcolor: '#FFFFFF',
-            flexWrap: 'wrap',
-            gap: 2,
-          }}
-        >
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search by coupon name or promo code..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{
-              width: '340px',
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-                bgcolor: '#F8FAFC',
-                transition: 'all 0.2s',
-                '&:hover': { bgcolor: '#F1F5F9' },
-                '&.Mui-focused': { bgcolor: '#FFFFFF', boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)' },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" sx={{ fontSize: 20 }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <FormControl size="small" sx={{ width: '180px' }}>
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              displayEmpty
-              sx={{
-                borderRadius: '12px',
-                bgcolor: '#F8FAFC',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(226, 232, 240, 0.8)' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#CBD5E1' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#6D28D9' },
-              }}
+    <div className="w-full max-w-full box-border animate-fadeIn">
+      {viewMode === 'list' ? (
+        <>
+          {/* Header Row */}
+          <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
+            <div>
+              <div className="flex items-center gap-1 mb-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Offers &amp; Finances
+                </span>
+                <ChevronRight className="w-3 h-3 text-slate-300" />
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                  Coupons
+                </span>
+              </div>
+              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                Coupons &amp; Offers
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Create and manage discount coupons, promo codes, and limited-time offers for your customers.
+              </p>
+            </div>
+            <button
+              onClick={() => setViewMode('create')}
+              className="flex items-center gap-2 text-white bg-gradient-to-r from-primary to-secondary hover:from-[#7C3AED] hover:to-[#8B5CF6] px-4 py-2.5 text-xs font-bold rounded-xl transition-all shadow-[0_4px_14px_rgba(109,40,217,0.25)]"
             >
-              <MenuItem value="All">All Statuses</MenuItem>
-              <MenuItem value="Active">Active Only</MenuItem>
-              <MenuItem value="Inactive">Inactive Only</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+              <Plus className="w-4 h-4" />
+              Add New Coupon
+            </button>
+          </div>
 
-        <CardContent sx={{ p: 0 }}>
-          {loading ? (
-            <Box align="center" sx={{ py: 8 }}>
-              <CircularProgress size={40} sx={{ color: '#6D28D9', mb: 2 }} />
-              <Typography variant="body2" color="text.secondary">Loading coupons...</Typography>
-            </Box>
-          ) : filteredCoupons.length === 0 ? (
-            <Box align="center" sx={{ py: 8 }}>
-              <CouponIcon sx={{ fontSize: 48, color: 'text.disabled', opacity: 0.5, mb: 2 }} />
-              <Typography variant="subtitle1" fontWeight={600} color="text.secondary">
-                No coupons found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Click "Add New Coupon" to create your first promo offer.
-              </Typography>
-            </Box>
-          ) : (
-            <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0 }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pl: 3 }}>ID</TableCell>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>OFFER</TableCell>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>PROMO CODE</TableCell>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>DISCOUNT</TableCell>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>VALIDITY</TableCell>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>USAGE</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STATUS</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>ACTIONS</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredCoupons.map((coupon) => {
-                    const isActive = coupon.status === 1;
-                    const isPercent = coupon.value_type === 2;
-                    return (
-                      <TableRow
-                        key={coupon.id}
-                        hover
-                        sx={{ transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(109, 40, 217, 0.015) !important' } }}
-                      >
-                        <TableCell sx={{ pl: 3 }}>
-                          <Typography variant="subtitle2" fontWeight={800} color="#64748B">#{coupon.id}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box>
-                            <Typography variant="subtitle2" fontWeight={750} color="#1E293B">
-                              {coupon.offer_name}
-                            </Typography>
-                            <Chip
-                              label={OFFER_TYPE_LABELS[coupon.offer_type] || `Type ${coupon.offer_type}`}
-                              size="small"
-                              sx={{ mt: 0.5, bgcolor: 'rgba(109, 40, 217, 0.08)', color: '#6D28D9', fontWeight: 700, fontSize: '0.68rem', borderRadius: '6px', height: 20 }}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box sx={{ bgcolor: '#F1F5F9', border: '1px dashed rgba(100, 116, 139, 0.4)', borderRadius: '8px', px: 1.2, py: 0.4, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, color: '#334155', letterSpacing: '0.04em' }}>
-                              {coupon.promo_code}
-                            </Box>
-                            <Tooltip title="Copy code">
-                              <IconButton size="small" onClick={() => handleCopyCode(coupon.promo_code)} sx={{ color: '#94A3B8', '&:hover': { color: '#6D28D9' } }}>
-                                <CopyIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box sx={{ color: isPercent ? '#F59E0B' : '#10B981', display: 'flex' }}>
-                              {isPercent ? <PercentIcon sx={{ fontSize: 16 }} /> : <MoneyIcon sx={{ fontSize: 16 }} />}
-                            </Box>
-                            <Typography variant="subtitle2" fontWeight={750} color="#1E293B">
-                              {isPercent ? `${coupon.value}%` : `₹${coupon.value}`}
-                            </Typography>
-                          </Box>
-                          <Typography variant="caption" color="text.secondary" display="block">Min: ₹{coupon.min_order_amount} </Typography>
-                          {coupon.max_discount > 0 && (
-                            <Typography variant="caption" color="text.secondary" display="block">Max: ₹{coupon.max_discount}</Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            From: <strong>{formatDate(coupon.start_date)} </strong>
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            To: <strong>{formatDate(coupon.end_date)}</strong>
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            Limit: <strong>{coupon.total_usage_limit} </strong>
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            Per user: <strong>{coupon.per_user_limit} </strong>
-                          </Typography>
-                          {coupon.unique_users_only === 1 && (
-                            <Chip label="Unique" size="small" sx={{ mt: 0.3, fontSize: '0.62rem', height: 16, bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', fontWeight: 700, borderRadius: '4px' }} />
-                          )}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Button
-                            onClick={() => handleToggleStatus(coupon)}
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              borderRadius: '24px',
-                              textTransform: 'none',
-                              fontWeight: 750,
-                              fontSize: '0.72rem',
-                              px: 1.8,
-                              py: 0.4,
-                              minWidth: '95px',
-                              color: isActive ? '#10B981' : '#EF4444',
-                              bgcolor: isActive ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-                              borderColor: isActive ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                              transition: 'all 0.15s ease-in-out',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 0.8,
-                              '&:hover': {
-                                bgcolor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                borderColor: isActive ? '#10B981' : '#EF4444',
-                                transform: 'translateY(-1px)',
-                              },
-                              '&:active': {
-                                transform: 'translateY(0)',
-                              }
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: '50%',
-                                bgcolor: isActive ? '#10B981' : '#EF4444',
-                                display: 'inline-block',
-                              }}
-                            />
-                            {isActive ? 'Active' : 'Inactive'}
-                          </Button>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Delete coupon">
-                            <IconButton
-                              size="small"
-                              onClick={() => setDeleteTarget(coupon)}
-                              sx={{ color: '#94A3B8', '&:hover': { color: '#EF4444', bgcolor: 'rgba(239,68,68,0.06)' } }}
+          {/* Stats row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(109,40,217,0.06)] hover:border-primary transition-all duration-200">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Coupons</span>
+                <h3 className="text-xl font-black text-slate-900">{totalCoupons}</h3>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Tag className="w-4.5 h-4.5" />
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(16,185,129,0.06)] hover:border-emerald-500 transition-all duration-200">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Active Coupons</span>
+                <h3 className="text-xl font-black text-emerald-500">{activeCoupons}</h3>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                <CheckCircle2 className="w-4.5 h-4.5" />
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(239,68,68,0.06)] hover:border-red-500 transition-all duration-200">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Inactive Coupons</span>
+                <h3 className="text-xl font-black text-red-500">{inactiveCoupons}</h3>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
+                <Ban className="w-4.5 h-4.5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Main Table Card */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+            {/* Search / Filter header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 border-b border-slate-100 bg-white gap-4">
+              <div className="relative w-full sm:w-80">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Search className="w-4 h-4 text-slate-400" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search coupon name or promo code..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] hover:bg-[#F1F5F9] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all duration-200 text-slate-900 font-medium placeholder-slate-400"
+                />
+              </div>
+
+              <div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] focus:bg-white focus:border-primary outline-none transition-all text-slate-700 font-semibold"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Active">Active Only</option>
+                  <option value="Inactive">Inactive Only</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto w-full">
+              <table className="min-w-full text-left">
+                <thead>
+                  <tr className="bg-[#F8FAFC] border-b border-slate-100">
+                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 pl-6">ID</th>
+                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Offer</th>
+                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Discount</th>
+                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Validity</th>
+                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Usage</th>
+                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-center">Status</th>
+                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-right pr-6">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center bg-white">
+                        <div className="flex flex-col items-center gap-2">
+                          <svg className="animate-spin h-6 w-6 text-[#8B5CF6]" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          <span className="text-xs font-semibold text-slate-400">Loading coupons...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredCoupons.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-16 text-center bg-white">
+                        <div className="flex flex-col items-center gap-2">
+                          <Tag className="w-10 h-10 text-slate-300 opacity-55" />
+                          <span className="text-xs font-semibold text-slate-400">No coupons found.</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCoupons.map((coupon) => {
+                      const isLive = coupon.status === 1;
+                      return (
+                        <tr
+                          key={coupon.id}
+                          className="hover:bg-violet-50/10 transition-colors"
+                        >
+                          <td className="px-6 py-4 pl-6 whitespace-nowrap text-xs font-semibold text-slate-400">
+                            #{coupon.id}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-slate-800">
+                                {coupon.offer_name}
+                              </span>
+                              <span className="mt-1">
+                                <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-purple-50 text-purple-600 border border-purple-100">
+                                  {OFFER_TYPE_LABELS[coupon.offer_type] || 'Promo Code'}
+                                </span>
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-black text-amber-500">
+                                {coupon.value_type === 2 ? `${parseFloat(coupon.value).toFixed(2)}%` : `₹ ${parseFloat(coupon.value).toFixed(2)}`}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-semibold mt-0.5">
+                                Min Order: ₹{parseFloat(coupon.min_order_amount).toFixed(2)}
+                              </span>
+                              {coupon.max_discount && (
+                                <span className="text-[9px] text-slate-400 font-semibold">
+                                  Max Discount: ₹{parseFloat(coupon.max_discount).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col text-[10px] text-slate-500 font-semibold gap-0.5">
+                              <span>From: <strong className="text-slate-750">{formatDate(coupon.start_date)}</strong></span>
+                              <span>To: <strong className="text-slate-750">{formatDate(coupon.end_date)}</strong></span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col text-[10px] text-slate-500 font-semibold gap-0.5">
+                              <span>Limit: <strong className="text-slate-750">{coupon.total_usage_limit || 'Unlimited'}</strong></span>
+                              <span>Per User: <strong className="text-slate-750">{coupon.per_user_limit || '1'}</strong></span>
+                              {coupon.unique_users_only === 1 && (
+                                <span className="mt-1">
+                                  <span className="px-1.5 py-0.5 rounded text-[8px] bg-amber-50 text-amber-600 border border-amber-100 font-extrabold">Unique Users Only</span>
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <button
+                              onClick={() => handleToggleStatus(coupon)}
+                              className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors inline-flex items-center gap-1.5 ${
+                                isLive
+                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-250 hover:bg-emerald-100/50'
+                                  : 'bg-red-50 text-red-650 border-red-250 hover:bg-red-100/50'
+                              }`}
                             >
-                              <DeleteIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
+                              <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                              {isLive ? 'Active' : 'Inactive'}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right pr-6">
+                            <button
+                              onClick={() => setDeleteTarget(coupon)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                              title="Delete Coupon"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-        {/* ── Pagination footer ── */}
-        {!loading && paginationMeta.total > 0 && (
-          <Box sx={{ borderTop: '1px solid rgba(226, 232, 240, 0.8)', bgcolor: '#FAFBFC' }}>
-            <TablePagination
-              component="div"
-              count={paginationMeta.total}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              labelRowsPerPage="Coupons per page:"
-              sx={{
-                '& .MuiTablePagination-toolbar': { px: 3 },
-                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                  fontSize: '0.78rem',
-                  color: '#64748B',
-                  fontWeight: 600,
-                },
-                '& .MuiTablePagination-select': {
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                },
-              }}
-            />
-          </Box>
-        )}
-      </Card>
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* ADD COUPON DIALOG — Sectioned, easy-to-follow layout             */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Dialog
-        open={openAddDialog}
-        onClose={() => !submitting && (resetForm(), setOpenAddDialog(false))}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: '20px', overflow: 'hidden' } }}
-      >
-        {/* Title */}
-        <DialogTitle
-          sx={{
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            py: 2.5,
-            px: 3,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-          }}
-        >
-          <Box sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(109, 40, 217, 0.08)', color: '#6D28D9', display: 'flex' }}>
-            <CouponIcon sx={{ fontSize: 20 }} />
-          </Box>
-          <Box>
-            <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.1 }}>Create New Coupon</Typography>
-            <Typography variant="caption" color="text.secondary">
-              Fill the form below — fields marked <span style={{ color: '#EF4444' }}>*</span> are required.
-            </Typography>
-          </Box>
-        </DialogTitle>
-
-        <form onSubmit={handleAddSubmit}>
-          <DialogContent sx={{ p: 0, maxHeight: '70vh', overflowY: 'auto' }}>
-
-            {/* ── SECTION 1: Basic Info ─────────────────────────────────── */}
-            <Box sx={{ px: 3, pt: 3, pb: 3, borderBottom: '1px solid rgba(226,232,240,0.6)' }}>
-              {/* Section header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '8px', bgcolor: 'rgba(109,40,217,0.1)', color: '#6D28D9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem' }}>
-                  1
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={800} color="#0F172A">Basic Information</Typography>
-                  <Typography variant="caption" color="text.secondary">Name your offer and choose how it will be categorised</Typography>
-                </Box>
-              </Box>
-
-              <Grid container spacing={2.5}>
-                {/* Offer Name */}
-                <Grid item xs={12} sm={8}>
-                  <Typography variant="body2" sx={labelSx}>
-                    Offer Name <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth size="small"
-                    placeholder="e.g. Summer Sale — 10% Off Everything"
-                    value={formData.offer_name}
-                    onChange={handleFormChange('offer_name')}
-                    error={!!formErrors.offer_name}
-                    helperText={formErrors.offer_name || 'A friendly name that describes this offer'}
-                    sx={inputSx}
-                  />
-                </Grid>
-
-                {/* Offer Type */}
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" sx={labelSx}>
-                    Offer Type <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <FormControl fullWidth size="small">
-                    <Select value={formData.offer_type} onChange={handleFormChange('offer_type')} sx={{ borderRadius: '10px', bgcolor: '#F8FAFC' }}>
-                      <MenuItem value={1}>⚡ Instant Discount</MenuItem>
-                      <MenuItem value={2}>🎁 Cashback</MenuItem>
-                      <MenuItem value={3}>🏷️ Promo Code</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                    How this offer is categorised
-                  </Typography>
-                </Grid>
-
-                {/* Promo Code */}
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" sx={labelSx}>
-                    Promo Code <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth size="small"
-                    placeholder="e.g. SAVE100"
-                    value={formData.promo_code}
+            {/* Pagination Controls */}
+            {filteredCoupons.length > 0 && (
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-semibold text-slate-500">
+                <div className="flex items-center gap-2">
+                  <span>Coupons per page:</span>
+                  <select
+                    value={rowsPerPage}
                     onChange={(e) => {
-                      setFormData((prev) => ({ ...prev, promo_code: e.target.value.toUpperCase() }));
-                      if (formErrors.promo_code) setFormErrors((p) => ({ ...p, promo_code: '' }));
+                      setRowsPerPage(parseInt(e.target.value, 10));
+                      setPage(0);
+                      fetchCoupons(0, parseInt(e.target.value, 10));
                     }}
-                    error={!!formErrors.promo_code}
-                    helperText={formErrors.promo_code || 'The code customers enter at checkout (auto-uppercased)'}
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start"><TagIcon sx={{ fontSize: 16, color: '#94A3B8' }} /></InputAdornment>,
-                      sx: { fontFamily: 'monospace', fontWeight: 700, letterSpacing: '0.06em' },
+                    className="px-2 py-1 rounded-lg border border-slate-200 bg-white outline-none focus:border-primary text-slate-700"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-slate-400">
+                    {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, totalCoupons)} of {totalCoupons}
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    disabled={page === 0}
+                    onClick={() => {
+                      const newPage = page - 1;
+                      setPage(newPage);
+                      fetchCoupons(newPage, rowsPerPage);
                     }}
-                    sx={inputSx}
-                  />
-                </Grid>
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    disabled={(page + 1) * rowsPerPage >= totalCoupons}
+                    onClick={() => {
+                      const newPage = page + 1;
+                      setPage(newPage);
+                      fetchCoupons(newPage, rowsPerPage);
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="animate-fadeIn">
+          {/* Header with Title & Back Button */}
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                resetForm();
+                setViewMode('list');
+              }}
+              className="p-2.5 text-[#8B5CF6] hover:bg-violet-50 rounded-xl transition-all flex-shrink-0"
+              title="Back to Coupons"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            
+            <div className="w-8 h-8 rounded-xl bg-violet-100/60 text-[#8B5CF6] flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Tag className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none animate-slideDown">
+                Create New Coupon
+              </h2>
+              <span className="text-[10px] font-extrabold text-slate-400 mt-1 block">Add an automatic Instant Discount or Cashback offer</span>
+            </div>
+          </div>
 
-
-              </Grid>
-            </Box>
-
-            {/* ── SECTION 2: Discount Settings ──────────────────────────── */}
-            <Box sx={{ px: 3, pt: 3, pb: 3, borderBottom: '1px solid rgba(226,232,240,0.6)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '8px', bgcolor: 'rgba(245,158,11,0.12)', color: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem' }}>
-                  2
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={800} color="#0F172A">Discount Settings</Typography>
-                  <Typography variant="caption" color="text.secondary">Choose whether the discount is a flat amount or a percentage</Typography>
-                </Box>
-              </Box>
-
-              {/* Discount Type — compact radio pills */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
-                <Typography variant="body2" fontWeight={700} color="#1E293B" sx={{ whiteSpace: 'nowrap' }}>
-                  Discount Type <span style={{ color: '#EF4444' }}>*</span>
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  {[
-                    { v: 1, label: '₹ Fixed' },
-                    { v: 2, label: '% Percentage' },
-                  ].map(({ v, label }) => (
-                    <Box
-                      key={v}
-                      onClick={() => setFormData((p) => ({ ...p, value_type: v }))}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.8,
-                        px: 1.5,
-                        py: 0.6,
-                        borderRadius: '20px',
-                        border: '1.5px solid',
-                        borderColor: formData.value_type === v ? '#6D28D9' : 'rgba(226,232,240,0.9)',
-                        bgcolor: formData.value_type === v ? 'rgba(109,40,217,0.07)' : '#F8FAFC',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                        '&:hover': { borderColor: '#A78BFA', bgcolor: 'rgba(109,40,217,0.04)' },
-                      }}
+          {/* Form inside a clean white card */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+            <form onSubmit={handleAddSubmit} className="space-y-6">
+              {/* Section 1 */}
+              <div className="space-y-4 pb-5 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-violet-50 text-[#8B5CF6] flex items-center justify-center font-extrabold text-xs shadow-sm">1</span>
+                  <h4 className="text-xs font-bold text-slate-800">Basic Information</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2 flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Offer Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Summer Sale — 10% Off Everything"
+                      value={formData.offer_name}
+                      onChange={handleFormChange('offer_name')}
+                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
+                        formErrors.offer_name ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      }`}
+                    />
+                    {formErrors.offer_name && <span className="text-[10px] text-red-500 font-semibold">{formErrors.offer_name}</span>}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Offer Type *
+                    </label>
+                    <select
+                      value={formData.offer_type}
+                      onChange={handleFormChange('offer_type')}
+                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
                     >
-                      {/* Radio dot */}
-                      <Box sx={{
-                        width: 14, height: 14, borderRadius: '50%',
-                        border: '2px solid',
-                        borderColor: formData.value_type === v ? '#6D28D9' : '#CBD5E1',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0,
-                      }}>
-                        {formData.value_type === v && (
-                          <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#6D28D9' }} />
-                        )}
-                      </Box>
-                      <Typography variant="body2" fontWeight={formData.value_type === v ? 700 : 500} color={formData.value_type === v ? '#6D28D9' : '#475569'} sx={{ fontSize: '0.82rem' }}>
-                        {label}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
+                      <option value={1}>Instant Discount</option>
+                      <option value={2}>Cashback</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-              <Grid container spacing={2.5}>
-                {/* Value */}
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" sx={labelSx}>
-                    Discount Value <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth size="small" type="number"
-                    placeholder={formData.value_type === 2 ? '10' : '50'}
-                    value={formData.value}
-                    onChange={handleFormChange('value')}
-                    error={!!formErrors.value}
-                    helperText={formErrors.value || (formData.value_type === 2 ? 'Enter a number like 10 for 10% off' : 'Enter the rupee amount, e.g. 50')}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Typography fontWeight={800} color="#6D28D9">{formData.value_type === 2 ? '%' : '₹'}</Typography>
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={inputSx}
-                  />
-                </Grid>
+              {/* Section 2 */}
+              <div className="space-y-4 pb-5 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-violet-50 text-[#8B5CF6] flex items-center justify-center font-extrabold text-xs shadow-sm">2</span>
+                  <h4 className="text-xs font-bold text-slate-800">Value &amp; Discount Details</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Value Type *
+                    </label>
+                    <select
+                      value={formData.value_type}
+                      onChange={handleFormChange('value_type')}
+                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                    >
+                      <option value={1}>Flat Amount (₹)</option>
+                      <option value={2}>Percentage (%)</option>
+                    </select>
+                  </div>
 
-                {/* Min Order Amount */}
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" sx={labelSx}>
-                    Minimum Cart Amount <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth size="small" type="number"
-                    placeholder="100"
-                    value={formData.min_order_amount}
-                    onChange={handleFormChange('min_order_amount')}
-                    error={!!formErrors.min_order_amount}
-                    helperText={formErrors.min_order_amount || 'The cart must be at least this much to apply the coupon'}
-                    InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-                    sx={inputSx}
-                  />
-                </Grid>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Discount Value *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      placeholder={formData.value_type === 2 ? 'e.g. 10' : 'e.g. 150'}
+                      value={formData.value}
+                      onChange={handleFormChange('value')}
+                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
+                        formErrors.value ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      }`}
+                    />
+                    {formErrors.value && <span className="text-[10px] text-red-500 font-semibold">{formErrors.value}</span>}
+                  </div>
+                </div>
+              </div>
 
-                {/* Max Discount */}
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" sx={labelSx}>Max Discount Cap</Typography>
-                  <TextField
-                    fullWidth size="small" type="number"
-                    placeholder="500"
-                    value={formData.max_discount}
-                    onChange={handleFormChange('max_discount')}
-                    helperText="Maximum ₹ a customer can save. Set 0 for no cap (useful for % discounts)"
-                    InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-                    sx={inputSx}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
+              {/* Section 3 */}
+              <div className="space-y-4 pb-5 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-violet-50 text-[#8B5CF6] flex items-center justify-center font-extrabold text-xs shadow-sm">3</span>
+                  <h4 className="text-xs font-bold text-slate-800">Limits &amp; Rules</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Min Order Amount *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      placeholder="e.g. 499"
+                      value={formData.min_order_amount}
+                      onChange={handleFormChange('min_order_amount')}
+                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
+                        formErrors.min_order_amount ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      }`}
+                    />
+                    {formErrors.min_order_amount && <span className="text-[10px] text-red-500 font-semibold">{formErrors.min_order_amount}</span>}
+                  </div>
 
-            {/* ── SECTION 3: Usage Rules ────────────────────────────────── */}
-            <Box sx={{ px: 3, pt: 3, pb: 3, borderBottom: '1px solid rgba(226,232,240,0.6)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '8px', bgcolor: 'rgba(16,185,129,0.1)', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem' }}>
-                  3
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={800} color="#0F172A">Usage Rules</Typography>
-                  <Typography variant="caption" color="text.secondary">Control how many times this coupon can be redeemed</Typography>
-                </Box>
-              </Box>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Max Discount (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 500"
+                      value={formData.max_discount}
+                      onChange={handleFormChange('max_discount')}
+                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                    />
+                  </div>
 
-              <Grid container spacing={2.5} alignItems="flex-start">
-                {/* Total Usage Limit */}
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" sx={labelSx}>
-                    Total Usage Limit <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth size="small" type="number"
-                    placeholder="100"
-                    value={formData.total_usage_limit}
-                    onChange={handleFormChange('total_usage_limit')}
-                    error={!!formErrors.total_usage_limit}
-                    helperText={formErrors.total_usage_limit || 'Max number of times anyone can redeem this coupon in total'}
-                    sx={inputSx}
-                  />
-                </Grid>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Total Usage Limit *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      placeholder="e.g. 1000"
+                      value={formData.total_usage_limit}
+                      onChange={handleFormChange('total_usage_limit')}
+                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
+                        formErrors.total_usage_limit ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      }`}
+                    />
+                    {formErrors.total_usage_limit && <span className="text-[10px] text-red-500 font-semibold">{formErrors.total_usage_limit}</span>}
+                  </div>
 
-                {/* Per User Limit */}
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" sx={labelSx}>Per User Limit</Typography>
-                  <TextField
-                    fullWidth size="small" type="number"
-                    placeholder="1"
-                    value={formData.per_user_limit}
-                    onChange={handleFormChange('per_user_limit')}
-                    helperText="How many times a single customer can use this coupon"
-                    sx={inputSx}
-                  />
-                </Grid>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Per User Limit *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      placeholder="e.g. 1"
+                      value={formData.per_user_limit}
+                      onChange={handleFormChange('per_user_limit')}
+                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                    />
+                  </div>
+                </div>
 
-                {/* Unique Users Only — clickable card */}
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="body2" sx={{ ...labelSx, mb: 1 }}>Restriction</Typography>
-                  <Box
-                    onClick={() => setFormData((p) => ({ ...p, unique_users_only: p.unique_users_only === 1 ? 0 : 1 }))}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 1.2,
-                      p: 1.5,
-                      borderRadius: '10px',
-                      border: '2px solid',
-                      borderColor: formData.unique_users_only === 1 ? '#6D28D9' : 'rgba(226,232,240,0.8)',
-                      bgcolor: formData.unique_users_only === 1 ? 'rgba(109,40,217,0.05)' : '#F8FAFC',
-                      cursor: 'pointer',
-                      transition: 'all 0.18s',
-                      '&:hover': { borderColor: '#A78BFA' },
-                    }}
+                <div className="grid grid-cols-1 gap-4">
+                  <div
+                    onClick={() => setFormData(prev => ({ ...prev, unique_users_only: prev.unique_users_only === 1 ? 0 : 1 }))}
+                    className={`p-3.5 rounded-xl border flex items-start gap-3.5 cursor-pointer transition-all select-none ${
+                      formData.unique_users_only === 1
+                        ? 'border-[#8B5CF6] bg-violet-50/20 text-[#8B5CF6]'
+                        : 'border-slate-200 bg-white text-[#8B5CF6] hover:border-slate-350'
+                    }`}
                   >
-                    <Checkbox
+                    <input
+                      type="checkbox"
                       checked={formData.unique_users_only === 1}
-                      color="primary"
-                      size="small"
-                      sx={{ p: 0, mt: 0.1 }}
-                      onChange={() => {}}
+                      readOnly
+                      className="h-4 w-4 mt-0.5 text-[#8B5CF6] border-slate-300 rounded focus:ring-[#8B5CF6] pointer-events-none"
                     />
-                    <Box>
-                      <Typography variant="body2" fontWeight={700} color={formData.unique_users_only === 1 ? '#6D28D9' : '#334155'}>
-                        New Users Only
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Only customers who haven't used this coupon before
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs font-bold leading-none text-slate-800">New Users Only</span>
+                      <span className="text-[10px] text-slate-400 leading-tight">Only customers who haven't used this coupon before</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            {/* ── SECTION 4: Validity & Status ──────────────────────────── */}
-            <Box sx={{ px: 3, pt: 3, pb: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '8px', bgcolor: 'rgba(239,68,68,0.1)', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.8rem' }}>
-                  4
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={800} color="#0F172A">Validity &amp; Status</Typography>
-                  <Typography variant="caption" color="text.secondary">Set when the coupon is active and whether to publish it now</Typography>
-                </Box>
-              </Box>
-
-              <Grid container spacing={2.5}>
-                {/* Start Date */}
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" sx={labelSx}>
-                    Start Date &amp; Time <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth size="small" type="datetime-local"
-                    value={formData.start_date}
-                    onChange={handleFormChange('start_date')}
-                    error={!!formErrors.start_date}
-                    helperText={formErrors.start_date || 'When the coupon becomes active for customers'}
-                    InputLabelProps={{ shrink: true }}
-                    sx={inputSx}
-                  />
-                </Grid>
-
-                {/* End Date */}
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" sx={labelSx}>
-                    End Date &amp; Time <span style={{ color: '#EF4444' }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth size="small" type="datetime-local"
-                    value={formData.end_date}
-                    onChange={handleFormChange('end_date')}
-                    error={!!formErrors.end_date}
-                    helperText={formErrors.end_date || 'Coupon automatically stops working after this date'}
-                    InputLabelProps={{ shrink: true }}
-                    sx={inputSx}
-                  />
-                </Grid>
-
-                {/* Status toggle */}
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      p: 2,
-                      borderRadius: '12px',
-                      border: '1px solid',
-                      borderColor: formData.status === 1 ? 'rgba(16,185,129,0.3)' : 'rgba(226,232,240,0.8)',
-                      bgcolor: formData.status === 1 ? 'rgba(16,185,129,0.04)' : '#F8FAFC',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <Switch
-                      checked={formData.status === 1}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.checked ? 1 : 0 }))}
-                      color="primary"
+              {/* Section 4 */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-violet-50 text-[#8B5CF6] flex items-center justify-center font-extrabold text-xs shadow-sm">4</span>
+                  <h4 className="text-xs font-bold text-slate-800">Validity &amp; Status</h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      Start Date &amp; Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={formData.start_date}
+                      onChange={handleFormChange('start_date')}
+                      onClick={(e) => {
+                        if (typeof e.target.showPicker === 'function') {
+                          try {
+                            e.target.showPicker();
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }
+                      }}
+                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
+                        formErrors.start_date ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      }`}
                     />
-                    <Box>
-                      <Typography variant="body2" fontWeight={700} color={formData.status === 1 ? '#10B981' : '#64748B'}>
-                        {formData.status === 1 ? '✅ Active — Publish now' : '⏸️ Inactive — Save as draft'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formData.status === 1
-                          ? 'Customers can use this coupon immediately after saving'
-                          : 'Coupon is saved but hidden — you can activate it later'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
-          </DialogContent>
+                    {formErrors.start_date && <span className="text-[10px] text-red-500 font-semibold">{formErrors.start_date}</span>}
+                  </div>
 
-          <DialogActions sx={{ px: 3, pb: 3, pt: 1.5, borderTop: '1px solid rgba(226,232,240,0.8)', gap: 1 }}>
-            <Button
-              onClick={() => { resetForm(); setOpenAddDialog(false); }}
-              color="inherit"
-              disabled={submitting}
-              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '10px', px: 2.5 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={submitting}
-              startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <AddIcon />}
-              sx={{ textTransform: 'none', fontWeight: 650, px: 3.5, borderRadius: '12px', boxShadow: '0 4px 14px rgba(109,40,217,0.25)' }}
-            >
-              {submitting ? 'Creating Coupon...' : 'Create Coupon'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                      End Date &amp; Time *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={formData.end_date}
+                      onChange={handleFormChange('end_date')}
+                      onClick={(e) => {
+                        if (typeof e.target.showPicker === 'function') {
+                          try {
+                            e.target.showPicker();
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }
+                      }}
+                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
+                        formErrors.end_date ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      }`}
+                    />
+                    {formErrors.end_date && <span className="text-[10px] text-red-500 font-semibold">{formErrors.end_date}</span>}
+                  </div>
+                </div>
+              </div>
 
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* DELETE CONFIRM DIALOG                                            */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Dialog
-        open={Boolean(deleteTarget)}
-        onClose={() => !deleting && setDeleteTarget(null)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '16px',
-            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
-            overflow: 'hidden',
-            bgcolor: '#FFFFFF',
-            maxWidth: 380,
-            width: '100%',
-          },
-        }}
-      >
-        {/* Header Section */}
-        <Box sx={{ pt: 3.5, px: 3.5, pb: 1.5 }}>
-          <Typography variant="h6" sx={{ fontWeight: 750, fontSize: '1.25rem', color: '#EF4444', letterSpacing: '-0.02em' }}>
-            Delete Coupon
-          </Typography>
-        </Box>
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setViewMode('list');
+                  }}
+                  className="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-primary to-secondary hover:from-[#7C3AED] hover:to-[#8B5CF6] rounded-xl transition-all shadow-[0_4px_14px_rgba(109,40,217,0.25)] flex items-center gap-1.5"
+                >
+                  {submitting ? (
+                    <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  {submitting ? 'Creating...' : 'Create Coupon'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-        <DialogContent sx={{ p: 0, px: 3.5, pb: 2 }}>
-          <Typography sx={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.5 }}>
-            Are you sure you want to delete coupon <strong>"{deleteTarget?.offer_name}"</strong>?
-          </Typography>
-        </DialogContent>
-
-        <DialogActions 
-          sx={{ 
-            px: 3.5, 
-            pb: 3.5, 
-            pt: 1.5, 
-            display: 'flex', 
-            justifyContent: 'flex-end', 
-            gap: 1.5
-          }}
-        >
-          <Button
-            onClick={() => setDeleteTarget(null)}
-            disabled={deleting}
-            sx={{ 
-              textTransform: 'none', 
-              fontWeight: 600, 
-              fontSize: '0.82rem', 
-              color: '#64748B', 
-              '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
-              px: 2,
-              py: 0.8,
-              borderRadius: '6px',
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            variant="contained"
-            disabled={deleting}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '0.82rem',
-              borderRadius: '6px',
-              px: 2.5,
-              py: 0.8,
-              bgcolor: '#EF4444',
-              color: '#FFFFFF',
-              boxShadow: 'none',
-              transition: 'all 0.2s ease',
-              '&:hover': { 
-                bgcolor: '#DC2626',
-                boxShadow: 'none',
-              },
-            }}
-          >
-            {deleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {/* DELETE CONFIRM DIALOG */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden animate-fadeIn">
+            <div className="pt-6 px-6 pb-2">
+              <h3 className="text-sm font-extrabold text-red-500 tracking-tight">Delete Coupon</h3>
+            </div>
+            <div className="px-6 pb-4">
+              <p className="text-xs text-slate-650 leading-relaxed">
+                Are you sure you want to delete coupon <strong>"{deleteTarget.offer_name}"</strong>?
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-md flex items-center gap-1.5"
+              >
+                {deleting && (
+                  <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

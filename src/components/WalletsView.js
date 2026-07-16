@@ -1,30 +1,13 @@
 import React, { useState } from 'react';
 import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Grid,
-  TextField,
-  InputAdornment,
-  Button,
-  Avatar,
-} from '@mui/material';
-import {
-  AccountBalance as ReservesIcon,
-  MonetizationOn as DisbursedIcon,
-  HourglassEmpty as PendingIcon,
-  Search as SearchIcon,
-  GetApp as ExportIcon,
-  ChevronRight as ChevronRightIcon,
-  ReceiptLong as LedgerIcon,
-} from '@mui/icons-material';
+  Landmark,
+  Coins,
+  Clock,
+  Search,
+  Download,
+  ChevronRight,
+  FileText
+} from 'lucide-react';
 
 // Helper to get initials
 const getInitials = (name) => {
@@ -71,288 +54,161 @@ const WalletsView = ({ triggerToast }) => {
   );
 
   return (
-    <Box sx={{ animation: 'fadeIn 0.5s ease-out-back', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+    <div className="w-full max-w-full box-border animate-fadeIn">
       {/* Header section with breadcrumbs */}
-      <Box sx={{ mb: 4 }} display="flex" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div className="mb-8 flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <div className="flex items-center gap-1 mb-1.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Finances
-            </Typography>
-            <ChevronRightIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            </span>
+            <ChevronRight className="w-3 h-3 text-slate-350" />
+            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
               Platform Ledger
-            </Typography>
-          </Box>
-          <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em', color: '#0F172A', mb: 0.5 }}>
+            </span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Platform Ledger
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
             Monitor user wallet balances, disbursed cashback reports, and operational financial ledger logs.
-          </Typography>
-        </Box>
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<ExportIcon />}
+          </p>
+        </div>
+        <button
           onClick={() => triggerToast('Generating comprehensive audit spreadsheets...', 'success')}
-          sx={{
-            borderRadius: '12px',
-            textTransform: 'none',
-            fontWeight: 650,
-            px: 2.5,
-            py: 1,
-            border: '1px solid rgba(109, 40, 217, 0.25)',
-          }}
+          className="flex items-center gap-2 border border-primary/30 text-primary hover:bg-primary/5 px-4 py-2.5 text-xs font-bold rounded-xl transition-all"
         >
+          <Download className="w-4 h-4" />
           Export Ledger
-        </Button>
-      </Box>
+        </button>
+      </div>
 
       {/* Reserves Cards Grid */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" fontWeight={600} sx={{ mb: 1 }}>
-                    User Wallet Liability
-                  </Typography>
-                  <Typography variant="h4" fontWeight={850} color="#0F172A" sx={{ mb: 0.5 }}>
-                    ₹4,82,400
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Combined value of active user wallets
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(109, 40, 217, 0.08)',
-                    color: '#6D28D9',
-                    display: 'flex',
-                  }}
-                >
-                  <ReservesIcon sx={{ fontSize: 24 }} />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(109,40,217,0.06)] hover:border-primary transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">User Wallet Liability</span>
+            <h3 className="text-2xl font-black text-slate-900">₹4,82,400</h3>
+            <span className="text-[10px] text-slate-400 block mt-1 font-semibold">Combined value of active user wallets</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <Landmark className="w-4.5 h-4.5" />
+          </div>
+        </div>
 
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" fontWeight={600} sx={{ mb: 1 }}>
-                    Cashback Disbursed
-                  </Typography>
-                  <Typography variant="h4" fontWeight={850} color="#10B981" sx={{ mb: 0.5 }}>
-                    ₹1,24,900
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Total rewards disbursed to date
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(16, 185, 129, 0.08)',
-                    color: '#10B981',
-                    display: 'flex',
-                  }}
-                >
-                  <DisbursedIcon sx={{ fontSize: 24 }} />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(16,185,129,0.06)] hover:border-emerald-500 transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cashback Disbursed</span>
+            <h3 className="text-2xl font-black text-emerald-500">₹1,24,900</h3>
+            <span className="text-[10px] text-slate-400 block mt-1 font-semibold">Total rewards disbursed to date</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+            <Coins className="w-4.5 h-4.5" />
+          </div>
+        </div>
 
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" fontWeight={600} sx={{ mb: 1 }}>
-                    Pending Payout Reserve
-                  </Typography>
-                  <Typography variant="h4" fontWeight={850} color="#F59E0B" sx={{ mb: 0.5 }}>
-                    ₹24,500
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Reserves locked for active audits
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(245, 158, 11, 0.08)',
-                    color: '#F59E0B',
-                    display: 'flex',
-                  }}
-                >
-                  <PendingIcon sx={{ fontSize: 24 }} />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(245,158,11,0.06)] hover:border-amber-500 transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Pending Payout Reserve</span>
+            <h3 className="text-2xl font-black text-amber-550">₹24,500</h3>
+            <span className="text-[10px] text-slate-400 block mt-1 font-semibold">Reserves locked for active audits</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+            <Clock className="w-4.5 h-4.5" />
+          </div>
+        </div>
+      </div>
 
       {/* Ledger Table Section */}
-      <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', overflow: 'hidden' }}>
-        <CardContent sx={{ p: 0 }}>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            flexWrap="wrap"
-            gap={2}
-            sx={{ p: 3, borderBottom: '1px solid rgba(226, 232, 240, 0.8)' }}
-          >
-            <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
-              System Ledger Transactions
-            </Typography>
-            <TextField
-              size="small"
-              placeholder="Search ledger by transaction ID or user name..."
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+        {/* Table Title and Search Row */}
+        <div className="p-6 border-b border-slate-100 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <h3 className="font-bold text-sm text-slate-900">
+            System Ledger Transactions
+          </h3>
+          <div className="relative w-full sm:w-80">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-slate-400" />
+            </span>
+            <input
+              type="text"
+              placeholder="Search ledger by txn ID or user name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                minWidth: 320,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '12px',
-                  bgcolor: '#F8FAFC',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    bgcolor: '#F1F5F9',
-                  },
-                  '&.Mui-focused': {
-                    bgcolor: '#FFFFFF',
-                    boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                  },
-                },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" sx={{ fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
+              className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] hover:bg-[#F1F5F9] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all duration-200 text-slate-900 font-medium placeholder-slate-400"
             />
-          </Box>
+          </div>
+        </div>
 
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>TRANSACTION ID</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>SETTLEMENT DATE</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>CUSTOMER</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>ACTIVITY TYPE</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>LEDGER IMPACT</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pr: 3 }}>SETTLEMENT STATUS</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredLedgers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                      <Box display="flex" flexDirection="column" alignItems="center" gap={1.5}>
-                        <LedgerIcon sx={{ fontSize: 40, color: 'text.disabled', opacity: 0.5 }} />
-                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                          No transactions recorded matching your search.
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredLedgers.map((txn) => {
-                    const isDeduction = txn.type.toLowerCase().includes('deduct');
-                    return (
-                      <TableRow
-                        key={txn.id}
-                        hover
-                        sx={{
-                          transition: 'all 0.2s',
-                          '&:hover': {
-                            bgcolor: 'rgba(109, 40, 217, 0.015) !important',
-                          },
-                        }}
-                      >
-                        <TableCell sx={{ fontWeight: 700, color: '#6D28D9', fontFamily: 'monospace' }}>
-                          {txn.id}
-                        </TableCell>
-                        <TableCell sx={{ color: '#475569' }}>{txn.date}</TableCell>
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={1.5}>
-                            <Avatar
-                              sx={{
-                                width: 28,
-                                height: 28,
-                                fontSize: '0.7rem',
-                                fontWeight: 700,
-                                background: getAvatarGradient(txn.user),
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                              }}
-                            >
-                              {getInitials(txn.user)}
-                            </Avatar>
-                            <Typography variant="subtitle2" fontWeight={700} color="#1E293B">
-                              {txn.user}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ color: '#475569', fontWeight: 500 }}>
-                          {txn.type}
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: isDeduction ? '#EF4444' : '#10B981' }}>
-                          {isDeduction ? '-' : '+'}{txn.amount}
-                        </TableCell>
-                        <TableCell align="center" sx={{ pr: 3 }}>
-                          <Box
-                            sx={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 0.8,
-                              px: 1.5,
-                              py: 0.6,
-                              borderRadius: '20px',
-                              fontWeight: 600,
-                              fontSize: '0.75rem',
-                              bgcolor: 'rgba(16, 185, 129, 0.08)',
-                              color: '#10B981',
-                              border: '1px solid rgba(16, 185, 129, 0.15)',
-                            }}
+        {/* Ledger Table */}
+        <div className="overflow-x-auto w-full">
+          <table className="min-w-full text-left">
+            <thead>
+              <tr className="bg-[#F8FAFC] border-b border-slate-100">
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 pl-6">Transaction ID</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Settlement Date</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Customer</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Activity Type</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Ledger Impact</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-center pr-6">Settlement Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredLedgers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <FileText className="w-10 h-10 text-slate-300 opacity-50" />
+                      <span className="text-xs font-semibold text-slate-400">No transactions recorded matching your search.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredLedgers.map((txn) => {
+                  const isDeduction = txn.type.toLowerCase().includes('deduct');
+                  return (
+                    <tr
+                      key={txn.id}
+                      className="hover:bg-violet-50/10 transition-colors"
+                    >
+                      <td className="px-6 py-4 pl-6 text-xs font-mono font-bold text-primary whitespace-nowrap">
+                        {txn.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 font-semibold">
+                        {txn.date}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-white font-extrabold text-[10px] shadow-sm flex-shrink-0"
+                            style={{ background: getAvatarGradient(txn.user) }}
                           >
-                            <Box
-                              sx={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: '50%',
-                                bgcolor: '#10B981',
-                              }}
-                            />
-                            {txn.status}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
-    </Box>
+                            {getInitials(txn.user)}
+                          </div>
+                          <span className="text-xs font-bold text-slate-800">{txn.user}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-medium text-slate-650">
+                        {txn.type}
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-xs font-extrabold ${isDeduction ? 'text-red-500' : 'text-emerald-500'}`}>
+                        {isDeduction ? '-' : '+'}{txn.amount}
+                      </td>
+                      <td className="px-6 py-4 text-center pr-6 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold border bg-emerald-50 text-emerald-600 border-emerald-500/10">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          {txn.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 };
 

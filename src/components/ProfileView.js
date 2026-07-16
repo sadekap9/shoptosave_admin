@@ -1,27 +1,13 @@
 import React, { useState } from 'react';
 import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Button,
-  TextField,
-  Divider,
-  Avatar,
-  Tab,
-  Tabs,
-  Paper,
-} from '@mui/material';
-import {
-  Edit as EditIcon,
-  Save as SaveIcon,
-  Close as CancelIcon,
-  Shield as ShieldIcon,
-  Https as HttpsIcon,
-  History as HistoryIcon,
-} from '@mui/icons-material';
+  Edit3,
+  Save,
+  X,
+  Shield,
+  Lock,
+  History
+} from 'lucide-react';
 
-// Helper to get initials dynamically from name
 const getInitials = (name) => {
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
@@ -42,10 +28,6 @@ const ProfileView = ({ adminProfile, onUpdateProfile, triggerToast }) => {
   // Validation errors
   const [errors, setErrors] = useState({});
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
   const handleCancel = () => {
     setName(adminProfile.name);
     setEmail(adminProfile.email);
@@ -56,7 +38,6 @@ const ProfileView = ({ adminProfile, onUpdateProfile, triggerToast }) => {
   };
 
   const handleSave = () => {
-    // Basic validation
     const newErrors = {};
     if (!name.trim()) newErrors.name = 'Full name is required';
     if (!email.trim()) {
@@ -72,7 +53,6 @@ const ProfileView = ({ adminProfile, onUpdateProfile, triggerToast }) => {
       return;
     }
 
-    // Apply updates
     const initials = getInitials(name);
     const updated = {
       ...adminProfile,
@@ -88,454 +68,258 @@ const ProfileView = ({ adminProfile, onUpdateProfile, triggerToast }) => {
   };
 
   return (
-    <Box sx={{ animation: 'fadeIn 0.4s ease-out-back', width: '100%', boxSizing: 'border-box' }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em', color: '#0F172A', mb: 1 }}>
+    <div className="w-full max-w-full box-border animate-fadeIn">
+      <div className="mb-8">
+        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
           Administrator Account Profile
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+        </h2>
+        <p className="text-xs text-slate-400 mt-1">
           Manage your credentials, edit security configurations, and view workspace status.
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
-      {/* Main Profile Grid Wrapper */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', lg: '350px 1fr' },
-          gap: '28px',
-          alignItems: 'start',
-        }}
-      >
+      <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6 items-start">
         {/* LEFT COLUMN: AVATAR & QUICK STATS */}
-        <Box sx={{ minWidth: 0 }}>
-          <Card
-            sx={{
-              border: '1px solid rgba(226, 232, 240, 0.8)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
-            }}
-          >
-            {/* Gradient Avatar Header */}
-            <Box
-              sx={{
-                p: 4,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                bgcolor: '#F8FAFC',
-                borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-              }}
-            >
-              <Avatar
-                sx={{
-                  width: 96,
-                  height: 96,
-                  fontSize: '2.1rem',
-                  fontWeight: 800,
-                  background: 'linear-gradient(135deg, #6D28D9 0%, #A855F7 100%)',
-                  boxShadow: '0 8px 24px rgba(109, 40, 217, 0.18)',
-                  mb: 2.5,
-                }}
-              >
-                {adminProfile.avatarInitials}
-              </Avatar>
-              <Typography variant="h6" fontWeight={800} color="#0F172A" sx={{ mb: 0.5 }}>
-                {adminProfile.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-                {adminProfile.email}
-              </Typography>
+        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+          {/* Gradient Avatar Header */}
+          <div className="p-8 flex flex-col items-center text-center bg-[#F8FAFC] border-b border-slate-200/80">
+            <div className="w-24 h-24 rounded-full flex items-center justify-center text-white font-extrabold text-3xl shadow-lg bg-gradient-to-r from-primary to-secondary mb-5">
+              {adminProfile.avatarInitials}
+            </div>
+            <h3 className="font-extrabold text-base text-slate-900 leading-snug">
+              {adminProfile.name}
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              {adminProfile.email}
+            </p>
 
-              {/* Status Badges */}
-              <Box sx={{ display: 'flex', gap: 1.2, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <Box
-                  sx={{
-                    px: 1.5,
-                    py: 0.6,
-                    borderRadius: '20px',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    bgcolor: 'rgba(16, 185, 129, 0.08)',
-                    color: '#10B981',
-                    border: '1px solid rgba(16, 185, 129, 0.15)',
-                  }}
-                >
-                  Status: Online
-                </Box>
-                <Box
-                  sx={{
-                    px: 1.5,
-                    py: 0.6,
-                    borderRadius: '20px',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    bgcolor: 'rgba(109, 40, 217, 0.08)',
-                    color: '#6D28D9',
-                    border: '1px solid rgba(109, 40, 217, 0.15)',
-                  }}
-                >
-                  Role: Super Admin
-                </Box>
-              </Box>
-            </Box>
+            <div className="flex gap-2 mt-5 flex-wrap justify-center">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border bg-emerald-50 text-emerald-600 border-emerald-500/10">
+                Status: Online
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border bg-primary/10 text-primary border-primary/5">
+                Role: Super Admin
+              </span>
+            </div>
+          </div>
 
-            {/* Quick Stats list */}
-            <Box sx={{ p: 3 }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                fontWeight={750}
-                sx={{ display: 'block', mb: 2.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-              >
-                Security & Access Meta
-              </Typography>
-              <Box display="flex" justifyContent="space-between" sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Access Group</Typography>
-                <Typography variant="body2" fontWeight={700} color="#0F172A">System Admins</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">Access Level</Typography>
-                <Typography variant="body2" fontWeight={700} color="#6D28D9">Level 5 (Max)</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between" sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">2FA Status</Typography>
-                <Typography variant="body2" fontWeight={700} color="#10B981">Enabled (MFA)</Typography>
-              </Box>
-              <Box display="flex" justifyContent="space-between">
-                <Typography variant="body2" color="text.secondary">Session Age</Typography>
-                <Typography variant="body2" fontWeight={700} color="#0F172A">1h 40m</Typography>
-              </Box>
-            </Box>
-          </Card>
-        </Box>
+          {/* Security details quick stats */}
+          <div className="p-6 space-y-4 text-xs font-semibold">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+              Security &amp; Access Meta
+            </span>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Access Group</span>
+              <span className="text-slate-900 font-bold">System Admins</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Access Level</span>
+              <span className="text-primary font-bold">Level 5 (Max)</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">2FA Status</span>
+              <span className="text-emerald-500 font-bold">Enabled (MFA)</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400">Session Age</span>
+              <span className="text-slate-900 font-bold">1h 40m</span>
+            </div>
+          </div>
+        </div>
 
         {/* RIGHT COLUMN: DETAIL TABS & SETTINGS */}
-        <Box sx={{ minWidth: 0 }}>
-          <Card
-            sx={{
-              border: '1px solid rgba(226, 232, 240, 0.8)',
-              borderRadius: '20px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
-              overflow: 'visible',
-            }}
-          >
-            {/* Premium Tabs Panel */}
-            <Box
-              sx={{
-                px: 3.5,
-                borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-                bgcolor: '#FFFFFF',
-                borderTopLeftRadius: '20px',
-                borderTopRightRadius: '20px',
-              }}
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+          {/* Tab bar header */}
+          <div className="border-b border-slate-200 bg-white px-6 flex gap-1">
+            <button
+              onClick={() => setActiveTab(0)}
+              className={`px-4 py-4 text-xs font-bold border-b-2 transition-all ${
+                activeTab === 0
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-slate-450 hover:text-slate-700'
+              }`}
             >
-              <Tabs
-                value={activeTab}
-                onChange={handleTabChange}
-                sx={{
-                  '& .MuiTabs-indicator': {
-                    height: '3px',
-                    borderRadius: '3px 3px 0 0',
-                    bgcolor: '#6D28D9',
-                  },
-                  '& .MuiTab-root': {
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    minWidth: 100,
-                    px: 1,
-                    py: 2.2,
-                    color: '#64748B',
-                    '&.Mui-selected': {
-                      color: '#6D28D9',
-                    },
-                  },
-                }}
-              >
-                <Tab label="General Info" />
-                <Tab label="Security & System Policy" />
-              </Tabs>
-            </Box>
+              General Info
+            </button>
+            <button
+              onClick={() => setActiveTab(1)}
+              className={`px-4 py-4 text-xs font-bold border-b-2 transition-all ${
+                activeTab === 1
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-slate-450 hover:text-slate-700'
+              }`}
+            >
+              Security &amp; System Policy
+            </button>
+          </div>
 
-            <CardContent sx={{ p: 3.5 }}>
-              {/* TAB 0: GENERAL INFO */}
-              {activeTab === 0 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
-                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
-                      Administrative Identity & Contact Info
-                    </Typography>
-                    {!editMode && (
-                      <Button
-                        variant="outlined"
-                        startIcon={<EditIcon />}
-                        onClick={() => setEditMode(true)}
-                        sx={{
-                          borderRadius: '10px',
-                          textTransform: 'none',
-                          fontWeight: 700,
-                          fontSize: '0.78rem',
-                          px: 2,
-                          py: 0.8,
-                          color: '#6D28D9',
-                          borderColor: 'rgba(109, 40, 217, 0.24)',
-                          '&:hover': {
-                            borderColor: '#6D28D9',
-                            bgcolor: '#F5F3FF',
-                          },
-                        }}
-                      >
-                        Edit Details
-                      </Button>
-                    )}
-                  </Box>
+          <div className="p-6 md:p-8">
+            {/* TAB 0: GENERAL INFO */}
+            {activeTab === 0 && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center gap-4 flex-wrap">
+                  <h3 className="font-bold text-sm text-slate-900">
+                    Administrative Identity &amp; Contact Info
+                  </h3>
+                  {!editMode && (
+                    <button
+                      onClick={() => setEditMode(true)}
+                      className="flex items-center gap-1.5 border border-primary/20 text-primary hover:bg-[#F5F3FF] px-4 py-2 text-xs font-bold rounded-lg transition-all"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Edit Details
+                    </button>
+                  )}
+                </div>
 
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                      gap: 3.5,
-                      mt: 1,
-                    }}
-                  >
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mb: editMode ? 1.2 : 0.6, fontWeight: 700, letterSpacing: '0.05em' }}
-                      >
-                        FULL NAME
-                      </Typography>
-                      {editMode ? (
-                        <TextField
-                          fullWidth
-                          size="small"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Full Name
+                    </span>
+                    {editMode ? (
+                      <div className="flex flex-col gap-1">
+                        <input
+                          type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          error={!!errors.name}
-                          helperText={errors.name}
-                          InputProps={{
-                            sx: { borderRadius: '10px' },
-                          }}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-primary outline-none transition-all"
                         />
-                      ) : (
-                        <Typography variant="body1" fontWeight={750} color="#1E293B">
-                          {adminProfile.name}
-                        </Typography>
-                      )}
-                    </Box>
+                        {errors.name && <span className="text-[10px] text-red-500 font-semibold">{errors.name}</span>}
+                      </div>
+                    ) : (
+                      <span className="text-xs font-bold text-slate-800 block">{adminProfile.name}</span>
+                    )}
+                  </div>
 
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mb: editMode ? 1.2 : 0.6, fontWeight: 700, letterSpacing: '0.05em' }}
-                      >
-                        ASSIGNED ROLE
-                      </Typography>
-                      <Typography variant="body1" fontWeight={750} color="#64748B">
-                        {adminProfile.role}
-                      </Typography>
-                    </Box>
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Assigned Role
+                    </span>
+                    <span className="text-xs font-bold text-slate-450 block">{adminProfile.role}</span>
+                  </div>
 
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mb: editMode ? 1.2 : 0.6, fontWeight: 700, letterSpacing: '0.05em' }}
-                      >
-                        EMAIL ADDRESS
-                      </Typography>
-                      {editMode ? (
-                        <TextField
-                          fullWidth
-                          size="small"
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Email Address
+                    </span>
+                    {editMode ? (
+                      <div className="flex flex-col gap-1">
+                        <input
+                          type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          error={!!errors.email}
-                          helperText={errors.email}
-                          InputProps={{
-                            sx: { borderRadius: '10px' },
-                          }}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-primary outline-none transition-all"
                         />
-                      ) : (
-                        <Typography variant="body1" fontWeight={750} color="#1E293B">
-                          {adminProfile.email}
-                        </Typography>
-                      )}
-                    </Box>
+                        {errors.email && <span className="text-[10px] text-red-500 font-semibold">{errors.email}</span>}
+                      </div>
+                    ) : (
+                      <span className="text-xs font-bold text-slate-800 block">{adminProfile.email}</span>
+                    )}
+                  </div>
 
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: 'block', mb: editMode ? 1.2 : 0.6, fontWeight: 700, letterSpacing: '0.05em' }}
-                      >
-                        PHONE NUMBER
-                      </Typography>
-                      {editMode ? (
-                        <TextField
-                          fullWidth
-                          size="small"
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Phone Number
+                    </span>
+                    {editMode ? (
+                      <div className="flex flex-col gap-1">
+                        <input
+                          type="text"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          error={!!errors.phone}
-                          helperText={errors.phone}
-                          InputProps={{
-                            sx: { borderRadius: '10px' },
-                          }}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:border-primary outline-none transition-all"
                         />
-                      ) : (
-                        <Typography variant="body1" fontWeight={750} color="#1E293B" sx={{ fontFamily: 'monospace' }}>
-                          {adminProfile.phone}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
+                        {errors.phone && <span className="text-[10px] text-red-500 font-semibold">{errors.phone}</span>}
+                      </div>
+                    ) : (
+                      <span className="text-xs font-mono font-bold text-slate-800 block">{adminProfile.phone}</span>
+                    )}
+                  </div>
+                </div>
 
-                  {editMode && (
-                    <Box sx={{ mt: 3 }}>
-                      <Divider sx={{ my: 2 }} />
-                      <Box display="flex" justifyContent="flex-end" gap={2}>
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          startIcon={<CancelIcon />}
-                          onClick={handleCancel}
-                          sx={{
-                            borderRadius: '12px',
-                            textTransform: 'none',
-                            fontWeight: 700,
-                            px: 3,
-                            py: 1,
-                            borderWidth: '1.5px',
-                            '&:hover': { borderWidth: '1.5px' },
-                          }}
-                        >
-                          Discard
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          startIcon={<SaveIcon />}
-                          onClick={handleSave}
-                          sx={{
-                            borderRadius: '12px',
-                            textTransform: 'none',
-                            fontWeight: 700,
-                            px: 3,
-                            py: 1,
-                            bgcolor: '#6D28D9',
-                            '&:hover': { bgcolor: '#5B21B6' },
-                            boxShadow: 'none',
-                          }}
-                        >
-                          Save Profile
-                        </Button>
-                      </Box>
-                    </Box>
-                  )}
-                </Box>
-              )}
-
-              {/* TAB 1: SECURITY & SYSTEM POLICY */}
-              {activeTab === 1 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
-                  <Typography variant="subtitle1" fontWeight={800} color="#0F172A">
-                    Security Architecture & Logging Protocols
-                  </Typography>
-
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 2.5,
-                        borderRadius: '16px',
-                        border: '1px solid rgba(226, 232, 240, 0.8)',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 2,
-                        bgcolor: 'rgba(16, 185, 129, 0.02)',
-                      }}
+                {editMode && (
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-2.5">
+                    <button
+                      onClick={handleCancel}
+                      className="flex items-center gap-1.5 border border-red-200 text-red-500 hover:bg-red-50 px-4 py-2 text-xs font-bold rounded-lg transition-colors"
                     >
-                      <ShieldIcon sx={{ color: '#10B981', mt: 0.2 }} />
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={800} color="#0F172A" sx={{ mb: 0.5 }}>
-                          Multi-Factor Authentication (MFA)
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.74rem' }}>
-                          MFA via Google Authenticator is strictly enforced for your administrator account.
-                        </Typography>
-                      </Box>
-                    </Paper>
-
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 2.5,
-                        borderRadius: '16px',
-                        border: '1px solid rgba(226, 232, 240, 0.8)',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 2,
-                        bgcolor: 'rgba(109, 40, 217, 0.02)',
-                      }}
+                      <X className="w-3.5 h-3.5" />
+                      Discard
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      className="flex items-center gap-1.5 text-white bg-primary hover:bg-[#5B21B6] px-4 py-2 text-xs font-bold rounded-lg transition-colors shadow-sm"
                     >
-                      <HttpsIcon sx={{ color: '#6D28D9', mt: 0.2 }} />
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={800} color="#0F172A" sx={{ mb: 0.5 }}>
-                          Cryptographic Session Logs
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.74rem' }}>
-                          All administrator requests are signed and logged via secure SHA-256 hashing.
-                        </Typography>
-                      </Box>
-                    </Paper>
+                      <Save className="w-3.5 h-3.5" />
+                      Save Profile
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 2.5,
-                        borderRadius: '16px',
-                        border: '1px solid rgba(226, 232, 240, 0.8)',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 2,
-                        gridColumn: { md: 'span 2' },
-                      }}
-                    >
-                      <HistoryIcon sx={{ color: '#64748B', mt: 0.2 }} />
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={800} color="#0F172A" sx={{ mb: 0.5 }}>
-                          Recent Security Access Auditing
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.74rem', mb: 1.5 }}>
-                          The following logins were registered for this identity:
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
-                          <Box display="flex" justifyContent="space-between" sx={{ fontSize: '0.72rem', color: '#475569' }}>
-                            <Typography variant="caption" fontWeight={650}>2026-05-22 16:59 (Current Session)</Typography>
-                            <Typography variant="caption" fontWeight={600} color="#10B981">IP: 103.45.12.89 (Delhi, IN)</Typography>
-                          </Box>
-                          <Divider />
-                          <Box display="flex" justifyContent="space-between" sx={{ fontSize: '0.72rem', color: '#475569' }}>
-                            <Typography variant="caption" fontWeight={650}>2026-05-21 10:14 (Expired)</Typography>
-                            <Typography variant="caption" fontWeight={600} color="text.disabled">IP: 103.45.12.89 (Delhi, IN)</Typography>
-                          </Box>
-                        </Box>
-                      </Box>
-                    </Paper>
-                  </Box>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Box>
-      </Box>
-    </Box>
+            {/* TAB 1: SECURITY & SYSTEM POLICY */}
+            {activeTab === 1 && (
+              <div className="space-y-6">
+                <h3 className="font-bold text-sm text-slate-900">
+                  Security Architecture &amp; Logging Protocols
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl border border-slate-200/60 bg-emerald-500/5 flex gap-3">
+                    <Shield className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 mb-1">
+                        Multi-Factor Authentication (MFA)
+                      </h4>
+                      <p className="text-[10px] text-slate-400 leading-normal font-semibold">
+                        MFA via Google Authenticator is strictly enforced for your administrator account.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-slate-200/60 bg-primary/5 flex gap-3">
+                    <Lock className="w-5 h-5 text-primary flex-shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 mb-1">
+                        Cryptographic Session Logs
+                      </h4>
+                      <p className="text-[10px] text-slate-400 leading-normal font-semibold">
+                        All administrator requests are signed and logged via secure SHA-256 hashing.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-slate-200/60 bg-slate-50 flex gap-3 md:col-span-2">
+                    <History className="w-5 h-5 text-slate-450 flex-shrink-0" />
+                    <div className="w-full">
+                      <h4 className="text-xs font-bold text-slate-900 mb-1">
+                        Recent Security Access Auditing
+                      </h4>
+                      <p className="text-[10px] text-slate-400 leading-normal mb-3 font-semibold">
+                        The following logins were registered for this identity:
+                      </p>
+                      <div className="space-y-2.5">
+                        <div className="flex justify-between items-center text-[10px] text-slate-650 flex-wrap gap-2">
+                          <span className="font-bold">2026-05-22 16:59 (Current Session)</span>
+                          <span className="text-emerald-500 font-bold">IP: 103.45.12.89 (Delhi, IN)</span>
+                        </div>
+                        <div className="border-t border-slate-200" />
+                        <div className="flex justify-between items-center text-[10px] text-slate-450 flex-wrap gap-2">
+                          <span className="font-semibold">2026-05-21 10:14 (Expired)</span>
+                          <span className="font-semibold">IP: 103.45.12.89 (Delhi, IN)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

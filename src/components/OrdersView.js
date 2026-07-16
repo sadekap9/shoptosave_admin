@@ -1,32 +1,13 @@
 import React, { useState } from 'react';
 import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Grid,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  CalendarToday as DateIcon,
-  ChevronRight as ChevronRightIcon,
-  ShoppingBag as OrdersIcon,
-  CheckCircle as CompleteIcon,
-  HourglassEmpty as PendingIcon,
-  Paid as RevenueIcon,
-} from '@mui/icons-material';
+  Search,
+  Calendar,
+  ChevronRight,
+  ShoppingBag,
+  CheckCircle2,
+  Clock,
+  Coins
+} from 'lucide-react';
 
 const OrdersView = ({ orders }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +18,7 @@ const OrdersView = ({ orders }) => {
   const completeCount = orders.filter((o) => o.status === 'Complete').length;
   const processingCount = orders.filter((o) => o.status === 'Processing').length;
   const failedCount = orders.filter((o) => o.status === 'Failed').length;
-  
+
   // Calculate total checkout volume
   const totalVolume = orders.reduce((sum, o) => {
     const numericStr = o.amount.replace(/[^0-9]/g, '');
@@ -55,327 +36,184 @@ const OrdersView = ({ orders }) => {
   });
 
   return (
-    <Box sx={{ animation: 'fadeIn 0.5s ease-out-back', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-      {/* Header section with breadcrumbs */}
-      <Box sx={{ mb: 4 }} display="flex" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+    <div className="w-full max-w-full box-border animate-fadeIn">
+      {/* Header section */}
+      <div className="mb-8 flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <div className="flex items-center gap-1 mb-1.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Sales
-            </Typography>
-            <ChevronRightIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            </span>
+            <ChevronRight className="w-3 h-3 text-slate-350" />
+            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
               Orders Ledger
-            </Typography>
-          </Box>
-          <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em', color: '#0F172A', mb: 0.5 }}>
+            </span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Gift Card Orders
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
             Track transaction purchases, order processing pipelines, and client distributions.
-          </Typography>
-        </Box>
-      </Box>
+          </p>
+        </div>
+      </div>
 
-      {/* Orders quick stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                  Total Orders
-                </Typography>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: '10px',
-                    background: 'rgba(109, 40, 217, 0.08)',
-                    color: '#6D28D9',
-                    display: 'flex',
-                  }}
-                >
-                  <OrdersIcon sx={{ fontSize: 20 }} />
-                </Box>
-              </Box>
-              <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5 }}>
-                {totalCount}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Purchased gift cards
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* Stats cards row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        {/* Card 1 */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(109,40,217,0.06)] hover:border-primary transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Orders</span>
+            <h3 className="text-2xl font-black text-slate-900">{totalCount}</h3>
+            <span className="text-[10px] text-slate-400 block mt-1 font-semibold">Purchased gift cards</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <ShoppingBag className="w-4.5 h-4.5" />
+          </div>
+        </div>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                  Completed Handover
-                </Typography>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: '10px',
-                    background: 'rgba(16, 185, 129, 0.08)',
-                    color: '#10B981',
-                    display: 'flex',
-                  }}
-                >
-                  <CompleteIcon sx={{ fontSize: 20 }} />
-                </Box>
-              </Box>
-              <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5, color: '#10B981' }}>
-                {completeCount}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Delivered successfully
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        {/* Card 2 */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(16,185,129,0.06)] hover:border-emerald-500 transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Completed Handover</span>
+            <h3 className="text-2xl font-black text-emerald-500">{completeCount}</h3>
+            <span className="text-[10px] text-slate-400 block mt-1 font-semibold">Delivered successfully</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+            <CheckCircle2 className="w-4.5 h-4.5" />
+          </div>
+        </div>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                  Active Handover / Failed
-                </Typography>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: '10px',
-                    background: 'rgba(245, 158, 11, 0.08)',
-                    color: '#F59E0B',
-                    display: 'flex',
-                  }}
-                >
-                  <PendingIcon sx={{ fontSize: 20 }} />
-                </Box>
-              </Box>
-              <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5, color: '#F59E0B' }}>
-                {processingCount} <span style={{ fontSize: '1rem', color: '#EF4444', fontWeight: 600 }}>/ {failedCount} Failed</span>
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Processing queue status
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        {/* Card 3 */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(245,158,11,0.06)] hover:border-amber-500 transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Active / Failed</span>
+            <h3 className="text-2xl font-black text-amber-500">
+              {processingCount} <span className="text-xs text-red-500 font-bold">/ {failedCount} Failed</span>
+            </h3>
+            <span className="text-[10px] text-slate-400 block mt-1 font-semibold">Processing queue status</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+            <Clock className="w-4.5 h-4.5" />
+          </div>
+        </div>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                  Total Volume
-                </Typography>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: '10px',
-                    background: 'rgba(13, 148, 136, 0.08)',
-                    color: '#0D9488',
-                    display: 'flex',
-                  }}
-                >
-                  <RevenueIcon sx={{ fontSize: 20 }} />
-                </Box>
-              </Box>
-              <Typography variant="h4" fontWeight={800} sx={{ mb: 0.5 }}>
-                ₹{totalVolume.toLocaleString('en-IN')}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Total checkout value
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        {/* Card 4 */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(13,148,136,0.06)] hover:border-teal-500 transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Volume</span>
+            <h3 className="text-2xl font-black text-slate-900">₹{totalVolume.toLocaleString('en-IN')}</h3>
+            <span className="text-[10px] text-slate-400 block mt-1 font-semibold">Total checkout value</span>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+            <Coins className="w-4.5 h-4.5" />
+          </div>
+        </div>
+      </div>
 
       {/* Main Table Card */}
-      <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', overflow: 'hidden' }}>
-        <CardContent sx={{ p: 0 }}>
-          {/* Filters Row */}
-          <Box
-            display="flex"
-            gap={2}
-            flexWrap="wrap"
-            sx={{
-              p: 3,
-              borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-              bgcolor: '#FFFFFF',
-              alignItems: 'center',
-            }}
-          >
-            <TextField
-              sx={{
-                flexGrow: 1,
-                minWidth: 280,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '12px',
-                  bgcolor: '#F8FAFC',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    bgcolor: '#F1F5F9',
-                  },
-                  '&.Mui-focused': {
-                    bgcolor: '#FFFFFF',
-                    boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                  },
-                },
-              }}
-              size="small"
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+        {/* Filters bar */}
+        <div className="p-6 border-b border-slate-100 bg-white flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="relative flex-1 md:max-w-md">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-slate-400" />
+            </span>
+            <input
+              type="text"
               placeholder="Search by order ID, customer name, or brand..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" sx={{ fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
+              className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] hover:bg-[#F1F5F9] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all duration-200 text-slate-900 font-medium placeholder-slate-400"
             />
-            <FormControl
-              size="small"
-              sx={{
-                minWidth: 180,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '12px',
-                  bgcolor: '#F8FAFC',
-                },
-              }}
-            >
-              <InputLabel id="order-status-filter-label">Order Status</InputLabel>
-              <Select
-                labelId="order-status-filter-label"
-                value={statusFilter}
-                label="Order Status"
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="All">All Orders</MenuItem>
-                <MenuItem value="Complete">Complete</MenuItem>
-                <MenuItem value="Processing">Processing</MenuItem>
-                <MenuItem value="Failed">Failed</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
+          </div>
 
-          {/* Orders Table */}
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>ORDER ID</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>TIMESTAMP</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>CUSTOMER</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>GIFT CARD BRAND</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>VALUE</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pr: 3 }}>DELIVERY STATUS</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredOrders.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                      <Box display="flex" flexDirection="column" alignItems="center" gap={1.5}>
-                        <OrdersIcon sx={{ fontSize: 40, color: 'text.disabled', opacity: 0.5 }} />
-                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                          No orders recorded matching your criteria.
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <TableRow
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] focus:bg-white focus:border-primary outline-none transition-all text-slate-700 font-semibold w-full md:w-44"
+            >
+              <option value="All">All Orders</option>
+              <option value="Complete">Complete</option>
+              <option value="Processing">Processing</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Orders Table */}
+        <div className="overflow-x-auto w-full">
+          <table className="min-w-full text-left">
+            <thead>
+              <tr className="bg-[#F8FAFC] border-b border-slate-100">
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 pl-6">Order ID</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Timestamp</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Customer</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Gift Card Brand</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Value</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-center pr-6">Delivery Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <ShoppingBag className="w-10 h-10 text-slate-300 opacity-50" />
+                      <span className="text-xs font-semibold text-slate-400">No orders recorded matching your criteria.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map((order) => {
+                  const status = order.status;
+                  return (
+                    <tr
                       key={order.id}
-                      hover
-                      sx={{
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          bgcolor: 'rgba(109, 40, 217, 0.015) !important',
-                        },
-                      }}
+                      className="hover:bg-violet-50/10 transition-colors"
                     >
-                      <TableCell sx={{ fontWeight: 700, color: '#6D28D9', fontFamily: 'monospace' }}>
+                      <td className="px-6 py-4 pl-6 text-xs font-mono font-bold text-primary whitespace-nowrap">
                         {order.id}
-                      </TableCell>
-                      <TableCell sx={{ color: '#475569' }}>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <DateIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
-                          <Typography variant="body2" color="#475569" sx={{ fontSize: '0.85rem' }}>
-                            {order.timestamp || '2026-05-22 10:15'}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 700, color: '#1E293B' }}>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 font-semibold">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          {order.timestamp || '2026-05-22 10:15'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-800">
                         {order.user}
-                      </TableCell>
-                      <TableCell sx={{ color: '#1E293B', fontWeight: 500 }}>{order.brand}</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#0F172A' }}>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-medium text-slate-700">
+                        {order.brand}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-extrabold text-slate-900">
                         {order.amount}
-                      </TableCell>
-                      <TableCell align="center" sx={{ pr: 3 }}>
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.8,
-                            px: 1.5,
-                            py: 0.6,
-                            borderRadius: '20px',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                            bgcolor:
-                              order.status === 'Complete'
-                                ? 'rgba(16, 185, 129, 0.08)'
-                                : order.status === 'Processing'
-                                ? 'rgba(245, 158, 11, 0.08)'
-                                : 'rgba(239, 68, 68, 0.08)',
-                            color:
-                              order.status === 'Complete'
-                                ? '#10B981'
-                                : order.status === 'Processing'
-                                ? '#F59E0B'
-                                : '#EF4444',
-                            border:
-                              order.status === 'Complete'
-                                ? '1px solid rgba(16, 185, 129, 0.15)'
-                                : order.status === 'Processing'
-                                ? '1px solid rgba(245, 158, 11, 0.15)'
-                                : '1px solid rgba(239, 68, 68, 0.15)',
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: '50%',
-                              bgcolor:
-                                order.status === 'Complete'
-                                  ? '#10B981'
-                                  : order.status === 'Processing'
-                                  ? '#F59E0B'
-                                  : '#EF4444',
-                            }}
-                          />
-                          {order.status}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
-    </Box>
+                      </td>
+                      <td className="px-6 py-4 text-center pr-6 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold border ${
+                          status === 'Complete'
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-500/10'
+                            : status === 'Processing'
+                            ? 'bg-amber-50 text-amber-600 border-amber-500/10'
+                            : 'bg-red-50 text-red-600 border-red-500/10'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            status === 'Complete' ? 'bg-emerald-500' : status === 'Processing' ? 'bg-amber-500' : 'bg-red-500'
+                          }`} />
+                          {status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,180 +1,144 @@
 import React, { useState } from 'react';
 import {
-  Typography,
-  Box,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
-  Select,
-  Tooltip,
-  Divider,
-} from '@mui/material';
-import {
-  PeopleAlt as UsersIcon,
-  MonetizationOn as RevenueIcon,
-  CardGiftcard as CardIcon,
-  Sync as SyncIcon,
-  Store as StoreIcon,
-  GetApp as ExportIcon,
-  Check as ApproveIcon,
-  Clear as RejectIcon,
-  CheckCircle as CheckIcon,
-  ArrowUpward as ArrowUpIcon,
-  ArrowForward as ArrowIcon,
-  HourglassEmpty as PendingIcon,
-  CreditCard as CreditCardIcon,
-} from '@mui/icons-material';
+  Users,
+  IndianRupee,
+  Gift,
+  RefreshCw,
+  Store,
+  Download,
+  Check,
+  X,
+  CheckCircle2,
+  ArrowUp,
+  Hourglass,
+  CreditCard
+} from 'lucide-react';
 
 // ─── Status Chip ────────────────────────────────────────────────────────────
 const StatusChip = ({ status }) => {
   const map = {
-    Complete:   { bg: '#ECFDF5', color: '#059669', label: 'Complete', pulseClass: 'pulse-dot-green' },
-    Processing: { bg: '#FEF3C7', color: '#D97706', label: 'Processing', pulseClass: 'pulse-dot-orange' },
-    Failed:     { bg: '#FEF2F2', color: '#DC2626', label: 'Failed', pulseClass: 'pulse-dot-red' },
-    Live:       { bg: '#ECFDF5', color: '#059669', label: 'Live', pulseClass: 'pulse-dot-green' },
-    Paused:     { bg: '#FEF3C7', color: '#D97706', label: 'Paused', pulseClass: 'pulse-dot-orange' },
-    Active:     { bg: '#ECFDF5', color: '#059669', label: 'Active', pulseClass: 'pulse-dot-green' },
-    Pending:    { bg: '#F5F3FF', color: '#7C3AED', label: 'Pending', pulseClass: 'pulse-dot-orange' },
-    Unverified: { bg: '#FFF7ED', color: '#C2410C', label: 'Unverified', pulseClass: 'pulse-dot-orange' },
-    Blocked:    { bg: '#FEF2F2', color: '#DC2626', label: 'Blocked', pulseClass: 'pulse-dot-red' },
-    Paid:       { bg: '#ECFDF5', color: '#059669', label: 'Paid', pulseClass: 'pulse-dot-green' },
+    Complete:   { bg: 'bg-emerald-50', border: 'border-emerald-500/10', color: 'text-emerald-600', label: 'Complete', pulseClass: 'pulse-dot-green' },
+    Processing: { bg: 'bg-amber-50', border: 'border-amber-500/10', color: 'text-amber-600', label: 'Processing', pulseClass: 'pulse-dot-orange' },
+    Failed:     { bg: 'bg-red-50', border: 'border-red-500/10', color: 'text-red-600', label: 'Failed', pulseClass: 'pulse-dot-red' },
+    Live:       { bg: 'bg-emerald-50', border: 'border-emerald-500/10', color: 'text-emerald-600', label: 'Live', pulseClass: 'pulse-dot-green' },
+    Paused:     { bg: 'bg-amber-50', border: 'border-amber-500/10', color: 'text-amber-600', label: 'Paused', pulseClass: 'pulse-dot-orange' },
+    Active:     { bg: 'bg-emerald-50', border: 'border-emerald-500/10', color: 'text-emerald-600', label: 'Active', pulseClass: 'pulse-dot-green' },
+    Pending:    { bg: 'bg-violet-50', border: 'border-violet-500/10', color: 'text-violet-600', label: 'Pending', pulseClass: 'pulse-dot-orange' },
+    Unverified: { bg: 'bg-orange-50', border: 'border-orange-500/10', color: 'text-orange-600', label: 'Unverified', pulseClass: 'pulse-dot-orange' },
+    Blocked:    { bg: 'bg-red-50', border: 'border-red-500/10', color: 'text-red-600', label: 'Blocked', pulseClass: 'pulse-dot-red' },
+    Paid:       { bg: 'bg-emerald-50', border: 'border-emerald-500/10', color: 'text-emerald-600', label: 'Paid', pulseClass: 'pulse-dot-green' },
   };
-  const cfg = map[status] || { bg: '#F1F5F9', color: '#475569', label: status, pulseClass: '' };
+  const cfg = map[status] || { bg: 'bg-slate-100', border: 'border-slate-500/10', color: 'text-slate-600', label: status, pulseClass: '' };
   return (
-    <Box component="span" sx={{
-      display: 'inline-flex', alignItems: 'center', px: 1.5, py: 0.4,
-      borderRadius: '20px', bgcolor: cfg.bg, color: cfg.color,
-      fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.01em',
-      gap: 0.8,
-      border: `1px solid ${cfg.color}18`,
-    }}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-extrabold tracking-wide gap-2 border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
       {cfg.pulseClass && (
-        <Box 
-          className={cfg.pulseClass}
-          sx={{
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            bgcolor: cfg.color,
-          }}
-        />
+        <span className={`w-1.5 h-1.5 rounded-full ${cfg.pulseClass}`} style={{ backgroundColor: 'currentColor' }} />
       )}
       {cfg.label}
-    </Box>
+    </span>
   );
 };
 
 // ─── Quick Action Card ───────────────────────────────────────────────────────
 const QuickActionCard = ({ icon, label, desc, color, onClick }) => (
-  <Box
+  <div
     onClick={onClick}
-    sx={{
-      display: 'flex', flexDirection: 'column', gap: 1,
-      p: 2.5, borderRadius: '14px', border: '1px solid #E2E8F0',
-      bgcolor: '#FFFFFF', cursor: 'pointer',
-      position: 'relative',
-      overflow: 'hidden',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      '&:hover': {
-        borderColor: color,
-        boxShadow: `0 12px 24px -8px ${color}20`,
-        transform: 'translateY(-4px)',
-      },
+    className="flex flex-col gap-2 p-5 rounded-2xl border border-slate-200 bg-white cursor-pointer relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
+    style={{
+      '--hover-border': color,
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.borderColor = color;
+      e.currentTarget.style.boxShadow = `0 12px 24px -8px ${color}20`;
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.borderColor = '#E2E8F0';
+      e.currentTarget.style.boxShadow = 'none';
     }}
   >
-    <Box sx={{
-      width: 44, height: 44, borderRadius: '10px',
-      bgcolor: `${color}15`, color: color,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div
+      className="width-11 h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0"
+      style={{
+        backgroundColor: `${color}15`,
+        color: color,
+      }}
+    >
       {icon}
-    </Box>
-    <Box>
-      <Typography sx={{ fontWeight: 700, fontSize: '0.88rem', color: '#0F172A', lineHeight: 1.3 }}>
+    </div>
+    <div>
+      <h4 className="font-bold text-[0.88rem] text-slate-900 leading-tight">
         {label}
-      </Typography>
-      <Typography sx={{ fontSize: '0.74rem', color: '#64748B', mt: 0.3 }}>
+      </h4>
+      <p className="text-[0.74rem] text-slate-500 mt-1">
         {desc}
-      </Typography>
-    </Box>
-    <Box sx={{ display: 'flex', alignItems: 'center', color: color, mt: 'auto', pt: 0.5 }}>
-      <Typography sx={{ fontSize: '0.72rem', fontWeight: 700 }}>Open →</Typography>
-    </Box>
-  </Box>
+      </p>
+    </div>
+    <div className="flex items-center mt-auto pt-2" style={{ color: color }}>
+      <span className="text-[11px] font-bold">Open →</span>
+    </div>
+  </div>
 );
 
 // ─── KPI Card ────────────────────────────────────────────────────────────────
-const KpiCard = ({ icon, label, value, badge, badgeColor, sub, iconColor }) => (
-  <Box sx={{
-    bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px',
-    p: '24px', display: 'flex', flexDirection: 'column', gap: 2,
-    position: 'relative',
-    overflow: 'hidden',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      top: 0, left: 0, right: 0,
-      height: '4px',
-      bgcolor: iconColor,
-      opacity: 0,
-      transition: 'opacity 0.3s ease',
-    },
-    '&:hover': { 
-      borderColor: iconColor, 
-      boxShadow: `0 12px 30px -10px ${iconColor}25, 0 4px 12px -5px ${iconColor}15`, 
-      transform: 'translateY(-4px)',
-      '&::before': {
-        opacity: 1,
-      }
-    },
-  }}>
-    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-      <Box>
-        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1 }}>
-          {label}
-        </Typography>
-        <Typography sx={{ fontSize: '2rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1 }}>
-          {value}
-        </Typography>
-      </Box>
-      <Box sx={{
-        width: 48, height: 48, borderRadius: '12px',
-        bgcolor: `${iconColor}12`, color: iconColor,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      }}>
-        {icon}
-      </Box>
-    </Box>
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      {badge && (
-        <Box sx={{
-          display: 'inline-flex', alignItems: 'center', gap: 0.3,
-          px: 1, py: 0.3, borderRadius: '6px',
-          bgcolor: badgeColor === 'green' ? '#ECFDF5' : badgeColor === 'red' ? '#FEF2F2' : '#F5F3FF',
-          color: badgeColor === 'green' ? '#059669' : badgeColor === 'red' ? '#DC2626' : '#7C3AED',
-          fontSize: '0.72rem', fontWeight: 700,
-        }}>
-          <ArrowUpIcon sx={{ fontSize: 11 }} />
-          {badge}
-        </Box>
-      )}
-      <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8' }}>{sub}</Typography>
-    </Box>
-  </Box>
-);
+const KpiCard = ({ icon, label, value, badge, badgeColor, sub, iconColor }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="bg-white border border-slate-200 rounded-[16px] p-6 flex flex-col gap-4 relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
+      style={{
+        borderColor: hovered ? iconColor : '#E2E8F0',
+        boxShadow: hovered ? `0 12px 30px -10px ${iconColor}25, 0 4px 12px -5px ${iconColor}15` : 'none',
+      }}
+    >
+      {/* Accent line on hover */}
+      <div
+        className="absolute top-0 left-0 right-0 h-1 transition-opacity duration-300"
+        style={{
+          backgroundColor: iconColor,
+          opacity: hovered ? 1 : 0,
+        }}
+      />
+      <div className="flex items-start justify-between">
+        <div>
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            {label}
+          </span>
+          <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight leading-none">
+            {value}
+          </h3>
+        </div>
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{
+            backgroundColor: `${iconColor}12`,
+            color: iconColor,
+          }}
+        >
+          {icon}
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {badge && (
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+              badgeColor === 'green'
+                ? 'bg-emerald-50 text-emerald-600'
+                : badgeColor === 'red'
+                ? 'bg-red-50 text-red-600'
+                : 'bg-violet-50 text-violet-600'
+            }`}
+          >
+            <ArrowUp className="w-2.5 h-2.5" />
+            {badge}
+          </span>
+        )}
+        <span className="text-xs text-slate-400">{sub}</span>
+      </div>
+    </div>
+  );
+};
 
 // Mock Data for new tables
 const recentRegistrations = [
@@ -245,63 +209,49 @@ const DashboardView = ({
   ];
 
   const quickActions = [
-    { icon: <SyncIcon />,   label: 'Sync Woohoo',     desc: `Last: ${systemStatus.lastSync}`, color: '#6D28D9', onClick: onSyncWoohoo },
-    { icon: <StoreIcon />,  label: 'Add Store',       desc: 'Register partner store',        color: '#10B981', onClick: () => setOpenStoreDialog(true) },
-    { icon: <CardIcon />,   label: 'Feature Card',    desc: 'Feature brand in catalog',      color: '#F59E0B', onClick: () => setOpenFeatureDialog(true) },
-    { icon: <ExportIcon />, label: 'Export Report',   desc: 'Download Excel summary',         color: '#2563EB', onClick: () => triggerToast('Preparing Excel summary reports...', 'info') },
+    { icon: <RefreshCw className="w-5 h-5" />,   label: 'Sync Woohoo',     desc: `Last: ${systemStatus.lastSync}`, color: '#6D28D9', onClick: onSyncWoohoo },
+    { icon: <Store className="w-5 h-5" />,  label: 'Add Store',       desc: 'Register partner store',        color: '#10B981', onClick: () => setOpenStoreDialog(true) },
+    { icon: <Gift className="w-5 h-5" />,   label: 'Feature Card',    desc: 'Feature brand in catalog',      color: '#F59E0B', onClick: () => setOpenFeatureDialog(true) },
+    { icon: <Download className="w-5 h-5" />, label: 'Export Report',   desc: 'Download Excel summary',         color: '#2563EB', onClick: () => triggerToast('Preparing Excel summary reports...', 'info') },
   ];
 
   return (
-    <Box sx={{ width: '100%', boxSizing: 'border-box' }}>
+    <div className="w-full box-border">
 
       {/* ── PAGE HEADER ─────────────────────────────────────────── */}
-      <Box sx={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        mb: 4, flexWrap: 'wrap', gap: 2,
-      }}>
-        <Box>
-          <Typography sx={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+        <div>
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Admin Dashboard
-          </Typography>
-          <Typography sx={{ fontSize: '0.875rem', color: '#64748B', mt: 0.5, fontWeight: 500 }}>
-            Shop2Save · Enterprise Management Console · {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1.5, flexShrink: 0 }}>
-          <Button
-            variant="outlined"
-            startIcon={<ExportIcon />}
+          </h2>
+          <p className="text-sm text-slate-500 mt-1 font-medium">
+            Shop2Save · Enterprise Console · {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+        <div className="flex gap-3 flex-shrink-0">
+          <button
             onClick={() => triggerToast('Generating export report...', 'info')}
-            sx={{ borderRadius: '10px', fontWeight: 600, fontSize: '0.82rem', px: 2.5, borderColor: '#E2E8F0', color: '#475569', '&:hover': { borderColor: '#6D28D9', color: '#6D28D9', bgcolor: '#F5F3FF' } }}
+            className="flex items-center gap-2 border border-slate-200 hover:border-[#6D28D9] hover:bg-[#F5F3FF] hover:text-[#6D28D9] text-slate-600 px-4 py-2 text-xs font-bold rounded-lg transition-all"
           >
+            <Download className="w-3.5 h-3.5" />
             Export
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<SyncIcon />}
+          </button>
+          <button
             onClick={onSyncWoohoo}
-            sx={{ borderRadius: '10px', fontWeight: 600, fontSize: '0.82rem', px: 2.5, background: 'linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%)', boxShadow: '0 4px 14px rgba(109,40,217,0.25)', '&:hover': { background: 'linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)' } }}
+            className="flex items-center gap-2 text-white bg-gradient-to-r from-primary to-secondary hover:from-[#7C3AED] hover:to-[#8B5CF6] px-4 py-2 text-xs font-bold rounded-lg transition-all shadow-[0_4px_14px_rgba(109,40,217,0.25)]"
           >
+            <RefreshCw className="w-3.5 h-3.5" />
             Sync Woohoo
-          </Button>
-        </Box>
-      </Box>
+          </button>
+        </div>
+      </div>
 
-      {/* ── KPI ROW  (4 × 3 cols = 12) ──────────────────────────── */}
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: {
-          xs: 'repeat(1, minmax(0, 1fr))',
-          sm: 'repeat(2, minmax(0, 1fr))',
-          md: 'repeat(4, minmax(0, 1fr))'
-        },
-        gap: '24px',
-        mb: 4,
-      }}>
+      {/* ── KPI ROW ────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         <KpiCard
           label="Total Users"
           value="1,248"
-          icon={<UsersIcon />}
+          icon={<Users className="w-6 h-6" />}
           iconColor="#6D28D9"
           badge="+12.4%"
           badgeColor="green"
@@ -310,7 +260,7 @@ const DashboardView = ({
         <KpiCard
           label="Checkout Volume"
           value={`₹${(totalOrdersVolume / 1000).toFixed(0)}K`}
-          icon={<RevenueIcon />}
+          icon={<IndianRupee className="w-6 h-6" />}
           iconColor="#0D9488"
           badge="+14.5%"
           badgeColor="green"
@@ -319,7 +269,7 @@ const DashboardView = ({
         <KpiCard
           label="Gift Cards Listed"
           value="52"
-          icon={<CardIcon />}
+          icon={<Gift className="w-6 h-6" />}
           iconColor="#2563EB"
           badge="+3"
           badgeColor="purple"
@@ -328,28 +278,20 @@ const DashboardView = ({
         <KpiCard
           label="Pending Audits"
           value={pendingAuditsCount}
-          icon={<PendingIcon />}
+          icon={<Hourglass className="w-6 h-6" />}
           iconColor="#DC2626"
           badge={pendingAuditsCount > 0 ? `${pendingAuditsCount} open` : 'All clear'}
           badgeColor={pendingAuditsCount > 0 ? 'red' : 'green'}
           sub="sell requests"
         />
-      </Box>
+      </div>
 
-      {/* ── QUICK ACTIONS (8 × 4 cols) ───────────────────────────── */}
-      <Box sx={{ mb: 4 }}>
-        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 2 }}>
+      {/* ── QUICK ACTIONS ───────────────────────────────────────── */}
+      <div className="mb-8">
+        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-3">
           Quick Actions
-        </Typography>
-        <Box sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: 'repeat(1, minmax(0, 1fr))',
-            sm: 'repeat(2, minmax(0, 1fr))',
-            md: 'repeat(4, minmax(0, 1fr))'
-          },
-          gap: '16px',
-        }}>
+        </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {quickActions.map((a, i) => (
             <QuickActionCard
               key={i}
@@ -360,725 +302,579 @@ const DashboardView = ({
               onClick={a.onClick}
             />
           ))}
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      {/* ── TABLES ROW  (65% + 35%) ───────────────────────────────── */}
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: {
-          xs: 'repeat(1, minmax(0, 1fr))',
-          md: '65fr 35fr'
-        },
-        gap: '24px',
-        mb: 4,
-        alignItems: 'start',
-      }}>
-        {/* ─ Recent Orders Table (65%) ─────────────────────────── */}
-        <Box sx={{ bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden' }}>
-          {/* Card Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
-            <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A' }}>Recent Orders</Typography>
-              <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', mt: 0.2 }}>{orders.length} transactions this week</Typography>
-            </Box>
-            <Button
-              size="small" endIcon={<ArrowIcon />}
-              sx={{ fontSize: '0.74rem', fontWeight: 600, color: '#6D28D9', textTransform: 'none', '&:hover': { bgcolor: '#F5F3FF' } }}
+      {/* ── TABLES ROW ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
+        {/* Recent Orders Table (2/3 width on large screens) */}
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+            <div>
+              <h3 className="font-bold text-[0.95rem] text-slate-900">Recent Orders</h3>
+              <p className="text-[0.74rem] text-slate-400 mt-0.5">{orders.length} transactions this week</p>
+            </div>
+            <button
               onClick={() => triggerToast('Opening full orders view...', 'info')}
+              className="text-xs font-bold text-[#6D28D9] hover:bg-[#F5F3FF] px-3 py-1 rounded-md transition-colors"
             >
-              View All
-            </Button>
-          </Box>
+              View All &rarr;
+            </button>
+          </div>
 
-          {/* Table */}
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
                   {['Order', 'Customer', 'Brand', 'Amount', 'Status', 'Time'].map(h => (
-                    <TableCell key={h} sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
+                    <th key={h} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">
                       {h}
-                    </TableCell>
+                    </th>
                   ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
                 {orders.map(order => (
-                  <TableRow key={order.id} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.78rem', fontWeight: 700, color: '#6D28D9' }}>
-                        {order.id}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid #F1F5F9' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                        <Avatar sx={{ width: 28, height: 28, fontSize: '0.68rem', bgcolor: '#EDE9FE', color: '#7C3AED', fontWeight: 700 }}>
+                  <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-3 text-xs font-mono font-bold text-[#6D28D9] whitespace-nowrap">
+                      {order.id}
+                    </td>
+                    <td className="px-6 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-full text-[10px] bg-[#EDE9FE] text-[#7C3AED] font-bold flex items-center justify-center">
                           {order.user.substring(0, 2).toUpperCase()}
-                        </Avatar>
-                        <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{order.user}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.82rem', color: '#475569' }}>{order.brand}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A' }}>{order.amount}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid #F1F5F9' }}>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-900">{order.user}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-xs text-slate-600 whitespace-nowrap">
+                      {order.brand}
+                    </td>
+                    <td className="px-6 py-3 text-xs font-bold text-slate-900 whitespace-nowrap">
+                      {order.amount}
+                    </td>
+                    <td className="px-6 py-3 whitespace-nowrap">
                       <StatusChip status={order.status} />
-                    </TableCell>
-                    <TableCell sx={{ py: 2, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8' }}>
-                        {order.timestamp?.split(' ')[1] || '—'}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                    <td className="px-6 py-3 text-xs text-slate-400 whitespace-nowrap">
+                      {order.timestamp?.split(' ')[1] || '—'}
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </tbody>
+            </table>
+          </div>
 
           {/* Footer Summary */}
-          <Box sx={{
-            px: 3,
-            py: 1.8,
-            bgcolor: '#F8FAFC',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: { xs: 2.5, sm: 4 },
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{
-                width: 32, height: 32, borderRadius: '8px',
-                bgcolor: '#ECFDF5', color: '#059669',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <CheckIcon sx={{ fontSize: 16 }} />
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: '0.65rem', color: '#64748B', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.2 }}>
-                  Completed
-                </Typography>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: '#059669', lineHeight: 1.2 }}>
-                  {completeOrders}
-                </Typography>
-              </Box>
-            </Box>
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <Check className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Completed</span>
+                <span className="text-[13px] font-black text-emerald-600 leading-none">{completeOrders}</span>
+              </div>
+            </div>
 
-            <Divider orientation="vertical" flexItem sx={{ borderColor: '#E2E8F0', my: 0.5, display: { xs: 'none', sm: 'block' } }} />
+            <div className="hidden sm:block h-6 border-r border-slate-200" />
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{
-                width: 32, height: 32, borderRadius: '8px',
-                bgcolor: '#EFF6FF', color: '#2563EB',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <RevenueIcon sx={{ fontSize: 16 }} />
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: '0.65rem', color: '#64748B', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.2 }}>
-                  Total Volume
-                </Typography>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>
-                  ₹{totalOrdersVolume.toLocaleString('en-IN')}
-                </Typography>
-              </Box>
-            </Box>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <IndianRupee className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Total Volume</span>
+                <span className="text-[13px] font-black text-slate-900 leading-none">₹{totalOrdersVolume.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
 
-            <Divider orientation="vertical" flexItem sx={{ borderColor: '#E2E8F0', my: 0.5, display: { xs: 'none', sm: 'block' } }} />
+            <div className="hidden sm:block h-6 border-r border-slate-200" />
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{
-                width: 32, height: 32, borderRadius: '8px',
-                bgcolor: '#F5F3FF', color: '#7C3AED',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <ArrowUpIcon sx={{ fontSize: 16 }} />
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: '0.65rem', color: '#64748B', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', mb: 0.2 }}>
-                  Success Rate
-                </Typography>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-50 text-[#7C3AED] flex items-center justify-center">
+                <ArrowUp className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Success Rate</span>
+                <span className="text-[13px] font-black text-slate-900 leading-none">
                   {orders.length > 0 ? Math.round((completeOrders / orders.length) * 100) : 0}%
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        {/* ─ Sell Requests Table (35%) ─────────────────────────── */}
-        <Box sx={{ bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A' }}>Sell Requests</Typography>
-                {pendingAuditsCount > 0 && (
-                  <Box sx={{ bgcolor: '#FEF2F2', color: '#DC2626', px: 1, py: 0.2, borderRadius: '6px', fontSize: '0.7rem', fontWeight: 800 }}>
-                    {pendingAuditsCount} pending
-                  </Box>
-                )}
-              </Box>
-              <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', mt: 0.2 }}>Require audit approval</Typography>
-            </Box>
-          </Box>
+        {/* Sell Requests Table (1/3 width on large screens) */}
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-[0.95rem] text-slate-900">Sell Requests</h3>
+              {pendingAuditsCount > 0 && (
+                <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wide">
+                  {pendingAuditsCount} pending
+                </span>
+              )}
+            </div>
+          </div>
 
           {sellRequests.length === 0 ? (
-            <Box sx={{ py: 6, textAlign: 'center' }}>
-              <CheckIcon sx={{ fontSize: 40, color: '#10B981', mb: 1 }} />
-              <Typography sx={{ fontWeight: 700, color: '#0F172A', fontSize: '0.9rem' }}>All Clear</Typography>
-              <Typography sx={{ color: '#94A3B8', fontSize: '0.78rem', mt: 0.5 }}>No pending requests</Typography>
-            </Box>
+            <div className="py-12 text-center">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+              <h4 className="font-bold text-slate-900 text-sm">All Clear</h4>
+              <p className="text-slate-400 text-xs mt-1">No pending resell audits</p>
+            </div>
           ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                    <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pl: 3 }}>Customer</TableCell>
-                    <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5 }}>Brand / Value</TableCell>
-                    <TableCell align="center" sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pr: 3 }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+            <div className="overflow-x-auto w-full">
+              <table className="min-w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Customer</th>
+                    <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-4 py-3">Brand/Value</th>
+                    <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-4 py-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
                   {sellRequests.map((req) => (
-                    <TableRow key={req.id} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
-                      <TableCell sx={{ py: 1.5, pl: 3, borderBottom: '1px solid #F1F5F9' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                          <Avatar sx={{ width: 28, height: 28, fontSize: '0.68rem', bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 700 }}>
+                    <tr key={req.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full text-[10px] bg-violet-50 text-violet-600 font-bold flex items-center justify-center flex-shrink-0">
                             {req.user.substring(0, 2).toUpperCase()}
-                          </Avatar>
-                          <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{req.user}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
-                        <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{req.brand}</Typography>
-                        <Typography sx={{ fontSize: '0.72rem', color: '#64748B' }}>{req.value}</Typography>
-                      </TableCell>
-                      <TableCell align="center" sx={{ py: 1.5, pr: 3, borderBottom: '1px solid #F1F5F9' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.8 }}>
-                          <Tooltip title="Approve">
-                            <IconButton
-                              size="small"
-                              onClick={() => onApproveRequest(req.id)}
-                              sx={{ bgcolor: '#ECFDF5', color: '#059669', width: 28, height: 28, '&:hover': { bgcolor: '#10B981', color: '#FFFFFF' } }}
-                            >
-                              <ApproveIcon sx={{ fontSize: 13 }} />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Reject">
-                            <IconButton
-                              size="small"
-                              onClick={() => onRejectRequest(req.id)}
-                              sx={{ bgcolor: '#FEF2F2', color: '#DC2626', width: 28, height: 28, '&:hover': { bgcolor: '#EF4444', color: '#FFFFFF' } }}
-                            >
-                              <RejectIcon sx={{ fontSize: 13 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
+                          </div>
+                          <span className="text-xs font-semibold text-slate-900">{req.user}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="text-xs font-bold text-slate-900">{req.brand}</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">{req.value}</div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => onApproveRequest(req.id)}
+                            title="Approve"
+                            className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => onRejectRequest(req.id)}
+                            title="Reject"
+                            className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-lg transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                </tbody>
+              </table>
+            </div>
           )}
 
-          <Box sx={{
-            px: 3,
-            py: 2,
-            bgcolor: '#F8FAFC',
-            borderTop: '1px solid #F1F5F9',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-          }}>
-            <Box sx={{
-              width: 32, height: 32, borderRadius: '8px',
-              bgcolor: pendingAuditsCount === 0 ? '#ECFDF5' : '#FEF2F2',
-              color: pendingAuditsCount === 0 ? '#059669' : '#DC2626',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {pendingAuditsCount === 0 ? (
-                <CheckIcon sx={{ fontSize: 16 }} />
-              ) : (
-                <PendingIcon sx={{ fontSize: 16 }} />
-              )}
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#0F172A' }}>
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+              pendingAuditsCount === 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+            }`}>
+              {pendingAuditsCount === 0 ? <Check className="w-4 h-4" /> : <Hourglass className="w-4 h-4" />}
+            </div>
+            <div>
+              <span className="text-xs font-bold text-slate-900 block leading-tight">
                 {pendingAuditsCount === 0 ? 'All Clear' : 'Review Required'}
-              </Typography>
-              <Typography sx={{ fontSize: '0.7rem', color: '#64748B', mt: 0.1 }}>
+              </span>
+              <span className="text-[10px] text-slate-400 mt-0.5 block leading-none">
                 {pendingAuditsCount === 0 ? 'No pending audits' : `${pendingAuditsCount} requests awaiting review`}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ── WIDGETS ROW (3 Columns) ────────────────────────────── */}
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-        gap: '24px',
-        mb: 4,
-      }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Widget 1: Top Selling Brands */}
-        <Box sx={{ bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden' }}>
-          <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
-            <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: '#0F172A' }}>Top Selling Brands</Typography>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pl: 3 }}>Brand</TableCell>
-                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5 }}>Sales</TableCell>
-                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pr: 3 }}>Popularity</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-slate-100 bg-white">
+            <h3 className="font-bold text-[0.9rem] text-slate-900">Top Selling Brands</h3>
+          </div>
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Brand</th>
+                  <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-4 py-3">Sales</th>
+                  <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Popularity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
                 {topSellingBrands.map((b, i) => (
-                  <TableRow key={b.name} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
-                    <TableCell sx={{ py: 1.5, pl: 3, borderBottom: '1px solid #F1F5F9' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: i === 0 ? '#6D28D9' : i === 1 ? '#2563EB' : i === 2 ? '#0D9488' : i === 3 ? '#D97706' : i === 4 ? '#E11D48' : '#64748B' }} />
-                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#0F172A' }}>{b.name}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>{b.sales}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.5, pr: 3, borderBottom: '1px solid #F1F5F9', minWidth: '80px' }}>
-                      <Box sx={{ height: 5, borderRadius: 9999, bgcolor: '#F1F5F9', overflow: 'hidden', width: '100%' }}>
-                        <Box sx={{
-                          height: '100%', borderRadius: 9999,
-                          width: `${b.pct}%`,
-                          background: i === 0 ? 'linear-gradient(90deg,#6D28D9,#8B5CF6)' : i === 1 ? 'linear-gradient(90deg,#2563EB,#60A5FA)' : i === 2 ? 'linear-gradient(90deg,#0D9488,#34D399)' : i === 3 ? 'linear-gradient(90deg,#D97706,#FBB94C)' : i === 4 ? 'linear-gradient(90deg,#E11D48,#FDA4AF)' : 'linear-gradient(90deg,#64748B,#94A3B8)',
-                          transition: 'width 0.6s ease',
-                        }} />
-                      </Box>
-                    </TableCell>
-                  </TableRow>
+                  <tr key={b.name} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          i === 0 ? 'bg-[#6D28D9]' : i === 1 ? 'bg-blue-600' : i === 2 ? 'bg-teal-600' : i === 3 ? 'bg-amber-600' : i === 4 ? 'bg-rose-600' : 'bg-slate-400'
+                        }`} />
+                        <span className="text-xs font-semibold text-slate-900">{b.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-xs font-bold text-slate-600 whitespace-nowrap">
+                      {b.sales}
+                    </td>
+                    <td className="px-6 py-3 whitespace-nowrap min-w-[80px]">
+                      <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden w-full">
+                        <div
+                          className="h-full rounded-full transition-all duration-600"
+                          style={{
+                            width: `${b.pct}%`,
+                            background: i === 0 ? 'linear-gradient(90deg,#6D28D9,#8B5CF6)' : i === 1 ? 'linear-gradient(90deg,#2563EB,#60A5FA)' : i === 2 ? 'linear-gradient(90deg,#0D9488,#34D399)' : i === 3 ? 'linear-gradient(90deg,#D97706,#FBB94C)' : i === 4 ? 'linear-gradient(90deg,#E11D48,#FDA4AF)' : 'linear-gradient(90deg,#64748B,#94A3B8)',
+                          }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Widget 2: Cashback Stores */}
-        <Box sx={{ bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden' }}>
-          <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: '#0F172A' }}>Cashback Stores</Typography>
-            <Button
-              size="small"
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-slate-100 bg-white flex justify-between items-center">
+            <h3 className="font-bold text-[0.9rem] text-slate-900">Cashback Stores</h3>
+            <button
               onClick={() => setOpenStoreDialog(true)}
-              sx={{ fontSize: '0.74rem', fontWeight: 700, color: '#6D28D9', textTransform: 'none', minWidth: 0, p: 0, '&:hover': { bgcolor: 'transparent', opacity: 0.8 } }}
+              className="text-xs font-bold text-[#6D28D9] hover:opacity-80 px-2 py-0.5 rounded transition-opacity"
             >
               + Add
-            </Button>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pl: 3 }}>Store</TableCell>
-                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5 }}>Cashback</TableCell>
-                  <TableCell align="center" sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pr: 3 }}>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+            </button>
+          </div>
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Store</th>
+                  <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-4 py-3">Cashback</th>
+                  <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
                 {stores.map((store) => {
                   const initials = store.name.substring(0, 1).toUpperCase() + store.name.substring(1, 2).toLowerCase();
-                  let badgeBg = '#F1F5F9';
-                  let badgeColor = '#475569';
+                  let badgeBg = 'bg-slate-100';
+                  let badgeColor = 'text-slate-600';
                   const nameLower = store.name.toLowerCase();
                   if (nameLower.includes('amazon')) {
-                    badgeBg = '#FFF5E6';
-                    badgeColor = '#D97706';
+                    badgeBg = 'bg-amber-50';
+                    badgeColor = 'text-amber-600';
                   } else if (nameLower.includes('flipkart')) {
-                    badgeBg = '#E0F2FE';
-                    badgeColor = '#0284C7';
+                    badgeBg = 'bg-blue-50';
+                    badgeColor = 'text-blue-600';
                   } else if (nameLower.includes('ajio')) {
-                    badgeBg = '#FFF1F2';
-                    badgeColor = '#E11D48';
+                    badgeBg = 'bg-rose-50';
+                    badgeColor = 'text-rose-600';
                   } else if (nameLower.includes('nykaa')) {
-                    badgeBg = '#F5F3FF';
-                    badgeColor = '#7C3AED';
+                    badgeBg = 'bg-purple-50';
+                    badgeColor = 'text-purple-600';
                   }
                   return (
-                    <TableRow key={store.id} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
-                      <TableCell sx={{ py: 1.5, pl: 3, borderBottom: '1px solid #F1F5F9' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                          <Box sx={{ width: 28, height: 28, borderRadius: '8px', bgcolor: badgeBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: badgeColor }}>
-                              {initials}
-                            </Typography>
-                          </Box>
-                          <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{store.name}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
-                        <Typography sx={{ fontSize: '0.74rem', color: '#94A3B8', fontWeight: 600 }}>{store.cashback}</Typography>
-                      </TableCell>
-                      <TableCell align="center" sx={{ py: 1.5, pr: 3, borderBottom: '1px solid #F1F5F9' }}>
-                        <Box
+                    <tr key={store.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[10px] ${badgeBg} ${badgeColor}`}>
+                            {initials}
+                          </div>
+                          <span className="text-xs font-bold text-slate-900">{store.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs font-semibold text-slate-400 whitespace-nowrap">
+                        {store.cashback}
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-center">
+                        <button
                           onClick={() => onToggleStoreStatus(store.id)}
-                          sx={{
-                            display: 'inline-block',
-                            px: 1.2, py: 0.3, borderRadius: '6px', cursor: 'pointer',
-                            bgcolor: store.status === 'Live' ? '#ECFDF5' : '#FEF3C7',
-                            color: store.status === 'Live' ? '#059669' : '#D97706',
-                            fontSize: '0.7rem', fontWeight: 700,
-                            transition: 'all 0.15s',
-                            '&:hover': { opacity: 0.8 },
-                          }}
+                          className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all hover:opacity-85 ${
+                            store.status === 'Live' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                          }`}
                         >
                           {store.status}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
+                        </button>
+                      </td>
+                    </tr>
                   );
                 })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Widget 3: System Status */}
-        <Box sx={{ bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
-            <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: '#0F172A' }}>System Status</Typography>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                  <TableCell sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pl: 3 }}>Service</TableCell>
-                  <TableCell align="right" sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, pr: 3 }}>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-100 bg-white">
+            <h3 className="font-bold text-[0.9rem] text-slate-900">System Status</h3>
+          </div>
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Service</th>
+                  <th className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
                 {[
                   { name: 'Woohoo API', status: 'Online' },
                   { name: 'Razorpay', status: 'Online' },
                   { name: 'MSG91 OTP', status: 'Online' },
                 ].map(node => (
-                  <TableRow key={node.name} sx={{ '&:hover': { bgcolor: '#F8FAFC' } }}>
-                    <TableCell sx={{ py: 1.5, pl: 3, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{node.name}</Typography>
-                    </TableCell>
-                    <TableCell align="right" sx={{ py: 1.5, pr: 3, borderBottom: '1px solid #F1F5F9' }}>
-                      <Box sx={{
-                        display: 'inline-flex', alignItems: 'center', gap: 0.6,
-                        px: 1.2, py: 0.3, borderRadius: '20px', bgcolor: '#ECFDF5', color: '#047857',
-                        fontSize: '0.7rem', fontWeight: 700,
-                      }}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10B981', boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.4)' }} />
+                  <tr key={node.name} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-3 text-xs font-semibold text-slate-900 whitespace-nowrap">
+                      {node.name}
+                    </td>
+                    <td className="px-6 py-3 whitespace-nowrap text-right">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.4)]" />
                         {node.status}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
+                      </span>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </tbody>
+            </table>
+          </div>
 
-          <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2, borderTop: '1px solid #F1F5F9' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography sx={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>Last Sync</Typography>
-              <Typography sx={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{systemStatus.lastSync || '2h ago'}</Typography>
-            </Box>
+          <div className="p-6 flex flex-col gap-4 border-t border-slate-100 mt-auto bg-slate-50">
+            <div className="flex justify-between text-xs font-semibold">
+              <span className="text-slate-400">Last Sync</span>
+              <span className="text-slate-600">{systemStatus.lastSync || '2h ago'}</span>
+            </div>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography sx={{ fontSize: '0.82rem', color: '#0F172A', fontWeight: 700 }}>SVC Balance</Typography>
-              <Typography sx={{ fontSize: '0.95rem', color: '#10B981', fontWeight: 800 }}>₹48,200</Typography>
-            </Box>
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-extrabold text-slate-900">SVC Balance</span>
+              <span className="text-sm font-black text-emerald-500">₹48,200</span>
+            </div>
 
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.8 }}>
-                <Typography sx={{ fontSize: '0.74rem', color: '#64748B', fontWeight: 600 }}>SVC Balance used (82%)</Typography>
-              </Box>
-              <Box sx={{ height: 6, borderRadius: 9999, bgcolor: '#F1F5F9', overflow: 'hidden' }}>
-                <Box sx={{ height: '100%', width: '82%', bgcolor: '#F59E0B', borderRadius: 9999 }} />
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+            <div>
+              <div className="flex justify-between mb-2">
+                <span className="text-[11px] font-semibold text-slate-400">SVC Balance used (82%)</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden w-full">
+                <div className="h-full bg-amber-500 rounded-full" style={{ width: '82%' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ── NEW TABLES ROW (Recent Registrations & Recent Payments) ── */}
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-        gap: '24px',
-        mb: 4,
-        alignItems: 'start',
-      }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
         {/* Recent Registrations Table */}
-        <Box sx={{ bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <UsersIcon sx={{ color: '#7C3AED', fontSize: 20 }} />
-              <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A' }}>Recent Registrations</Typography>
-            </Box>
-            <Button
-              size="small"
-              sx={{ fontSize: '0.74rem', fontWeight: 600, color: '#6D28D9', textTransform: 'none', '&:hover': { bgcolor: '#F5F3FF' } }}
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#7C3AED]" />
+              <h3 className="font-bold text-[0.95rem] text-slate-900">Recent Registrations</h3>
+            </div>
+            <button
               onClick={() => triggerToast('Opening user management...', 'info')}
+              className="text-xs font-bold text-[#6D28D9] hover:bg-[#F5F3FF] px-3 py-1 rounded-md transition-colors"
             >
-              View all →
-            </Button>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+              View all &rarr;
+            </button>
+          </div>
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
                   {['Name', 'Phone', 'Wallet', 'Status'].map(h => (
-                    <TableCell key={h} sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
+                    <th key={h} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">
                       {h}
-                    </TableCell>
+                    </th>
                   ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
                 {recentRegistrations.map((reg, idx) => (
-                  <TableRow key={idx} sx={{ '&:hover': { bgcolor: '#F8FAFC' }, '&:last-child td': { border: 0 } }}>
-                    <TableCell sx={{ py: 1.8, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{reg.name}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.8, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.82rem', color: '#475569' }}>{reg.phone}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.8, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{reg.wallet}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.8, borderBottom: '1px solid #F1F5F9' }}>
-                      <StatusChip status={reg.status} />
-                    </TableCell>
-                  </TableRow>
+                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-3 text-xs font-semibold text-slate-900 whitespace-nowrap">{reg.name}</td>
+                    <td className="px-6 py-3 text-xs text-slate-500 whitespace-nowrap">{reg.phone}</td>
+                    <td className="px-6 py-3 text-xs font-bold text-slate-900 whitespace-nowrap">{reg.wallet}</td>
+                    <td className="px-6 py-3 whitespace-nowrap"><StatusChip status={reg.status} /></td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Recent Payments Table */}
-        <Box sx={{ bgcolor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, py: 2.5, borderBottom: '1px solid #F1F5F9' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CreditCardIcon sx={{ color: '#2563EB', fontSize: 20 }} />
-              <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#0F172A' }}>Recent Payments</Typography>
-            </Box>
-            <Button
-              size="small"
-              sx={{ fontSize: '0.74rem', fontWeight: 600, color: '#6D28D9', textTransform: 'none', '&:hover': { bgcolor: '#F5F3FF' } }}
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+              <h3 className="font-bold text-[0.95rem] text-slate-900">Recent Payments</h3>
+            </div>
+            <button
               onClick={() => triggerToast('Opening payments details...', 'info')}
+              className="text-xs font-bold text-[#6D28D9] hover:bg-[#F5F3FF] px-3 py-1 rounded-md transition-colors"
             >
-              View all →
-            </Button>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+              View all &rarr;
+            </button>
+          </div>
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
                   {['User', 'Type', 'Amount', 'Status'].map(h => (
-                    <TableCell key={h} sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', py: 1.5, borderBottom: '1px solid #F1F5F9' }}>
+                    <th key={h} className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">
                       {h}
-                    </TableCell>
+                    </th>
                   ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
                 {recentPayments.map((pay, idx) => (
-                  <TableRow key={idx} sx={{ '&:hover': { bgcolor: '#F8FAFC' }, '&:last-child td': { border: 0 } }}>
-                    <TableCell sx={{ py: 1.8, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 600, color: '#0F172A' }}>{pay.user}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.8, borderBottom: '1px solid #F1F5F9' }}>
-                      <Box component="span" sx={{
-                        display: 'inline-flex', alignItems: 'center', px: 1.2, py: 0.3,
-                        borderRadius: '12px',
-                        bgcolor: pay.type === 'Wallet' ? '#EFF6FF' : '#F5F3FF',
-                        color: pay.type === 'Wallet' ? '#2563EB' : '#7C3AED',
-                        fontSize: '0.72rem', fontWeight: 700,
-                      }}>
+                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-3 text-xs font-semibold text-slate-900 whitespace-nowrap">{pay.user}</td>
+                    <td className="px-6 py-3 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        pay.type === 'Wallet' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-[#7C3AED]'
+                      }`}>
                         {pay.type}
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.8, borderBottom: '1px solid #F1F5F9' }}>
-                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>{pay.amount}</Typography>
-                    </TableCell>
-                    <TableCell sx={{ py: 1.8, borderBottom: '1px solid #F1F5F9' }}>
-                      <StatusChip status={pay.status} />
-                    </TableCell>
-                  </TableRow>
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-xs font-bold text-slate-900 whitespace-nowrap">{pay.amount}</td>
+                    <td className="px-6 py-3 whitespace-nowrap"><StatusChip status={pay.status} /></td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      </Box>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-      {/* ── ADD STORE DIALOG ──────────────────────────────────────── */}
-      <Dialog open={openStoreDialog} onClose={() => setOpenStoreDialog(false)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { borderRadius: '16px', border: '1px solid #E2E8F0' } }}>
-        <form onSubmit={handleAddStoreSubmit}>
-          <DialogTitle sx={{ fontWeight: 800, fontSize: '1rem', color: '#0F172A', pb: 1 }}>
-            Register Partner Store
-          </DialogTitle>
-          <DialogContent sx={{ pt: '8px !important' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  STORE NAME *
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="e.g. Swiggy, Amazon"
-                  value={storeName}
-                  onChange={e => setStoreName(e.target.value)}
-                  variant="outlined"
-                  size="small"
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      bgcolor: '#F8FAFC',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        bgcolor: '#F1F5F9',
-                      },
-                      '&.Mui-focused': {
-                        bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                      },
-                    },
-                  }}
-                />
-              </Box>
-
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  CASHBACK % *
-                </Typography>
-                <TextField
-                  fullWidth
-                  type="number"
-                  placeholder="e.g. 5.0"
-                  value={cashbackPct}
-                  onChange={e => setCashbackPct(e.target.value)}
-                  variant="outlined"
-                  size="small"
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '10px',
-                      bgcolor: '#F8FAFC',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        bgcolor: '#F1F5F9',
-                      },
-                      '&.Mui-focused': {
-                        bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                      },
-                    },
-                  }}
-                />
-              </Box>
-
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  STATUS *
-                </Typography>
-                <Select
-                  value={storeStoreStatus}
-                  onChange={e => setStoreStoreStatus(e.target.value)}
-                  size="small"
-                  fullWidth
-                  sx={{
-                    borderRadius: '10px',
-                    bgcolor: '#F8FAFC',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#CBD5E1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6D28D9',
-                    },
-                  }}
+      {/* ── ADD STORE DIALOG (Modal) ─────────────────────────────── */}
+      {openStoreDialog && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden animate-fadeIn">
+            <form onSubmit={handleAddStoreSubmit}>
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-extrabold text-slate-900">Register Partner Store</h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Store Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Swiggy, Amazon"
+                    value={storeName}
+                    onChange={e => setStoreName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100/70 focus:bg-white focus:border-primary outline-none transition-all"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Cashback % *
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    required
+                    placeholder="e.g. 5.0"
+                    value={cashbackPct}
+                    onChange={e => setCashbackPct(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100/70 focus:bg-white focus:border-primary outline-none transition-all"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Status *
+                  </label>
+                  <select
+                    value={storeStoreStatus}
+                    onChange={e => setStoreStoreStatus(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 outline-none focus:border-primary text-slate-700"
+                  >
+                    <option value="Live">Live</option>
+                    <option value="Paused">Paused</option>
+                  </select>
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOpenStoreDialog(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  <MenuItem value="Live">Live</MenuItem>
-                  <MenuItem value="Paused">Paused</MenuItem>
-                </Select>
-              </Box>
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-            <Button onClick={() => setOpenStoreDialog(false)} color="inherit" sx={{ fontWeight: 600, borderRadius: '8px' }}>Cancel</Button>
-            <Button type="submit" variant="contained" sx={{ fontWeight: 600, borderRadius: '8px', background: 'linear-gradient(135deg,#6D28D9,#7C3AED)' }}>
-              Add Store
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-primary to-secondary rounded-lg hover:from-primary-dark hover:to-secondary-dark transition-colors shadow-md"
+                >
+                  Add Store
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-      {/* ── FEATURE CARD DIALOG ───────────────────────────────────── */}
-      <Dialog open={openFeatureDialog} onClose={() => setOpenFeatureDialog(false)} maxWidth="xs" fullWidth
-        PaperProps={{ sx: { borderRadius: '16px', border: '1px solid #E2E8F0' } }}>
-        <form onSubmit={handleFeatureSubmit}>
-          <DialogTitle sx={{ fontWeight: 800, fontSize: '1rem', color: '#0F172A', pb: 1 }}>
-            Feature a Gift Card
-          </DialogTitle>
-          <DialogContent sx={{ pt: '8px !important' }}>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                SELECT BRAND *
-              </Typography>
-              <Select
-                value={selectedBrand}
-                onChange={e => setSelectedBrand(e.target.value)}
-                size="small"
-                fullWidth
-                sx={{
-                  borderRadius: '10px',
-                  bgcolor: '#F8FAFC',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(226, 232, 240, 0.8)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#CBD5E1',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#6D28D9',
-                  },
-                }}
-              >
-                <MenuItem value="Amazon">Amazon</MenuItem>
-                <MenuItem value="Flipkart">Flipkart</MenuItem>
-                <MenuItem value="Myntra">Myntra</MenuItem>
-                <MenuItem value="Swiggy">Swiggy</MenuItem>
-                <MenuItem value="Zomato">Zomato</MenuItem>
-                <MenuItem value="Nykaa">Nykaa</MenuItem>
-                <MenuItem value="Google Play">Google Play</MenuItem>
-              </Select>
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-            <Button onClick={() => setOpenFeatureDialog(false)} color="inherit" sx={{ fontWeight: 600, borderRadius: '8px' }}>Cancel</Button>
-            <Button type="submit" variant="contained" color="secondary" sx={{ fontWeight: 600, borderRadius: '8px' }}>
-              Feature Card
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+      {/* ── FEATURE CARD DIALOG (Modal) ──────────────────────────── */}
+      {openFeatureDialog && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden animate-fadeIn">
+            <form onSubmit={handleFeatureSubmit}>
+              <div className="px-6 py-4 border-b border-slate-100">
+                <h3 className="text-base font-extrabold text-slate-900">Feature a Gift Card</h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Select Brand *
+                  </label>
+                  <select
+                    value={selectedBrand}
+                    onChange={e => setSelectedBrand(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 outline-none focus:border-primary text-slate-700"
+                  >
+                    <option value="">-- Choose Brand --</option>
+                    <option value="Amazon">Amazon</option>
+                    <option value="Flipkart">Flipkart</option>
+                    <option value="Myntra">Myntra</option>
+                    <option value="Swiggy">Swiggy</option>
+                    <option value="Zomato">Zomato</option>
+                    <option value="Nykaa">Nykaa</option>
+                    <option value="Google Play">Google Play</option>
+                  </select>
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOpenFeatureDialog(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-[#8B5CF6] hover:bg-[#7C3AED] rounded-lg transition-colors shadow-md"
+                >
+                  Feature Card
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-    </Box>
+    </div>
   );
 };
 

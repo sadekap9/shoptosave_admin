@@ -1,41 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  TextField,
-  InputAdornment,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  MenuItem,
-  FormControl,
-  Select,
-  Tooltip,
-  IconButton,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Category as CategoryIcon,
-  CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon,
-  Layers as LayersIcon,
-  QueryStats as StatsIcon,
-} from '@mui/icons-material';
-
 import { categoryService } from '../services/categoryService';
+import {
+  Search,
+  Plus,
+  Edit3,
+  Trash2,
+  Grid,
+  X
+} from 'lucide-react';
 
 // Helper to get initials
 const getInitials = (name) => {
@@ -80,137 +52,121 @@ const getLogoUrl = (logoPath) => {
   return `${baseHost}${cleanPath}`;
 };
 
-const initialCategories = [
-  { id: 'CAT-001', name: 'Electronics & Mobiles', status: 'Active', created: '2026-05-10 14:30' },
-  { id: 'CAT-002', name: 'Fashion & Apparel', status: 'Active', created: '2026-05-12 09:15' },
-  { id: 'CAT-003', name: 'Food & Dining', status: 'Active', created: '2026-05-15 18:45' },
-  { id: 'CAT-004', name: 'Travel & Flights', status: 'Active', created: '2026-05-18 11:20' },
-  { id: 'CAT-005', name: 'Beauty & Wellness', status: 'Inactive', created: '2026-05-20 16:00' },
-  { id: 'CAT-006', name: 'Home Decor & Furniture', status: 'Active', created: '2026-05-22 10:05' },
-  { id: 'CAT-007', name: 'Entertainment & Gaming', status: 'Inactive', created: '2026-05-24 15:30' },
-];
-
 let lastFetchTime = 0;
 
 const CategoriesView = ({ triggerToast }) => {
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [dateFilter, setDateFilter] = useState('All');
-  
-  // Dialog state
+
+  // Dialog States
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
-  // Form input states
-  const [catName, setCatName] = useState('');
-  const [catStatus, setCatStatus] = useState('Active');
-  const [catLogo, setCatLogo] = useState(null);
-  
+  // Form input states (Add)
+  const [categoryName, setCategoryName] = useState('');
+  const [categoryLogo, setCategoryLogo] = useState(null);
+  const [categoryStatus, setCategoryStatus] = useState('Active');
+
+  // Form input states (Edit)
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [editName, setEditName] = useState('');
-  const [editStatus, setEditStatus] = useState('Active');
   const [editLogo, setEditLogo] = useState(null);
-  const fetchCategories = async () => {
+  const [editStatus, setEditStatus] = useState('Active');
+
+  const fetchCategoriesList = async () => {
     try {
       const response = await categoryService.getCategories();
       if (response && response.success && response.result && response.result.data) {
-        const mappedCategories = response.result.data.map(cat => ({
-          id: cat.id,
-          name: cat.category_name,
-          status: cat.status === 1 ? 'Active' : 'Inactive',
-          created: formatDateTime(cat.created_at),
-          logo: cat.logo
-        }));
+        const mappedCategories = response.result.data.map((cat) => {
+          return {
+            id: `CAT-${String(cat.id).padStart(3, '0')}`,
+            dbId: cat.id,
+            name: cat.category_name,
+            logo: cat.logo || '',
+            status: cat.status === 1 ? 'Active' : 'Inactive',
+            created: formatDateTime(cat.created_at),
+          };
+        });
         setCategories(mappedCategories);
       }
     } catch (error) {
       console.error('Fetch categories error:', error);
-      triggerToast(error.message || 'Failed to fetch categories from server', 'error');
+      triggerToast('Failed to load categories list', 'error');
     }
   };
 
-  // Load categories on component mount
   useEffect(() => {
     const now = Date.now();
     if (now - lastFetchTime > 500) {
       lastFetchTime = now;
-      fetchCategories();
+      fetchCategoriesList();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Stats calculation
-  const totalCategories = categories.length;
-  const activeCount = categories.filter((c) => c.status === 'Active').length;
-  const inactiveCount = categories.filter((c) => c.status === 'Inactive').length;
-  const lastCreatedName = categories.length > 0 ? categories[categories.length - 1].name : 'N/A';
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (!catName.trim()) {
-      triggerToast('Please enter a valid category name', 'warning');
+    if (!categoryName.trim()) {
+      triggerToast('Please fill in the category name', 'warning');
       return;
     }
-    if (!catLogo) {
+    if (!categoryLogo) {
       triggerToast('Please select a category logo file', 'warning');
       return;
     }
     try {
       const response = await categoryService.addCategory(
-        catName.trim(),
-        catStatus,
-        catLogo
+        categoryName.trim(),
+        categoryStatus,
+        categoryLogo
       );
 
       if (response && response.success) {
-        triggerToast(`Category "${catName.trim()}" added successfully!`, 'success');
-        
-        // Reset form & close dialog
-        setCatName('');
-        setCatStatus('Active');
-        setCatLogo(null);
-        setOpenAddDialog(false);
+        await fetchCategoriesList();
+        triggerToast(`Category "${categoryName.trim()}" created successfully!`, 'success');
 
-        // Fetch refreshed categories list
-        fetchCategories();
+        // Reset fields & close
+        setCategoryName('');
+        setCategoryLogo(null);
+        setOpenAddDialog(false);
       } else {
-        triggerToast(response.message || 'Failed to add category', 'error');
+        triggerToast(response.message || 'Failed to create category', 'error');
       }
     } catch (err) {
       console.error('Add Category API error:', err);
-      triggerToast(err.message || 'An error occurred while adding the category', 'error');
+      triggerToast(err.message || 'An error occurred while creating the category', 'error');
     }
   };
 
   const handleOpenEdit = (category) => {
     setSelectedCategory(category);
     setEditName(category.name);
-    setEditStatus(category.status);
     setEditLogo(null);
+    setEditStatus(category.status);
     setOpenEditDialog(true);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editName.trim()) {
-      triggerToast('Please enter a valid category name', 'warning');
+      triggerToast('Please fill in the category name', 'warning');
       return;
     }
-
     try {
+      const databaseId = selectedCategory.dbId;
       const response = await categoryService.updateCategory(
-        selectedCategory.id,
+        databaseId,
         editName.trim(),
         editStatus,
         editLogo
       );
 
       if (response && response.success) {
-        triggerToast(`Category "${editName}" updated successfully!`, 'success');
+        await fetchCategoriesList();
+        triggerToast(`Category "${editName.trim()}" updated successfully!`, 'success');
         setOpenEditDialog(false);
-        setEditLogo(null);
-        fetchCategories();
       } else {
         triggerToast(response.message || 'Failed to update category', 'error');
       }
@@ -228,11 +184,12 @@ const CategoriesView = ({ triggerToast }) => {
   const handleDeleteConfirm = async () => {
     if (selectedCategory) {
       try {
-        const response = await categoryService.deleteCategory(selectedCategory.id);
+        const databaseId = selectedCategory.dbId;
+        const response = await categoryService.deleteCategory(databaseId);
         if (response && response.success) {
           triggerToast(`Category "${selectedCategory.name}" has been deleted.`, 'error');
           setOpenDeleteDialog(false);
-          fetchCategories();
+          await fetchCategoriesList();
         } else {
           triggerToast(response.message || 'Failed to delete category', 'error');
         }
@@ -243,882 +200,378 @@ const CategoriesView = ({ triggerToast }) => {
     }
   };
 
-  const filteredCategories = categories.filter((cat) => {
-    const matchesSearch = (cat.name ? cat.name.toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
-                          String(cat.id).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || cat.status === statusFilter;
+  const filteredCategories = categories.filter((category) => {
+    const matchesSearch =
+      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      category.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || category.status === statusFilter;
 
-    // Date filtering logic
-    let matchesDate = true;
-    if (dateFilter !== 'All') {
-      const createdDate = new Date(cat.created.replace(' ', 'T'));
-      const now = new Date();
-      const diffTime = Math.abs(now - createdDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (dateFilter === 'Today') {
-        matchesDate = createdDate.toDateString() === now.toDateString();
-      } else if (dateFilter === 'Week') {
-        matchesDate = diffDays <= 7;
-      } else if (dateFilter === 'Month') {
-        matchesDate = diffDays <= 30;
-      }
-    }
-
-    return matchesSearch && matchesStatus && matchesDate;
+    return matchesSearch && matchesStatus;
   });
 
   return (
-    <Box sx={{ animation: 'fadeIn 0.5s ease-out-back', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-      {/* Header with breadcrumbs */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box>
-          
-          <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em', color: '#0F172A', mb: 0.5 }}>
-            Categories
-          </Typography>
-          
-        </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
+    <div className="w-full max-w-full box-border animate-fadeIn">
+      {/* Header with Title & Add Button */}
+      <div className="flex justify-end items-center mb-8">
+
+        <button
           onClick={() => setOpenAddDialog(true)}
-          sx={{
-            borderRadius: '12px',
-            textTransform: 'none',
-            fontWeight: 650,
-            px: 3,
-            py: 1.2,
-            boxShadow: '0 4px 14px rgba(109, 40, 217, 0.25)',
-          }}
+          className="flex items-center gap-2 text-white bg-gradient-to-r from-primary to-secondary hover:from-[#7C3AED] hover:to-[#8B5CF6] px-4 py-2.5 text-xs font-bold rounded-xl transition-all shadow-[0_4px_14px_rgba(109,40,217,0.25)]"
         >
+          <Plus className="w-4 h-4" />
           Add Category
-        </Button>
-      </Box>
+        </button>
+      </div>
 
-      {/* Telemetry Summary Cards */}
-      {/* Telemetry Summary Cards */}
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' },
-        gap: 3,
-        mb: 4,
-        width: '100%',
-        boxSizing: 'border-box'
-      }}>
-        <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                  Total Categories
-                </Typography>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(109, 40, 217, 0.08)', color: '#6D28D9', display: 'flex' }}>
-                  <LayersIcon sx={{ fontSize: 18 }} />
-                </Box>
-              </Box>
-              <Typography variant="h5" fontWeight={850} sx={{ mb: 0.5 }}>
-                {totalCategories}
-              </Typography>
-            </Box>
-
-          </CardContent>
-        </Card>
-
-        <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                  Active Categories
-                </Typography>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.08)', color: '#10B981', display: 'flex' }}>
-                  <ActiveIcon sx={{ fontSize: 18 }} />
-                </Box>
-              </Box>
-              <Typography variant="h5" fontWeight={850} color="#10B981" sx={{ mb: 0.5 }}>
-                {activeCount} Active
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                  Inactive Categories
-                </Typography>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(239, 68, 68, 0.08)', color: '#EF4444', display: 'flex' }}>
-                  <InactiveIcon sx={{ fontSize: 18 }} />
-                </Box>
-              </Box>
-              <Typography variant="h5" fontWeight={850} color="#EF4444" sx={{ mb: 0.5 }}>
-                {inactiveCount} Hidden
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                  Recently Created
-                </Typography>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(13, 148, 136, 0.08)', color: '#0D9488', display: 'flex' }}>
-                  <StatsIcon sx={{ fontSize: 18 }} />
-                </Box>
-              </Box>
-              <Typography variant="h5" fontWeight={850} color="#0D9488" sx={{ mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {lastCreatedName}
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
-
-      {/* Main card Category directory */}
-      <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', overflow: 'hidden' }}>
-        <CardContent sx={{ p: 0 }}>
-          {/* Search Row */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              p: 3,
-              borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-              bgcolor: '#FFFFFF',
-              flexWrap: 'wrap',
-              gap: 2,
-            }}
-          >
-            <TextField
-              variant="outlined"
-              sx={{
-                width: '320px',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '12px',
-                  bgcolor: '#F8FAFC',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    bgcolor: '#F1F5F9',
-                  },
-                  '&.Mui-focused': {
-                    bgcolor: '#FFFFFF',
-                    boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                  },
-                },
-              }}
-              size="small"
-              placeholder="Search by category ID or name..."
+      {/* Main card Categories directory */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+        {/* Search & Filter Row */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 border-b border-slate-100 bg-white gap-4">
+          <div className="relative w-full sm:w-80">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-slate-400" />
+            </span>
+            <input
+              type="text"
+              placeholder="Search category name or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" sx={{ fontSize: 20 }} />
-                  </InputAdornment>
-                ),
-              }}
+              className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] hover:bg-[#F1F5F9] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all duration-200 text-slate-900 font-medium placeholder-slate-400"
             />
+          </div>
 
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              <FormControl size="small" sx={{ width: '180px' }}>
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  displayEmpty
-                  sx={{
-                    borderRadius: '12px',
-                    bgcolor: '#F8FAFC',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#CBD5E1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6D28D9',
-                    },
-                  }}
-                >
-                  <MenuItem value="All">All Statuses</MenuItem>
-                  <MenuItem value="Active">Active Only</MenuItem>
-                  <MenuItem value="Inactive">Inactive Only</MenuItem>
-                </Select>
-              </FormControl>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full sm:w-44 px-3 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] focus:bg-white focus:border-primary outline-none transition-all text-slate-700 font-semibold"
+            >
+              <option value="All">All Statuses</option>
+              <option value="Active">Active </option>
+              <option value="Inactive">Inactive </option>
+            </select>
+          </div>
+        </div>
 
-              <FormControl size="small" sx={{ width: '180px' }}>
-                <Select
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  displayEmpty
-                  sx={{
-                    borderRadius: '12px',
-                    bgcolor: '#F8FAFC',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#CBD5E1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6D28D9',
-                    },
-                  }}
-                >
-                  <MenuItem value="All">All Time</MenuItem>
-                  <MenuItem value="Today">Created Today</MenuItem>
-                  <MenuItem value="Week">Last 7 Days</MenuItem>
-                  <MenuItem value="Month">Last 30 Days</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          </Box>
-
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pl: 3 }}>ID</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>CATEGORY NAME</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STATUS</TableCell>
-                  <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>CREATED AT</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pr: 3 }}>ACTIONS</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredCategories.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-                        <CategoryIcon sx={{ fontSize: 40, color: 'text.disabled', opacity: 0.5 }} />
-                        <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                          No categories found matching details.
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCategories.map((cat) => {
-                    const isActive = cat.status === 'Active';
-                    return (
-                      <TableRow
-                        key={cat.id}
-                        hover
-                        sx={{
-                          transition: 'all 0.2s',
-                          '&:hover': {
-                            bgcolor: 'rgba(109, 40, 217, 0.015) !important',
-                          },
-                        }}
-                      >
-                        <TableCell sx={{ pl: 3 }}>
-                          <Typography variant="subtitle2" fontWeight={800} color="#64748B">
-                            {cat.id}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            {cat.logo ? (
-                              <Box
-                                component="img"
-                                src={getLogoUrl(cat.logo)}
-                                alt={cat.name}
-                                sx={{
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: '10px',
-                                  objectFit: 'cover',
-                                  boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                                }}
-                                onError={(e) => {
-                                  // Fallback to initials if image fails to load
-                                  e.target.onerror = null;
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <Box
-                                sx={{
-                                  background: getAvatarGradient(cat.name),
-                                  color: '#FFFFFF',
-                                  width: 36,
-                                  height: 36,
-                                  borderRadius: '10px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontWeight: 800,
-                                  fontSize: '0.8rem',
-                                  boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                                }}
-                              >
-                                {getInitials(cat.name)}
-                              </Box>
-                            )}
-                            <Typography variant="subtitle2" fontWeight={750} color="#1E293B">
-                              {cat.name}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Box
-                            sx={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 0.8,
-                              px: 1.5,
-                              py: 0.6,
-                              borderRadius: '20px',
-                              fontWeight: 600,
-                              fontSize: '0.75rem',
-                              bgcolor: isActive ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                              color: isActive ? '#10B981' : '#EF4444',
-                              border: isActive ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(239, 68, 68, 0.15)',
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: '50%',
-                                bgcolor: isActive ? '#10B981' : '#EF4444',
-                              }}
+        {/* Table View */}
+        <div className="overflow-x-auto w-full">
+          <table className="min-w-full text-left">
+            <thead>
+              <tr className="bg-[#F8FAFC] border-b border-slate-100">
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 pl-6">ID</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Category</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Created At</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-center">Status</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-right pr-6">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredCategories.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Grid className="w-10 h-10 text-slate-300 opacity-50" />
+                      <span className="text-xs font-semibold text-slate-400">No categories found matching criteria.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredCategories.map((category) => {
+                  const isActive = category.status === 'Active';
+                  return (
+                    <tr
+                      key={category.id}
+                      className="hover:bg-violet-50/10 transition-colors"
+                    >
+                      <td className="px-6 py-4 pl-6 whitespace-nowrap">
+                        <span className="text-xs font-extrabold text-slate-400">
+                          {category.id}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          {category.logo ? (
+                            <img
+                              src={getLogoUrl(category.logo)}
+                              alt={category.name}
+                              className="w-9 h-9 rounded-lg object-cover border border-slate-150 shadow-sm flex-shrink-0"
                             />
-                            {cat.status}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                            {cat.created}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right" sx={{ pr: 3 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                            <Tooltip title="Configure Category details">
-                              <IconButton
-                                size="small"
-                                sx={{
-                                  color: '#8B5CF6',
-                                  bgcolor: 'rgba(139, 92, 246, 0.05)',
-                                  '&:hover': {
-                                    bgcolor: '#8B5CF6',
-                                    color: '#FFFFFF',
-                                  },
-                                  width: 32,
-                                  height: 32,
-                                  transition: 'all 0.2s',
-                                }}
-                                onClick={() => handleOpenEdit(cat)}
-                              >
-                                <EditIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete Category">
-                              <IconButton
-                                size="small"
-                                sx={{
-                                  color: '#EF4444',
-                                  bgcolor: 'rgba(239, 68, 68, 0.05)',
-                                  '&:hover': {
-                                    bgcolor: '#EF4444',
-                                    color: '#FFFFFF',
-                                  },
-                                  width: 32,
-                                  height: 32,
-                                  transition: 'all 0.2s',
-                                }}
-                                onClick={() => handleOpenDelete(cat)}
-                              >
-                                <DeleteIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+                          ) : (
+                            <div
+                              className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-extrabold text-xs shadow-sm flex-shrink-0"
+                              style={{ background: getAvatarGradient(category.name) }}
+                            >
+                              {getInitials(category.name)}
+                            </div>
+                          )}
+                          <span className="text-xs font-bold text-slate-800">{category.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-xs text-slate-500 font-medium">
+                          {category.created}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold border ${isActive
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-500/10'
+                            : 'bg-red-50 text-red-600 border-red-500/10'
+                          }`}>
+                          {category.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right pr-6 whitespace-nowrap">
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEdit(category)}
+                            title="Configure Details"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-violet-50 text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all duration-200"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenDelete(category)}
+                            title="Delete Category"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-500 hover:text-white transition-all duration-200"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* DIALOG 1: Add Category */}
-      <Dialog
-        open={openAddDialog}
-        onClose={() => setOpenAddDialog(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '20px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            overflow: 'hidden',
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            pb: 2,
-            pt: 3,
-            px: 3,
-            fontSize: '1.2rem',
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'inline-flex',
-              p: 1,
-              borderRadius: '10px',
-              bgcolor: 'rgba(109, 40, 217, 0.08)',
-              color: '#6D28D9',
-            }}
-          >
-            <CategoryIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Create New Category
-        </DialogTitle>
-        <form onSubmit={handleAddSubmit}>
-          <DialogContent sx={{ p: 3, pt: 3 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  CATEGORY NAME *
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="e.g. Food & Dining, Fashion"
-                  value={catName}
-                  onChange={(e) => setCatName(e.target.value)}
-                  variant="outlined"
-                  size="small"
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                      bgcolor: '#F8FAFC',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        bgcolor: '#F1F5F9',
-                      },
-                      '&.Mui-focused': {
-                        bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                      },
-                    },
-                  }}
-                />
-              </Box>
-
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  CATEGORY LOGO *
-                </Typography>
-                <Button
-                  variant="outlined"
-                  component="label"
-                  fullWidth
-                  sx={{
-                    borderRadius: '12px',
-                    py: 1.2,
-                    textTransform: 'none',
-                    borderColor: 'rgba(226, 232, 240, 0.8)',
-                    color: '#475569',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                    '&:hover': {
-                      borderColor: '#CBD5E1',
-                      backgroundColor: '#F1F5F9',
-                    },
-                  }}
-                >
-                  {catLogo ? catLogo.name : 'Choose Logo Image *'}
+      {openAddDialog && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+              <h3 className="text-sm font-extrabold text-slate-900">Create Category</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryName('');
+                  setCategoryLogo(null);
+                  setOpenAddDialog(false);
+                }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAddSubmit}>
+              <div className="p-7 space-y-6">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Category Name *
+                  </label>
                   <input
-                    type="file"
-                    hidden
-                    accept="image/*"
-                    onChange={(e) => setCatLogo(e.target.files[0])}
+                    type="text"
+                    required
+                    placeholder="e.g. Fashion, Electronics"
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100/70 focus:bg-white focus:border-primary outline-none transition-all text-slate-800"
                   />
-                </Button>
-              </Box>
+                </div>
 
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  INITIAL STATUS *
-                </Typography>
-                <Select
-                  value={catStatus}
-                  onChange={(e) => setCatStatus(e.target.value)}
-                  size="small"
-                  fullWidth
-                  sx={{
-                    borderRadius: '12px',
-                    bgcolor: '#F8FAFC',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#CBD5E1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6D28D9',
-                    },
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Category Logo *
+                  </label>
+                  <label className="w-full px-3 py-2 text-center text-xs font-semibold text-slate-500 hover:text-slate-850 hover:bg-slate-100/60 border border-dashed border-slate-250 hover:border-slate-350 bg-slate-50/50 rounded-lg cursor-pointer transition-all truncate block">
+                    {categoryLogo ? categoryLogo.name : 'Choose Logo Image *'}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={(e) => setCategoryLogo(e.target.files[0])}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Visibility Status *
+                  </label>
+                  <select
+                    value={categoryStatus}
+                    onChange={(e) => setCategoryStatus(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-slate-50 outline-none focus:border-primary text-slate-700"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryName('');
+                    setCategoryLogo(null);
+                    setOpenAddDialog(false);
                   }}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  <MenuItem value="Active">Active (Visible)</MenuItem>
-                  <MenuItem value="Inactive">Inactive (Hidden)</MenuItem>
-                </Select>
-              </Box>
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
-            <Button
-              onClick={() => {
-                setCatName('');
-                setCatStatus('Active');
-                setCatLogo(null);
-                setOpenAddDialog(false);
-              }}
-              color="inherit"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              sx={{
-                textTransform: 'none',
-                fontWeight: 650,
-                borderRadius: '10px',
-                px: 2.5,
-              }}
-            >
-              Create Category
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-primary to-secondary hover:from-[#7C3AED] hover:to-[#8B5CF6] rounded-xl transition-all shadow-md active:scale-95 duration-200"
+                >
+                  Create Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* DIALOG 2: Edit Category */}
-      <Dialog
-        open={openEditDialog}
-        onClose={() => setOpenEditDialog(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '20px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            overflow: 'hidden',
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 800,
-            pb: 2,
-            pt: 3,
-            px: 3,
-            fontSize: '1.2rem',
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-          }}
-        >
-          <Box
-            sx={{
-              display: 'inline-flex',
-              p: 1,
-              borderRadius: '10px',
-              bgcolor: 'rgba(139, 92, 246, 0.08)',
-              color: '#8B5CF6',
-            }}
-          >
-            <EditIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Modify Category Details
-        </DialogTitle>
-        <form onSubmit={handleEditSubmit}>
-          <DialogContent sx={{ p: 3, pt: 3 }}>
-            {selectedCategory && (
-              <Box
-                sx={{
-                  mb: 3,
-                  p: 2,
-                  bgcolor: '#F8FAFC',
-                  borderRadius: '14px',
-                  border: '1px solid rgba(226, 232, 240, 0.8)',
+      {openEditDialog && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+              <h3 className="text-sm font-extrabold text-slate-900">Modify Category</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenEditDialog(false);
+                  setEditLogo(null);
                 }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               >
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
-                  MODIFYING CATEGORY
-                </Typography>
-                <Typography variant="subtitle2" color="#0F172A" fontWeight={750}>
-                  ID: {selectedCategory.id}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                  Originally created: <strong>{selectedCategory.created}</strong>
-                </Typography>
-              </Box>
-            )}
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  CATEGORY NAME *
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="e.g. Food & Dining, Fashion"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  variant="outlined"
-                  size="small"
-                  required
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: '12px',
-                      bgcolor: '#F8FAFC',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        bgcolor: '#F1F5F9',
-                      },
-                      '&.Mui-focused': {
-                        bgcolor: '#FFFFFF',
-                        boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                      },
-                    },
-                  }}
-                />
-              </Box>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  CATEGORY LOGO
-                </Typography>
-
-                {editLogo ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <Typography variant="caption" color="primary" fontWeight={700} sx={{ fontSize: '0.68rem' }}>
-                      NEW LOGO PREVIEW
-                    </Typography>
-                    <Box
-                      component="img"
-                      src={URL.createObjectURL(editLogo)}
-                      alt="New Preview"
-                      sx={{
-                        width: 72,
-                        height: 72,
-                        borderRadius: '12px',
-                        objectFit: 'cover',
-                        border: '2px dashed #6D28D9',
-                        boxShadow: '0 4px 12px rgba(109, 40, 217, 0.1)',
-                      }}
-                    />
-                  </Box>
-                ) : (
-                  selectedCategory && selectedCategory.logo && (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '0.68rem' }}>
-                        CURRENT LOGO
-                      </Typography>
-                      <Box
-                        component="img"
-                        src={getLogoUrl(selectedCategory.logo)}
-                        alt={selectedCategory.name}
-                        sx={{
-                          width: 72,
-                          height: 72,
-                          borderRadius: '12px',
-                          objectFit: 'cover',
-                          border: '1px solid rgba(226, 232, 240, 0.8)',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                        }}
-                      />
-                    </Box>
-                  )
-                )}
-
-                <Button
-                  variant="outlined"
-                  component="label"
-                  fullWidth
-                  sx={{
-                    borderRadius: '12px',
-                    py: 1.2,
-                    textTransform: 'none',
-                    borderColor: 'rgba(226, 232, 240, 0.8)',
-                    color: '#475569',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                    '&:hover': {
-                      borderColor: '#CBD5E1',
-                      backgroundColor: '#F1F5F9',
-                    },
-                  }}
-                >
-                  {editLogo ? editLogo.name : 'Change Logo Image (Optional)'}
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit}>
+              <div className="p-7 space-y-6">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Category Name *
+                  </label>
                   <input
-                    type="file"
-                    hidden
-                    accept="image/*"
-                    onChange={(e) => setEditLogo(e.target.files[0])}
+                    type="text"
+                    required
+                    placeholder="e.g. Fashion, Electronics"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-[#F8FAFC] hover:bg-slate-100/50 focus:bg-white focus:border-primary outline-none transition-all text-slate-800"
                   />
-                </Button>
-              </Box>
+                </div>
 
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                  VISIBILITY STATUS *
-                </Typography>
-                <Select
-                  value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value)}
-                  size="small"
-                  fullWidth
-                  sx={{
-                    borderRadius: '12px',
-                    bgcolor: '#F8FAFC',
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(226, 232, 240, 0.8)',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#CBD5E1',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#6D28D9',
-                    },
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Category Logo
+                  </label>
+                  {editLogo ? (
+                    <div className="flex flex-col items-center gap-1 mb-2">
+                      <span className="text-[9px] font-bold text-primary block uppercase">New Logo Preview</span>
+                      <img
+                        src={URL.createObjectURL(editLogo)}
+                        alt="New Preview"
+                        className="w-[72px] h-[72px] rounded-xl object-cover border-2 border-dashed border-[#6D28D9] shadow-md"
+                      />
+                    </div>
+                  ) : (
+                    selectedCategory && selectedCategory.logo && (
+                      <div className="flex flex-col items-center gap-1 mb-2">
+                        <span className="text-[9px] font-bold text-slate-400 block uppercase">Current Logo</span>
+                        <img
+                          src={getLogoUrl(selectedCategory.logo)}
+                          alt={selectedCategory.name}
+                          className="w-[72px] h-[72px] rounded-xl object-cover border border-slate-200 shadow-sm"
+                        />
+                      </div>
+                    )
+                  )}
+
+                  <label className="w-full px-3 py-2 text-center text-xs font-semibold text-slate-500 hover:text-slate-850 hover:bg-slate-100/60 border border-dashed border-slate-250 hover:border-slate-350 bg-slate-50/50 rounded-lg cursor-pointer transition-all truncate block">
+                    {editLogo ? editLogo.name : 'Choose New Logo Image'}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={(e) => setEditLogo(e.target.files[0])}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Visibility Status *
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm rounded-lg border border-slate-200 bg-[#F8FAFC] outline-none focus:border-primary text-slate-700 font-semibold"
+                  >
+                    <option value="Active">Active (Visible)</option>
+                    <option value="Inactive">Inactive (Hidden)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenEditDialog(false);
+                    setEditLogo(null);
                   }}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  <MenuItem value="Active">Active (Visible)</MenuItem>
-                  <MenuItem value="Inactive">Inactive (Hidden)</MenuItem>
-                </Select>
-              </Box>
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
-            <Button
-              onClick={() => {
-                setOpenEditDialog(false);
-                setEditLogo(null);
-              }}
-              color="inherit"
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              sx={{
-                textTransform: 'none',
-                fontWeight: 650,
-                borderRadius: '10px',
-                px: 2.5,
-              }}
-            >
-              Save Details
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-primary to-secondary hover:from-[#7C3AED] hover:to-[#8B5CF6] rounded-xl transition-all shadow-md active:scale-95 duration-200"
+                >
+                  Save Details
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-      {/* DIALOG 3: Delete Confirmation */}
-      <Dialog
-        open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '16px',
-            boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)',
-            overflow: 'hidden',
-            bgcolor: '#FFFFFF',
-            maxWidth: 380,
-            width: '100%',
-          },
-        }}
-      >
-        {/* Header Section */}
-        <Box sx={{ pt: 3.5, px: 3.5, pb: 1.5 }}>
-          <Typography variant="h6" sx={{ fontWeight: 750, fontSize: '1.25rem', color: '#EF4444', letterSpacing: '-0.02em' }}>
-            Delete Category
-          </Typography>
-        </Box>
-
-        <DialogContent sx={{ p: 0, px: 3.5, pb: 2 }}>
-          <Typography sx={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.5 }}>
-            Are you sure you want to delete category <strong>"{selectedCategory?.name}"</strong>?
-          </Typography>
-        </DialogContent>
-
-        <DialogActions 
-          sx={{ 
-            px: 3.5, 
-            pb: 3.5, 
-            pt: 1.5, 
-            display: 'flex', 
-            justifyContent: 'flex-end', 
-            gap: 1.5
-          }}
-        >
-          <Button
-            onClick={() => setOpenDeleteDialog(false)}
-            sx={{ 
-              textTransform: 'none', 
-              fontWeight: 600, 
-              fontSize: '0.82rem', 
-              color: '#64748B', 
-              '&:hover': { bgcolor: '#F1F5F9', color: '#0F172A' },
-              px: 2,
-              py: 0.8,
-              borderRadius: '6px',
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            variant="contained"
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '0.82rem',
-              borderRadius: '6px',
-              px: 2.5,
-              py: 0.8,
-              bgcolor: '#EF4444',
-              color: '#FFFFFF',
-              boxShadow: 'none',
-              transition: 'all 0.2s ease',
-              '&:hover': { 
-                bgcolor: '#DC2626',
-                boxShadow: 'none',
-              },
-            }}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {/* DIALOG 3: Delete Confirm Dialog */}
+      {openDeleteDialog && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden animate-fadeIn">
+            <div className="pt-6 px-6 pb-2">
+              <h3 className="text-sm font-extrabold text-red-500 tracking-tight">Delete Category</h3>
+            </div>
+            <div className="px-6 pb-4">
+              <p className="text-xs text-slate-650 leading-relaxed">
+                Are you sure you want to delete category <strong>"{selectedCategory?.name}"</strong>?
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                onClick={() => setOpenDeleteDialog(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-md"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -1,46 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  Avatar,
-  IconButton,
-  Badge,
-  InputBase,
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  ShoppingBag,
+  Repeat,
+  RefreshCw,
+  Store,
+  IndianRupee,
+  Wallet,
+  Search,
+  Bell,
+  LogOut,
   Menu,
-  MenuItem,
-  Snackbar,
-  Alert,
-  Tooltip,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  PeopleAlt as UsersIcon,
-  CardGiftcard as GiftCardIcon,
-  ShoppingBag as OrdersIcon,
-  CompareArrows as SellRequestsIcon,
-  SyncAlt as WoohooSyncIcon,
-  Store as StoresIcon,
-  MonetizationOn as EarningsIcon,
-  AccountBalanceWallet as WalletsIcon,
-  Search as SearchIcon,
-  Notifications as NotificationsIcon,
-  ExitToApp as LogoutIcon,
-  Menu as MenuIcon,
-  MenuOpen as MenuOpenIcon,
-  KeyboardArrowRight as ChevronRightIcon,
-  Category as CategoryIcon,
-  SupervisorAccount as SubAdminIcon,
-  ViewCarousel as BannersIcon,
-  LocalOffer as CouponsIcon,
-} from '@mui/icons-material';
+  ChevronLeft,
+  ChevronRight,
+  Grid,
+  ShieldCheck,
+  Image,
+  Tag,
+  PanelLeftClose
+} from 'lucide-react';
 
 // Subcomponents import
 import DashboardView from './components/DashboardView';
@@ -90,42 +70,23 @@ function App() {
   // Authentication status state
   const [isAuthenticated, setIsAuthenticated] = useState(authModel.isAuthenticated());
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  // Resize listener to track mobile viewport
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Navigation active tab state
-  const [activeTab, _setActiveTab] = useState('dashboard');
-  const setActiveTab = (tab) => {
-    _setActiveTab(tab);
-    setIsMobileSidebarOpen(false);
-  };
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   // Collapsible sidebar state
   const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const getSidebarItemSx = (tabName) => {
-    const isSelected = activeTab === tabName;
-    return {
-      borderRadius: '8px',
-      margin: '2px 8px',
-      padding: '8px 12px',
-      color: isSelected ? '#6D28D9' : '#475569',
-      bgcolor: isSelected ? '#F5F3FF !important' : 'transparent',
-      transition: 'all 0.2s ease',
-      '& .MuiListItemIcon-root': {
-        color: isSelected ? '#6D28D9' : '#64748B',
-        minWidth: 32,
-      },
-      '&:hover': {
-        bgcolor: isSelected ? '#EDE9FE !important' : '#F1F5F9',
-        color: isSelected ? '#6D28D9' : '#0F172A',
-        '& .MuiListItemIcon-root': {
-          color: isSelected ? '#6D28D9' : '#0F172A',
-        },
-      },
-    };
-  };
 
   // Admin Profile state
   const [adminProfile, setAdminProfile] = useState(() => {
@@ -174,8 +135,6 @@ function App() {
     };
   }, []);
 
-
-
   // Shared state values
   const [orders] = useState(initialOrders);
   const [sellRequests, setSellRequests] = useState(initialSellRequests);
@@ -183,8 +142,7 @@ function App() {
   const [systemStatus, setSystemStatus] = useState({ lastSync: '2h ago' });
 
   // Top header Profile menu state
-  const [anchorEl, setAnchorEl] = useState(null);
-  const openMenu = Boolean(anchorEl);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   // Snackbar alerts state
   const [toastOpen, setToastOpen] = useState(false);
@@ -196,6 +154,16 @@ function App() {
     setToastSeverity(severity);
     setToastOpen(true);
   };
+
+  // Automatically close toast
+  useEffect(() => {
+    if (toastOpen) {
+      const timer = setTimeout(() => {
+        setToastOpen(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastOpen]);
 
   // Actions
   const handleApproveRequest = (id) => {
@@ -298,6 +266,13 @@ function App() {
           />
         );
       case 'cashback-earnings':
+        // Fallback for tab since earnings ledger view is simple or embedded in dashboard
+        return (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/80">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Earnings Ledger</h3>
+            <p className="text-sm text-slate-600">Complete transaction details ledger coming soon.</p>
+          </div>
+        );
       case 'wallets':
         return <WalletsView triggerToast={triggerToast} />;
       case 'coupons':
@@ -311,7 +286,7 @@ function App() {
           />
         );
       default:
-        return <Typography variant="h5">Feature coming soon!</Typography>;
+        return <h5 className="text-base font-bold text-slate-900">Feature coming soon!</h5>;
     }
   };
 
@@ -321,542 +296,263 @@ function App() {
     return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
 
+  const renderNavItem = (tabName, label, IconComponent, badgeContent, badgeClass = 'bg-primary-light text-primary') => {
+    const isSelected = activeTab === tabName;
+    return (
+      <li key={tabName}>
+        <button
+          onClick={() => {
+            setActiveTab(tabName);
+            setIsMobileSidebarOpen(false);
+          }}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+            isSelected
+              ? 'bg-[#F5F3FF] text-[#6D28D9] relative glowing-indicator'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          } ${isCollapsed && !isMobile ? 'justify-center' : ''}`}
+        >
+          <IconComponent className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-[#6D28D9]' : 'text-slate-400'}`} />
+          {(!isCollapsed || isMobile) && (
+            <span className="flex-1 text-left truncate">{label}</span>
+          )}
+          {(!isCollapsed || isMobile) && badgeContent !== undefined && (
+            <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-md ${badgeClass}`}>
+              {badgeContent}
+            </span>
+          )}
+        </button>
+      </li>
+    );
+  };
+
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh', bgcolor: '#F8FAFC', width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+    <div className="relative min-h-screen bg-[#F8FAFC] w-full max-w-full overflow-x-hidden">
       {/* Mobile Sidebar Backdrop Overlay */}
       {isMobile && isMobileSidebarOpen && (
-        <Box
+        <div
           onClick={() => setIsMobileSidebarOpen(false)}
-          sx={{
-            position: 'fixed',
-            inset: 0,
-            bgcolor: 'rgba(15, 23, 42, 0.4)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 1250,
-          }}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-[4px] z-[1250]"
         />
       )}
 
       {/* 1. Sidebar Nav */}
-      <Box
-        className="sidebar-container"
-        sx={{
-          width: isMobile ? 260 : sidebarWidth,
-          transform: isMobile ? (isMobileSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          borderRight: '1px solid rgba(226, 232, 240, 0.8)',
-          backgroundColor: '#FFFFFF',
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 1300,
-          boxShadow: isMobile && isMobileSidebarOpen ? '4px 0 24px rgba(0,0,0,0.15)' : 'none',
-        }}
+      <aside
+        className={`fixed left-0 top-0 h-screen bg-white border-r border-slate-200/80 flex flex-col z-[1300] transition-all duration-300 ${
+          isMobile
+            ? `${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-[260px] shadow-2xl`
+            : `${isCollapsed ? 'w-[72px]' : 'w-[260px]'}`
+        }`}
       >
         {/* Brand Header */}
-        <Box
-          sx={{
-            p: 2.5,
-            height: 72,
-            boxSizing: 'border-box',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: (isCollapsed && !isMobile) ? 'center' : 'space-between',
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-          }}
+        <div
+          className={`px-5 py-4 h-[72px] border-b border-slate-200/80 flex items-center ${
+            isCollapsed && !isMobile ? 'justify-center' : 'justify-between'
+          }`}
         >
-          {(!isCollapsed || isMobile) && (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 2.5,
-                    background: 'linear-gradient(135deg, #6D28D9 0%, #A855F7 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: '1rem',
-                    boxShadow: '0 4px 10px rgba(109, 40, 217, 0.25)',
-                  }}
-                >
+          {(!isCollapsed || isMobile) ? (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-extrabold text-sm shadow-[0_4px_10px_rgba(109,40,217,0.25)]">
                   S
-                </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.1, color: '#0F172A', letterSpacing: '-0.02em' }}>
+                </div>
+                <div>
+                  <h2 className="text-sm font-extrabold text-[#0F172A] leading-none tracking-tight">
                     Shop2Save
-                  </Typography>
-                  <Typography variant="caption" sx={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 600 }}>
+                  </h2>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5 block">
                     PRO ENTERPRISE
-                  </Typography>
-                </Box>
-              </Box>
+                  </span>
+                </div>
+              </div>
               {isMobile && (
-                <IconButton size="small" onClick={() => setIsMobileSidebarOpen(false)} sx={{ color: '#64748B' }}>
-                  <MenuOpenIcon fontSize="small" style={{ transform: 'rotate(180deg)' }} />
-                </IconButton>
+                <button
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="p-1 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100"
+                >
+                  <PanelLeftClose className="w-5 h-5" />
+                </button>
               )}
-            </Box>
-          )}
-
-          {isCollapsed && !isMobile && (
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: 2.5,
-                background: 'linear-gradient(135deg, #6D28D9 0%, #A855F7 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#FFFFFF',
-                fontWeight: 800,
-                fontSize: '1.2rem',
-                boxShadow: '0 4px 10px rgba(109, 40, 217, 0.25)',
-              }}
-            >
+            </div>
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-extrabold text-base shadow-[0_4px_10px_rgba(109,40,217,0.25)]">
               S
-            </Box>
+            </div>
           )}
-        </Box>
+        </div>
 
         {/* Navigation Items */}
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 2, px: 1 }}>
-          {/* Main Category */}
-          {!isCollapsed && (
-            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#475569', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
-              OVERVIEW
-            </Typography>
-          )}
-          <List sx={{ p: 0, mb: isCollapsed ? 0 : 2 }}>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'dashboard'}
-                onClick={() => setActiveTab('dashboard')}
-                className={activeTab === 'dashboard' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('dashboard')}
-              >
-                <ListItemIcon>
-                  <DashboardIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Dashboard" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'users'}
-                onClick={() => setActiveTab('users')}
-                className={activeTab === 'users' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('users')}
-              >
-                <ListItemIcon>
-                  <UsersIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="User Accounts" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-                {!isCollapsed && <Badge badgeContent="1.2k" color="primary" sx={{ mr: 1, '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16, fontWeight: 700, backgroundColor: 'rgba(109, 40, 217, 0.2)', color: '#A855F7' } }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'sub-admins'}
-                onClick={() => setActiveTab('sub-admins')}
-                className={activeTab === 'sub-admins' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('sub-admins')}
-              >
-                <ListItemIcon>
-                  <SubAdminIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Sub-Admins" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-          </List>
+        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+          {/* Overview Section */}
+          <div>
+            {(!isCollapsed || isMobile) && (
+              <span className="px-3 text-[10px] font-bold text-slate-500 tracking-wider block mb-2 uppercase">
+                OVERVIEW
+              </span>
+            )}
+            <ul className="space-y-1">
+              {renderNavItem('dashboard', 'Dashboard', LayoutDashboard)}
+              {renderNavItem('users', 'User Accounts', Users, '1.2k', 'bg-[#F5F3FF] text-[#A855F7]')}
+              {renderNavItem('sub-admins', 'Sub-Admins', ShieldCheck)}
+            </ul>
+          </div>
 
-          {/* Catalog Category */}
-          {!isCollapsed && (
-            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#475569', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
-              GIFT INVENTORY
-            </Typography>
-          )}
-          <List sx={{ p: 0, mb: isCollapsed ? 0 : 2 }}>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'gift-card-catalog'}
-                onClick={() => setActiveTab('gift-card-catalog')}
-                className={activeTab === 'gift-card-catalog' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('gift-card-catalog')}
-              >
-                <ListItemIcon>
-                  <GiftCardIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Gift Cards" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'categories'}
-                onClick={() => setActiveTab('categories')}
-                className={activeTab === 'categories' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('categories')}
-              >
-                <ListItemIcon>
-                  <CategoryIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Categories" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'banners'}
-                onClick={() => setActiveTab('banners')}
-                className={activeTab === 'banners' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('banners')}
-              >
-                <ListItemIcon>
-                  <BannersIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Promo Banners" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'orders'}
-                onClick={() => setActiveTab('orders')}
-                className={activeTab === 'orders' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('orders')}
-              >
-                <ListItemIcon>
-                  <OrdersIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Redeem Orders" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-                {!isCollapsed && <Badge badgeContent={orders.length} color="error" sx={{ mr: 1, '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16, fontWeight: 700 } }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'sell-requests'}
-                onClick={() => setActiveTab('sell-requests')}
-                className={activeTab === 'sell-requests' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('sell-requests')}
-              >
-                <ListItemIcon>
-                  <SellRequestsIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Sell Requests" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-                {!isCollapsed && <Badge badgeContent={sellRequests.length} color="error" sx={{ mr: 1, '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16, fontWeight: 700 } }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'woohoo-sync'}
-                onClick={() => setActiveTab('woohoo-sync')}
-                className={activeTab === 'woohoo-sync' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('woohoo-sync')}
-              >
-                <ListItemIcon>
-                  <WoohooSyncIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Sync Woohoo" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-          </List>
-
-          {/* Cashback Category */}
-          {!isCollapsed && (
-            <Typography variant="caption" sx={{ px: 2, py: 1, display: 'block', color: '#475569', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.68rem' }}>
-              OFFERS & FINANCES
-            </Typography>
-          )}
-          <List sx={{ p: 0, mb: isCollapsed ? 0 : 2 }}>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'stores'}
-                onClick={() => setActiveTab('stores')}
-                className={activeTab === 'stores' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('stores')}
-              >
-                <ListItemIcon>
-                  <StoresIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Stores" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'cashback-earnings'}
-                onClick={() => setActiveTab('cashback-earnings')}
-                className={activeTab === 'cashback-earnings' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('cashback-earnings')}
-              >
-                <ListItemIcon>
-                  <EarningsIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Earnings Ledger" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'wallets'}
-                onClick={() => setActiveTab('wallets')}
-                className={activeTab === 'wallets' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('wallets')}
-              >
-                <ListItemIcon>
-                  <WalletsIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="System Wallets" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                selected={activeTab === 'coupons'}
-                onClick={() => setActiveTab('coupons')}
-                className={activeTab === 'coupons' ? 'glowing-indicator' : ''}
-                sx={getSidebarItemSx('coupons')}
-              >
-                <ListItemIcon>
-                  <CouponsIcon fontSize="small" />
-                </ListItemIcon>
-                {!isCollapsed && <ListItemText primary="Coupons" primaryTypographyProps={{ fontSize: '0.8rem', fontWeight: 600 }} />}
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Box>
+          {/* Gift Inventory Section */}
+          <div>
+            {(!isCollapsed || isMobile) && (
+              <span className="px-3 text-[10px] font-bold text-slate-500 tracking-wider block mb-2 uppercase">
+                GIFT INVENTORY
+              </span>
+            )}
+            <ul className="space-y-1">
+              {renderNavItem('woohoo-sync', 'Sync Woohoo', RefreshCw)}
+              {renderNavItem('categories', 'Categories', Grid)}
+              {renderNavItem('stores', 'Stores', Store)}
+              {renderNavItem('gift-card-catalog', 'Gift Cards', CreditCard)}
+              {renderNavItem('banners', 'Promo Banners', Image)}
+              {renderNavItem('coupons', 'Coupons', Tag)}
+            </ul>
+          </div>
+        </div>
 
         {/* Collapsible toggle */}
         {!isMobile && (
-          <Box sx={{ borderTop: '1px solid rgba(226, 232, 240, 0.8)', p: 1, display: 'flex', justifyContent: 'center' }}>
-            <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} sx={{ color: '#64748B', '&:hover': { color: '#6D28D9', bgcolor: '#F1F5F9' } }}>
-              {isCollapsed ? <ChevronRightIcon fontSize="small" /> : <MenuOpenIcon fontSize="small" />}
-            </IconButton>
-          </Box>
+          <div className="border-t border-slate-200/80 p-2 flex justify-center">
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1.5 text-slate-500 hover:text-[#6D28D9] rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+          </div>
         )}
-
-      </Box>
+      </aside>
 
       {/* 2. Main Content Wrapper */}
-      <Box
-        sx={{
+      <div
+        className="min-h-screen flex flex-col bg-[#F8FAFC] transition-all duration-300"
+        style={{
           marginLeft: isMobile ? '0px' : `${sidebarWidth}px`,
           width: isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`,
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          bgcolor: '#F8FAFC',
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {/* Sticky top navbar */}
-        <Box
-          className="glass-blur"
-          sx={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 1000,
-            height: 72,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: { xs: 2, md: 4 },
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            boxSizing: 'border-box',
-          }}
-        >
-          {/* Left: Breadcrumbs / Collapsed menu toggler */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <header className="glass-blur sticky top-0 z-[1000] h-[72px] flex items-center justify-between px-4 md:px-8 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+          {/* Left: Title & Collapsed menu toggler */}
+          <div className="flex items-center gap-2">
             {(isMobile || isCollapsed) && (
-              <IconButton 
-                size="small" 
-                onClick={() => isMobile ? setIsMobileSidebarOpen(true) : setIsCollapsed(false)} 
-                sx={{ mr: 1, color: '#64748B' }}
+              <button
+                onClick={() => (isMobile ? setIsMobileSidebarOpen(true) : setIsCollapsed(false))}
+                className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 mr-1"
               >
-                <MenuIcon fontSize="small" />
-              </IconButton>
+                <Menu className="w-5 h-5" />
+              </button>
             )}
 
             {/* Page Title */}
-            <Typography variant="h6" sx={{ color: '#0F172A', fontWeight: 750, textTransform: 'capitalize', fontSize: '1.12rem', letterSpacing: '-0.015em' }}>
+            <h1 className="text-base md:text-lg font-bold text-[#0F172A] capitalize tracking-tight leading-none">
               {activeTab.replace('-', ' ')}
-            </Typography>
-          </Box>
+            </h1>
+          </div>
 
-          {/* Right: Global Actions & Dropdown */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.8 }}>
+          {/* Right: Search & Actions */}
+          <div className="flex items-center gap-4">
             {/* Search Bar */}
-            <Box
-              sx={{
-                bgcolor: '#F1F5F9',
-                border: '1px solid rgba(226, 232, 240, 0.6)',
-                borderRadius: 2,
-                px: 1.5,
-                py: 0.6,
-                display: { xs: 'none', md: 'flex' },
-                alignItems: 'center',
-                width: 320,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:focus-within': {
-                  bgcolor: '#FFFFFF',
-                  borderColor: '#6D28D9',
-                  boxShadow: '0 4px 16px rgba(109, 40, 217, 0.08)',
-                  width: 360,
-                },
-              }}
-            >
-              <SearchIcon sx={{ color: '#94A3B8', fontSize: 16, mr: 1 }} />
-              <InputBase placeholder="Search transactions, users..." sx={{ fontSize: '0.75rem', width: '100%', color: '#0F172A', fontWeight: 500 }} />
-              <Box
-                sx={{
-                  bgcolor: '#FFFFFF',
-                  color: '#64748B',
-                  borderRadius: 1.2,
-                  px: 0.6,
-                  py: 0.2,
-                  fontSize: '0.62rem',
-                  fontWeight: 700,
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                  border: '1px solid rgba(226,232,240,0.8)',
-                }}
-              >
+            <div className="hidden md:flex items-center bg-slate-100 border border-slate-200/60 rounded-lg px-3 py-1.5 w-80 focus-within:w-[360px] focus-within:bg-white focus-within:border-primary focus-within:shadow-[0_4px_16px_rgba(109,40,217,0.08)] transition-all duration-300">
+              <Search className="w-4 h-4 text-slate-400 mr-2 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Search transactions, users..."
+                className="bg-transparent border-none outline-none text-xs w-full text-[#0F172A] font-medium placeholder-slate-400"
+              />
+              <span className="bg-white text-slate-500 rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold shadow-sm flex-shrink-0 ml-1">
                 ⌘K
-              </Box>
-            </Box>
+              </span>
+            </div>
 
             {/* Notifications badge */}
-            <Tooltip title="Pending Card Audits">
-              <IconButton
-                size="medium"
+            <div className="relative">
+              <button
                 onClick={() => setActiveTab('sell-requests')}
-                sx={{
-                  bgcolor: '#FFFFFF',
-                  border: '1px solid rgba(226, 232, 240, 0.8)',
-                  color: '#64748B',
-                  width: 38,
-                  height: 38,
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                  '&:hover': {
-                    color: '#EF4444',
-                    borderColor: 'rgba(239,68,68,0.2)',
-                    backgroundColor: '#FEF2F2',
-                  },
-                }}
+                title="Pending Card Audits"
+                className="w-[38px] h-[38px] flex items-center justify-center bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 shadow-sm transition-all duration-200"
               >
-                <Badge badgeContent={sellRequests.length} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.62rem', height: 16, minWidth: 16 } }}>
-                  <NotificationsIcon fontSize="small" />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+                <Bell className="w-4.5 h-4.5" />
+                {sellRequests.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white font-bold rounded-full w-4 h-4 flex items-center justify-center text-[9px] border-2 border-white">
+                    {sellRequests.length}
+                  </span>
+                )}
+              </button>
+            </div>
 
-            {/* Profile Avatar trigger */}
-            <Tooltip title={`${adminProfile.name} (${adminProfile.role})`}>
-              <Avatar
-                sx={{
-                  bgcolor: '#6D28D9',
-                  color: '#FFFFFF',
-                  width: 38,
-                  height: 38,
-                  fontWeight: 700,
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(109, 40, 217, 0.15)',
-                  border: '1.5px solid rgba(226,232,240,0.8)',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 4px 12px rgba(109, 40, 217, 0.25)',
-                  },
-                }}
-                onClick={(e) => setAnchorEl(e.currentTarget)}
+            {/* Profile Avatar trigger dropdown */}
+            <div className="relative">
+              <button
+                title={`${adminProfile.name} (${adminProfile.role})`}
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="w-[38px] h-[38px] rounded-full bg-[#6D28D9] text-white flex items-center justify-center font-bold text-xs cursor-pointer border border-slate-200/80 shadow-[0_2px_8px_rgba(109,40,217,0.15)] hover:scale-105 transition-all duration-200"
               >
                 {adminProfile.avatarInitials}
-              </Avatar>
-            </Tooltip>
-          </Box>
-        </Box>
+              </button>
 
-        {/* Profile Dropdown Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={openMenu}
-          onClose={() => setAnchorEl(null)}
-          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-          PaperProps={{
-            sx: {
-              mt: 1,
-              borderRadius: 3,
-              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05)',
-              border: '1px solid rgba(226, 232, 240, 0.8)',
-              p: 0.5,
-              minWidth: 180,
-            },
-          }}
-        >
-          <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="body2" sx={{ fontWeight: 700, color: '#0F172A' }}>
-              {adminProfile.name}
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#64748B', display: 'block' }}>
-              {adminProfile.email}
-            </Typography>
-          </Box>
-          <Divider sx={{ my: 0.5 }} />
-          <MenuItem
-            onClick={() => {
-              setAnchorEl(null);
-              setActiveTab('profile');
-            }}
-            sx={{ fontSize: '0.78rem', py: 1, borderRadius: 1.5 }}
-          >
-            View Profile
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              setAnchorEl(null);
-              setActiveTab('profile');
-            }}
-            sx={{ fontSize: '0.78rem', py: 1, borderRadius: 1.5 }}
-          >
-            Settings
-          </MenuItem>
-          <Divider sx={{ my: 0.5 }} />
-          <MenuItem
-            onClick={() => {
-              setAnchorEl(null);
-              authModel.clearAuth();
-              triggerToast('Logged out successfully', 'success');
-            }}
-            sx={{ color: '#EF4444', fontSize: '0.78rem', py: 1, borderRadius: 1.5, '&:hover': { backgroundColor: '#FEF2F2' } }}
-          >
-            <LogoutIcon fontSize="small" sx={{ mr: 1, fontSize: 16 }} />
-            Log Out
-          </MenuItem>
-        </Menu>
+              {isProfileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-48 rounded-xl shadow-lg border border-slate-200 bg-white p-1 z-50 animate-fadeIn">
+                    <div className="px-4 py-3">
+                      <p className="text-xs font-bold text-[#0F172A] leading-snug">{adminProfile.name}</p>
+                      <p className="text-[10px] text-slate-500 truncate mt-0.5">{adminProfile.email}</p>
+                    </div>
+                    <div className="border-t border-slate-100 my-1" />
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        setActiveTab('profile');
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-[#0F172A] rounded-lg transition-colors"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        setActiveTab('profile');
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-[#0F172A] rounded-lg transition-colors"
+                    >
+                      Settings
+                    </button>
+                    <div className="border-t border-slate-100 my-1" />
+                    <button
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        authModel.clearAuth();
+                        triggerToast('Logged out successfully', 'success');
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      Log Out
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
 
         {/* 3. Screen Viewport rendering */}
-        <Box sx={{ p: { xs: 2, md: 3 }, flexGrow: 1, boxSizing: 'border-box', width: '100%' }}>
+        <main className="p-4 md:p-6 flex-1 w-full box-border">
           {renderContent()}
-        </Box>
-      </Box>
+        </main>
+      </div>
 
       {/* Global Snackbar Toast Notifications */}
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={4000}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={() => setToastOpen(false)}
-          severity={toastSeverity}
-          variant="filled"
-          sx={{
-            fontWeight: 600,
-            borderRadius: 2,
-            boxShadow: '0px 10px 25px rgba(0, 0, 0, 0.1)',
-            bgcolor:
+      {toastOpen && (
+        <div
+          className="fixed bottom-6 right-6 z-[2000] flex items-center gap-2.5 px-4 py-3 rounded-xl text-white shadow-xl animate-fadeIn text-sm font-semibold transition-all duration-300"
+          style={{
+            backgroundColor:
               toastSeverity === 'success'
                 ? '#10B981'
                 : toastSeverity === 'error'
@@ -864,17 +560,24 @@ function App() {
                 : toastSeverity === 'info'
                 ? '#6D28D9'
                 : '#F59E0B',
-            color: '#FFFFFF',
-            fontSize: '0.8rem',
-            '& .MuiAlert-icon': {
-              color: '#FFFFFF',
-            },
           }}
         >
-          {toastMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <span>
+            {toastSeverity === 'success' && '✅'}
+            {toastSeverity === 'error' && '❌'}
+            {toastSeverity === 'info' && 'ℹ️'}
+            {toastSeverity === 'warning' && '⚠️'}
+          </span>
+          <div className="flex-1">{toastMessage}</div>
+          <button
+            onClick={() => setToastOpen(false)}
+            className="ml-2 hover:opacity-80 text-white font-bold leading-none"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

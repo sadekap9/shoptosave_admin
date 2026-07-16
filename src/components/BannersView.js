@@ -1,39 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Button,
-  Grid,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  InputAdornment,
-  MenuItem,
-  FormControl,
-  Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  ViewCarousel as CarouselIcon,
-  CloudUpload as UploadIcon,
-  CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon,
-  ChevronRight as ChevronRightIcon,
-} from '@mui/icons-material';
 import { bannerService } from '../services/bannerService';
+import {
+  Search,
+  Plus,
+  Image as CarouselIcon,
+  Upload,
+  CheckCircle2,
+  Ban,
+  ChevronRight
+} from 'lucide-react';
 
 const getBannerImageUrl = (imagePath) => {
   if (!imagePath) return null;
@@ -44,8 +19,6 @@ const getBannerImageUrl = (imagePath) => {
   const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
   return `${baseHost}${cleanPath}`;
 };
-
-
 
 const BannersView = ({ triggerToast }) => {
   const [banners, setBanners] = useState([]);
@@ -91,8 +64,6 @@ const BannersView = ({ triggerToast }) => {
     fetchBanners();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -153,7 +124,7 @@ const BannersView = ({ triggerToast }) => {
       (banner.banner_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (banner.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (banner.subtitle || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus =
       statusFilter === 'All' ||
       (statusFilter === 'Active' && banner.status === 1) ||
@@ -163,430 +134,264 @@ const BannersView = ({ triggerToast }) => {
   });
 
   return (
-    <Box sx={{ animation: 'fadeIn 0.5s ease-out-back', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+    <div className="w-full max-w-full box-border animate-fadeIn">
       {/* Header section */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Box display="flex" alignItems="center" gap={1} sx={{ mb: 1 }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div className="mb-8 flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <div className="flex items-center gap-1 mb-1.5">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Marketing
-            </Typography>
-            <ChevronRightIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            </span>
+            <ChevronRight className="w-3 h-3 text-slate-350" />
+            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
               Banners Section
-            </Typography>
-          </Box>
-          <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.02em', color: '#0F172A', mb: 0.5 }}>
+            </span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Promo Banners
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
             Manage main carousel advertisements and promotional banners displayed in the customer application.
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
+          </p>
+        </div>
+        <button
           onClick={() => setOpenAddDialog(true)}
-          sx={{
-            borderRadius: '12px',
-            textTransform: 'none',
-            fontWeight: 650,
-            px: 3,
-            py: 1.2,
-            boxShadow: '0 4px 14px rgba(109, 40, 217, 0.25)',
-          }}
+          className="flex items-center gap-2 text-white bg-primary hover:bg-[#5B21B6] px-4 py-2.5 text-xs font-bold rounded-xl transition-all shadow-[0_4px_14px_rgba(109,40,217,0.25)]"
         >
+          <Plus className="w-4 h-4" />
           Add Banner
-        </Button>
-      </Box>
+        </button>
+      </div>
 
       {/* Telemetry Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(109, 40, 217, 0.08)', color: '#6D28D9', display: 'flex' }}>
-                  <CarouselIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  Total Banners
-                </Typography>
-              </Box>
-              <Typography variant="h5" fontWeight={850} sx={{ mt: 1 }}>
-                {totalBanners}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(109,40,217,0.06)] hover:border-primary transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Banners</span>
+            <h3 className="text-xl font-black text-slate-900">{totalBanners}</h3>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <CarouselIcon className="w-4.5 h-4.5" />
+          </div>
+        </div>
 
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.08)', color: '#10B981', display: 'flex' }}>
-                  <ActiveIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  Active Banners
-                </Typography>
-              </Box>
-              <Typography variant="h5" fontWeight={850} color="#10B981" sx={{ mt: 1 }}>
-                {activeBanners}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(16,185,129,0.06)] hover:border-emerald-500 transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Active Banners</span>
+            <h3 className="text-xl font-black text-emerald-500">{activeBanners}</h3>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+            <CheckCircle2 className="w-4.5 h-4.5" />
+          </div>
+        </div>
 
-        <Grid item xs={12} sm={4}>
-          <Card className="hover-lift" sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px' }}>
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" gap={1.5} sx={{ mb: 1 }}>
-                <Box sx={{ p: 1, borderRadius: '8px', bgcolor: 'rgba(239, 68, 68, 0.08)', color: '#EF4444', display: 'flex' }}>
-                  <InactiveIcon sx={{ fontSize: 18 }} />
-                </Box>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase' }}>
-                  Inactive Banners
-                </Typography>
-              </Box>
-              <Typography variant="h5" fontWeight={850} color="#EF4444" sx={{ mt: 1 }}>
-                {inactiveBanners}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(239,68,68,0.06)] hover:border-red-500 transition-all duration-200">
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Inactive Banners</span>
+            <h3 className="text-xl font-black text-red-500">{inactiveBanners}</h3>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
+            <Ban className="w-4.5 h-4.5" />
+          </div>
+        </div>
+      </div>
 
       {/* Main card with Banner list */}
-      <Card sx={{ border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '16px', overflow: 'hidden' }}>
-        {/* Search Row */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            p: 3,
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            bgcolor: '#FFFFFF',
-            flexWrap: 'wrap',
-            gap: 2,
-          }}
-        >
-          <TextField
-            variant="outlined"
-            sx={{
-              width: '320px',
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-                bgcolor: '#F8FAFC',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  bgcolor: '#F1F5F9',
-                },
-                '&.Mui-focused': {
-                  bgcolor: '#FFFFFF',
-                  boxShadow: '0 0 0 2px rgba(109, 40, 217, 0.1)',
-                },
-              },
-            }}
-            size="small"
-            placeholder="Search by banner title or name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" sx={{ fontSize: 20 }} />
-                </InputAdornment>
-              ),
-            }}
-          />
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+        {/* Search / Filter Row */}
+        <div className="p-6 border-b border-slate-100 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="relative w-full sm:w-80">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-slate-400" />
+            </span>
+            <input
+              type="text"
+              placeholder="Search by banner title or name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] hover:bg-[#F1F5F9] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all duration-200 text-slate-900 font-medium placeholder-slate-400"
+            />
+          </div>
 
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <FormControl size="small" sx={{ width: '180px' }}>
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                displayEmpty
-                sx={{
-                  borderRadius: '12px',
-                  bgcolor: '#F8FAFC',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(226, 232, 240, 0.8)',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#CBD5E1',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#6D28D9',
-                  },
-                }}
-              >
-                <MenuItem value="All">All Statuses</MenuItem>
-                <MenuItem value="Active">Active Only</MenuItem>
-                <MenuItem value="Inactive">Inactive Only</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </Box>
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] focus:bg-white focus:border-primary outline-none transition-all text-slate-700 font-semibold w-full sm:w-44"
+            >
+              <option value="All">All Statuses</option>
+              <option value="Active">Active Only</option>
+              <option value="Inactive">Inactive Only</option>
+            </select>
+          </div>
+        </div>
 
-        <CardContent sx={{ p: 0 }}>
-          {loading ? (
-            <Box align="center" sx={{ py: 8 }}>
-              <CircularProgress size={40} sx={{ color: '#6D28D9', mb: 2 }} />
-              <Typography variant="body2" color="text.secondary">
-                Loading promo banners...
-              </Typography>
-            </Box>
-          ) : filteredBanners.length === 0 ? (
-            <Box align="center" sx={{ py: 8 }}>
-              <CarouselIcon sx={{ fontSize: 48, color: 'text.disabled', opacity: 0.5, mb: 2 }} />
-              <Typography variant="subtitle1" fontWeight={600} color="text.secondary">
-                No banners found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Click "Add Banner" to upload your first advertisement.
-              </Typography>
-            </Box>
-          ) : (
-            <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 0 }}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#F8FAFC' }}>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2, pl: 3 }}>ID</TableCell>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>PREVIEW</TableCell>
-                    <TableCell sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>BANNER DETAILS</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 650, color: '#475569', fontSize: '0.8rem', py: 2 }}>STATUS</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredBanners.map((banner) => {
-                    const isActive = banner.status === 1;
-                    return (
-                      <TableRow
-                        key={banner.id}
-                        hover
-                        sx={{
-                          transition: 'all 0.2s',
-                          '&:hover': {
-                            bgcolor: 'rgba(109, 40, 217, 0.015) !important',
-                          },
-                        }}
-                      >
-                        <TableCell sx={{ pl: 3 }}>
-                          <Typography variant="subtitle2" fontWeight={800} color="#64748B">
-                            {banner.id}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box
-                            sx={{
-                              width: 96,
-                              height: 54,
-                              borderRadius: '8px',
-                              overflow: 'hidden',
-                              bgcolor: banner.background_color || '#ECE9FC',
-                              border: '1px solid rgba(226, 232, 240, 0.8)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
+        {/* Banners Table */}
+        <div className="overflow-x-auto w-full">
+          <table className="min-w-full text-left">
+            <thead>
+              <tr className="bg-[#F8FAFC] border-b border-slate-100">
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 pl-6">ID</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Preview</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Banner Details</th>
+                <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-center pr-6">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span className="text-xs font-semibold text-slate-400">Loading promo banners...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredBanners.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <CarouselIcon className="w-10 h-10 text-slate-300 opacity-50" />
+                      <span className="text-xs font-semibold text-slate-400">No banners found.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredBanners.map((banner) => {
+                  const isActive = banner.status === 1;
+                  return (
+                    <tr
+                      key={banner.id}
+                      className="hover:bg-violet-50/10 transition-colors"
+                    >
+                      <td className="px-6 py-4 pl-6 text-xs font-mono font-bold text-slate-400 whitespace-nowrap">
+                        {banner.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className="w-24 h-14 rounded-lg overflow-hidden border border-slate-200/80 flex items-center justify-center"
+                          style={{ backgroundColor: banner.background_color || '#ECE9FC' }}
+                        >
+                          <img
+                            src={getBannerImageUrl(banner.banner_image)}
+                            alt={banner.banner_name || 'Promo Banner'}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=600';
                             }}
-                          >
-                            <Box
-                              component="img"
-                              src={getBannerImageUrl(banner.banner_image)}
-                              alt={banner.banner_name || 'Promo Banner'}
-                              sx={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                              }}
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=600';
-                              }}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Box>
-                            <Typography variant="subtitle2" fontWeight={750} color="#1E293B">
-                              {banner.banner_name || 'Promo Banner'}
-                            </Typography>
-                            {banner.title && (
-                              <Typography variant="caption" color="text.secondary" display="block">
-                                {banner.title}
-                              </Typography>
-                            )}
-                            {banner.subtitle && (
-                              <Typography variant="caption" color="text.disabled" display="block" sx={{ mt: 0.2 }}>
-                                {banner.subtitle}
-                              </Typography>
-                            )}
-                          </Box>
-                        </TableCell>
-
-                        <TableCell align="center">
-                          <Button
-                            onClick={() => handleToggleStatus(banner.id)}
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              borderRadius: '24px',
-                              textTransform: 'none',
-                              fontWeight: 750,
-                              fontSize: '0.72rem',
-                              px: 1.8,
-                              py: 0.4,
-                              minWidth: '95px',
-                              color: isActive ? '#10B981' : '#EF4444',
-                              bgcolor: isActive ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-                              borderColor: isActive ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                              transition: 'all 0.15s ease-in-out',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 0.8,
-                              '&:hover': {
-                                bgcolor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                                borderColor: isActive ? '#10B981' : '#EF4444',
-                                transform: 'translateY(-1px)',
-                              },
-                              '&:active': {
-                                transform: 'translateY(0)',
-                              }
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: '50%',
-                                bgcolor: isActive ? '#10B981' : '#EF4444',
-                                display: 'inline-block',
-                              }}
-                            />
-                            {isActive ? 'Active' : 'Inactive'}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+                          />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-800">{banner.banner_name || 'Promo Banner'}</span>
+                          {banner.title && (
+                            <span className="text-[10px] text-slate-450 block mt-0.5">{banner.title}</span>
+                          )}
+                          {banner.subtitle && (
+                            <span className="text-[9px] text-slate-400 block mt-0.5">{banner.subtitle}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center pr-6 whitespace-nowrap">
+                        <button
+                          onClick={() => handleToggleStatus(banner.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${
+                            isActive
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-500/10 hover:bg-emerald-100'
+                              : 'bg-red-50 text-red-600 border-red-500/10 hover:bg-red-100'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                          {isActive ? 'Active' : 'Inactive'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Add Banner Dialog */}
-      <Dialog
-        open={openAddDialog}
-        onClose={() => !submitting && setOpenAddDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '24px',
-            overflow: 'hidden',
-          },
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 800, borderBottom: '1px solid rgba(226, 232, 240, 0.8)', py: 2.5, px: 3, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(109, 40, 217, 0.08)', color: '#6D28D9', display: 'flex' }}>
-            <CarouselIcon sx={{ fontSize: 20 }} />
-          </Box>
-          Create Promo Banner
-        </DialogTitle>
-        <form onSubmit={handleAddSubmit}>
-          <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#475569', mb: 1, fontSize: '0.75rem', letterSpacing: '0.05em' }}>
-                BANNER IMAGE *
-              </Typography>
-              <Button
-                variant="outlined"
-                component="label"
-                fullWidth
-                startIcon={<UploadIcon />}
-                sx={{
-                  borderRadius: '12px',
-                  py: 3,
-                  textTransform: 'none',
-                  borderColor: 'rgba(226, 232, 240, 0.8)',
-                  color: '#475569',
-                  fontWeight: 600,
-                  fontSize: '0.86rem',
-                  borderStyle: 'dashed',
-                  borderWidth: 2,
-                  '&:hover': {
-                    borderColor: '#6D28D9',
-                    backgroundColor: 'rgba(109, 40, 217, 0.02)',
-                  },
-                }}
-              >
-                {formData.banner_image ? formData.banner_image.name : 'Select or Upload Banner Image'}
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
-              </Button>
+      {openAddDialog && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden animate-fadeIn">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5 bg-white">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <CarouselIcon className="w-4 h-4" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900">Create Promo Banner</h3>
+            </div>
+            <form onSubmit={handleAddSubmit}>
+              <div className="p-6 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Banner Image *
+                  </label>
+                  <label className="w-full py-6 border-2 border-dashed border-slate-200 hover:border-primary hover:bg-primary/5 rounded-xl cursor-pointer flex flex-col items-center justify-center gap-2 transition-all">
+                    <Upload className="w-6 h-6 text-slate-400" />
+                    <span className="text-xs font-semibold text-slate-500 text-center px-4 max-w-[250px] truncate">
+                      {formData.banner_image ? formData.banner_image.name : 'Select or Upload Banner Image'}
+                    </span>
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </label>
+                </div>
 
-              {imagePreview && (
-                <Box sx={{ mt: 2.5, border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: '12px', overflow: 'hidden', p: 1, bgcolor: '#FFFFFF' }}>
-                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
-                    Image Preview:
-                  </Typography>
-                  <Box
-                    component="img"
-                    src={imagePreview}
-                    alt="Preview"
-                    sx={{
-                      width: '100%',
-                      maxHeight: '180px',
-                      objectFit: 'contain',
-                      borderRadius: '8px',
-                    }}
-                  />
-                </Box>
-              )}
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
-            <Button
-              onClick={() => {
-                resetForm();
-                setOpenAddDialog(false);
-              }}
-              color="inherit"
-              disabled={submitting}
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={submitting}
-              startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <AddIcon />}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 650,
-                px: 3,
-                borderRadius: '12px',
-                boxShadow: '0 4px 14px rgba(109, 40, 217, 0.25)',
-              }}
-            >
-              {submitting ? 'Creating...' : 'Create Banner'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
-    </Box>
+                {imagePreview && (
+                  <div className="p-2 border border-slate-250/60 rounded-xl bg-slate-50 space-y-1.5">
+                    <span className="text-[9px] font-bold text-slate-400 block uppercase">Image Preview</span>
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full max-h-40 object-contain rounded-lg bg-white p-1 border"
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setOpenAddDialog(false);
+                  }}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-[#5B21B6] rounded-lg transition-colors shadow-md flex items-center justify-center gap-1.5"
+                >
+                  {submitting ? (
+                    <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <Plus className="w-3.5 h-3.5" />
+                  )}
+                  {submitting ? 'Creating...' : 'Create Banner'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

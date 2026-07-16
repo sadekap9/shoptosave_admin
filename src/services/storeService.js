@@ -36,13 +36,31 @@ export const storeService = {
   /**
    * Add a voucher/gift card mapping to a store
    */
-  async addVoucher(storeId, sku, featured, categoryId) {
-    return apiClient.post('/gift-cards/add', {
-      store_id: Number(storeId),
-      sku: sku.trim(),
-      featured: Number(featured),
-      category_id: Number(categoryId)
-    });
+  async addVoucher(storeId, sku, featured, categoryId, giftcardImage) {
+    const formData = new FormData();
+    formData.append('store_id', Number(storeId));
+    formData.append('sku', sku.trim());
+    formData.append('featured', Number(featured));
+    formData.append('category_id', Number(categoryId));
+    if (giftcardImage) {
+      formData.append('giftcard_image', giftcardImage);
+    }
+    return apiClient.post('/gift-cards/add', formData);
+  },
+
+  /**
+   * Update voucher/gift card mapping
+   */
+  async updateVoucher(id, storeId, sku, featured, categoryId, giftcardImage) {
+    const formData = new FormData();
+    formData.append('store_id', Number(storeId));
+    formData.append('sku', sku.trim());
+    formData.append('featured', Number(featured));
+    formData.append('category_id', Number(categoryId));
+    if (giftcardImage) {
+      formData.append('giftcard_image', giftcardImage);
+    }
+    return apiClient.patch(`/gift-cards/update/${id}`, formData);
   },
 
   /**
@@ -71,6 +89,13 @@ export const storeService = {
    */
   async deleteVoucher(id) {
     return apiClient.delete(`/gift-cards/delete/${id}`);
+  },
+
+  /**
+   * Delete a store
+   */
+  async deleteStore(id) {
+    return apiClient.delete(`/stores/delete/${id}`);
   },
 
   /**
