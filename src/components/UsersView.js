@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { userService } from '../services/userService';
+import { userService } from '../services/adminService';
 import {
   Search,
   Edit3,
@@ -64,8 +64,8 @@ const UsersView = ({ triggerToast }) => {
             phone: user.phone || 'NA',
             email: user.email || 'NA',
             balance: Number(user.wallet_balance || 0),
-            status: user.status === 1 ? 'Active' : 'Inactive',
-            joinedDate: user.created_at ? new Date(user.created_at).toLocaleDateString('en-IN') : 'NA',
+            status: (user.status === 1 || user.is_active === 1) ? 'Active' : 'Inactive',
+            joinedDate: (user.createdAt || user.created_at) ? new Date(user.createdAt || user.created_at).toLocaleDateString('en-IN') : 'NA',
             kycStatus: user.kyc_status === 0 ? 'Pending' : user.kyc_status === 1 ? 'Approved' : 'Rejected',
             kycDocument: user.kyc_doc_type ? {
               type: user.kyc_doc_type,
@@ -169,6 +169,31 @@ const UsersView = ({ triggerToast }) => {
     setSelectedUser(user);
     setTargetStatus(user.status);
     setOpenStatusDialog(true);
+  };
+
+  const toggleUserStatus = async (user) => {
+    const nextStatus = user.status === 'Active' ? 'Inactive' : 'Active';
+    const statusValue = nextStatus === 'Active' ? 1 : 0;
+    try {
+      const response = await userService.updateUserStatus(user.dbId, statusValue);
+      if (response && response.success) {
+        triggerToast(`Status for "${user.name}" updated to ${nextStatus} successfully!`, 'success');
+        setUsersList(prev => prev.map((u) => {
+          if (u.dbId === user.dbId) {
+            return { ...u, status: nextStatus };
+          }
+          return u;
+        }));
+        if (selectedUserForView && selectedUserForView.dbId === user.dbId) {
+          setSelectedUserForView(prev => ({ ...prev, status: nextStatus }));
+        }
+      } else {
+        triggerToast(response.message || 'Status update failed', 'error');
+      }
+    } catch (err) {
+      console.error('Update status API error:', err);
+      triggerToast(err.message || 'Failed to update user account status', 'error');
+    }
   };
 
   const handleStatusSubmit = async (e) => {
@@ -650,11 +675,16 @@ const UsersView = ({ triggerToast }) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center whitespace-nowrap">
-                      <span className={`inline-block text-[11px] font-bold ${
-                        user.status === 'Active' ? 'text-emerald-500' : 'text-red-500'
-                      }`}>
+                      <button
+                        onClick={() => toggleUserStatus(user)}
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold border transition-all active:scale-95 ${
+                          user.status === 'Active'
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-500/10 hover:bg-emerald-100'
+                            : 'bg-red-50 text-red-600 border-red-500/10 hover:bg-red-100'
+                        }`}
+                      >
                         {user.status === 'Active' ? 'Active' : 'Inactive'}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-500 whitespace-nowrap">
                       {user.joinedDate}
@@ -667,13 +697,6 @@ const UsersView = ({ triggerToast }) => {
                           className="w-8 h-8 flex items-center justify-center rounded-lg bg-violet-50 text-primary hover:bg-primary hover:text-white transition-all duration-200"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenStatus(user)}
-                          title="Edit Status"
-                          className="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white transition-all duration-200"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -752,6 +775,7 @@ const UsersView = ({ triggerToast }) => {
                       placeholder="Enter amount (e.g. 500, 1000)"
                       value={adjustmentAmount}
                       onChange={(e) => setAdjustmentAmount(e.target.value)}
+                      onWheel={(e) => e.target.blur()}
                       className="w-full pl-7 pr-4 py-2 text-sm rounded-lg border border-slate-200 focus:border-primary outline-none transition-all text-slate-800 font-semibold"
                     />
                   </div>

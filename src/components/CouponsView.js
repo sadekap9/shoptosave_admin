@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { couponService } from '../services/couponService';
-import { storeService } from '../services/storeService';
+import { couponService, storeService } from '../services/adminService';
 import {
   Search,
   Plus,
@@ -9,11 +8,10 @@ import {
   Ban,
   ChevronRight,
   Trash2,
-  Copy,
-  Percent,
-  Coins,
+  Pencil,
   X,
-  ArrowLeft
+  ArrowLeft,
+  Filter
 } from 'lucide-react';
 
 const OFFER_TYPE_LABELS = {
@@ -32,6 +30,23 @@ const formatDate = (isoStr) => {
     });
   } catch {
     return isoStr;
+  }
+};
+
+const formatForDatetimeInput = (isoStr) => {
+  if (!isoStr) return '';
+  try {
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '';
+    const pad = (num) => String(num).padStart(2, '0');
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch {
+    return '';
   }
 };
 
@@ -55,6 +70,46 @@ const INITIAL_FORM = {
 
 let lastFetchTime = 0;
 
+// ─── Premium Stat Card ────────────────────────────────────────────────────────
+const StatCard = ({ label, value, icon, accentColor, hoverShadow }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between relative overflow-hidden transition-all duration-300 cursor-default"
+      style={{
+        borderColor: hovered ? accentColor : '#E2E8F0',
+        boxShadow: hovered ? `0 12px 30px -10px ${hoverShadow}, 0 4px 12px -5px ${hoverShadow}` : '0 1px 3px rgba(0,0,0,0.04)',
+        transform: hovered ? 'translateY(-2px)' : 'none',
+      }}
+    >
+      {/* Accent top bar */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[3px] transition-opacity duration-300"
+        style={{
+          background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)`,
+          opacity: hovered ? 1 : 0,
+        }}
+      />
+      <div>
+        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1.5">{label}</span>
+        <h3 className="text-2xl font-black" style={{ color: accentColor }}>{value}</h3>
+      </div>
+      <div
+        className="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300"
+        style={{
+          backgroundColor: `${accentColor}12`,
+          color: accentColor,
+          transform: hovered ? 'scale(1.1) rotate(-5deg)' : 'none',
+        }}
+      >
+        {icon}
+      </div>
+    </div>
+  );
+};
+
 const CouponsView = ({ triggerToast }) => {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -65,6 +120,7 @@ const CouponsView = ({ triggerToast }) => {
 
   // View mode state: 'list' or 'create'
   const [viewMode, setViewMode] = useState('list');
+  const [editingCoupon, setEditingCoupon] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [formErrors, setFormErrors] = useState({});
@@ -77,6 +133,7 @@ const CouponsView = ({ triggerToast }) => {
   const [page, setPage] = useState(0); // 0-based index
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [paginationMeta, setPaginationMeta] = useState({ total: 0, totalPages: 1 });
+  const [statsMeta, setStatsMeta] = useState({ total: 0, active: 0, inactive: 0 });
 
   const fetchCoupons = async (pageNum = page, limitNum = rowsPerPage) => {
     setLoading(true);
@@ -88,6 +145,13 @@ const CouponsView = ({ triggerToast }) => {
           setPaginationMeta({
             total: response.result.pagination.total,
             totalPages: response.result.pagination.totalPages,
+          });
+        }
+        if (response.result.statistics) {
+          setStatsMeta({
+            total: response.result.statistics.total || 0,
+            active: response.result.statistics.active || 0,
+            inactive: response.result.statistics.inactive || 0,
           });
         }
       } else {
@@ -113,11 +177,13 @@ const CouponsView = ({ triggerToast }) => {
   useEffect(() => {
     const fetchSelectData = async () => {
       try {
-        const storeRes = await storeService.getStores();
+        const [storeRes, giftRes] = await Promise.all([
+          storeService.getStores(),
+          storeService.getGiftCards()
+        ]);
         if (storeRes && storeRes.success && storeRes.result && storeRes.result.data) {
           setStores(storeRes.result.data);
         }
-        const giftRes = await storeService.getGiftCards();
         if (giftRes && giftRes.success && giftRes.result && giftRes.result.data) {
           const fetchedCards = Array.isArray(giftRes.result.data)
             ? giftRes.result.data
@@ -133,7 +199,18 @@ const CouponsView = ({ triggerToast }) => {
 
   const handleFormChange = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? (e.target.checked ? 1 : 0) : e.target.value;
-    setFormData((prev) => ({ ...prev, [field]: val }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: val };
+      if (field === 'store_id') {
+        if (updated.gift_card_id && val) {
+          const matchingCard = giftCards.find((g) => Number(g.id) === Number(updated.gift_card_id));
+          if (!matchingCard || Number(matchingCard.store_id) !== Number(val)) {
+            updated.gift_card_id = '';
+          }
+        }
+      }
+      return updated;
+    });
     if (formErrors[field]) {
       setFormErrors((prev) => ({ ...prev, [field]: '' }));
     }
@@ -157,6 +234,30 @@ const CouponsView = ({ triggerToast }) => {
   const resetForm = () => {
     setFormData(INITIAL_FORM);
     setFormErrors({});
+    setEditingCoupon(null);
+  };
+
+  const handleEditClick = (coupon) => {
+    setEditingCoupon(coupon);
+    setFormData({
+      offer_name: coupon.offer_name || '',
+      offer_type: coupon.offer_type || 1,
+      promo_code: coupon.promo_code || '',
+      value_type: coupon.value_type || 1,
+      value: coupon.value !== undefined && coupon.value !== null ? coupon.value : '',
+      min_order_amount: coupon.min_order_amount !== undefined && coupon.min_order_amount !== null ? coupon.min_order_amount : '',
+      max_discount: coupon.max_discount !== undefined && coupon.max_discount !== null ? coupon.max_discount : '',
+      total_usage_limit: coupon.total_usage_limit !== undefined && coupon.total_usage_limit !== null ? coupon.total_usage_limit : '',
+      per_user_limit: coupon.per_user_limit !== undefined && coupon.per_user_limit !== null ? coupon.per_user_limit : 1,
+      unique_users_only: coupon.unique_users_only ? 1 : 0,
+      start_date: formatForDatetimeInput(coupon.start_date),
+      end_date: formatForDatetimeInput(coupon.end_date),
+      status: coupon.status !== undefined ? coupon.status : 1,
+      store_id: coupon.store_id || '',
+      gift_card_id: coupon.gift_card_id || '',
+    });
+    setFormErrors({});
+    setViewMode('create');
   };
 
   const handleAddSubmit = async (e) => {
@@ -181,19 +282,27 @@ const CouponsView = ({ triggerToast }) => {
       };
       delete payload.priority;
 
-      const response = await couponService.addCoupon(payload);
+      let response;
+      if (editingCoupon) {
+        response = await couponService.updateCoupon(editingCoupon.id, payload);
+      } else {
+        response = await couponService.addCoupon(payload);
+      }
+
       if (response && response.success) {
-        triggerToast('Coupon created successfully!', 'success');
+        triggerToast(
+          editingCoupon ? 'Coupon updated successfully!' : 'Coupon created successfully!',
+          'success'
+        );
         resetForm();
         setViewMode('list');
-        setPage(0);
-        fetchCoupons(0, rowsPerPage);
+        fetchCoupons(editingCoupon ? page : 0, rowsPerPage);
       } else {
-        triggerToast(response?.message || 'Failed to create coupon', 'error');
+        triggerToast(response?.message || `Failed to ${editingCoupon ? 'update' : 'create'} coupon`, 'error');
       }
     } catch (error) {
-      console.error('Add coupon error:', error);
-      triggerToast(error.message || 'An error occurred while creating the coupon', 'error');
+      console.error(`${editingCoupon ? 'Update' : 'Add'} coupon error:`, error);
+      triggerToast(error.message || `An error occurred while ${editingCoupon ? 'updating' : 'creating'} the coupon`, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -210,6 +319,7 @@ const CouponsView = ({ triggerToast }) => {
         `Coupon "${coupon.offer_name}" is now ${newStatus === 1 ? 'Active' : 'Inactive'}`,
         'info'
       );
+      fetchCoupons(page, rowsPerPage);
     } catch (error) {
       setCoupons((prev) =>
         prev.map((c) => (c.id === coupon.id ? { ...c, status: coupon.status } : c))
@@ -244,9 +354,14 @@ const CouponsView = ({ triggerToast }) => {
     });
   };
 
-  const totalCoupons = paginationMeta.total;
-  const activeCoupons = coupons.filter((c) => c.status === 1).length;
-  const inactiveCoupons = coupons.filter((c) => c.status === 0).length;
+  const totalCoupons = statsMeta.total;
+  const activeCoupons = statsMeta.active;
+  const inactiveCoupons = statsMeta.inactive;
+
+  const filteredGiftCards = giftCards.filter((g) => {
+    if (!formData.store_id) return true;
+    return Number(g.store_id) === Number(formData.store_id);
+  });
 
   const filteredCoupons = coupons.filter((c) => {
     const q = searchTerm.toLowerCase();
@@ -269,27 +384,15 @@ const CouponsView = ({ triggerToast }) => {
       {viewMode === 'list' ? (
         <>
           {/* Header Row */}
-          <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
+          <div className="flex justify-between items-start mb-8 flex-wrap gap-4">
             <div>
-              <div className="flex items-center gap-1 mb-1.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Offers &amp; Finances
-                </span>
-                <ChevronRight className="w-3 h-3 text-slate-300" />
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                  Coupons
-                </span>
-              </div>
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                Coupons &amp; Offers
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Create and manage discount coupons, promo codes, and limited-time offers for your customers.
-              </p>
+              
+              
+             
             </div>
             <button
               onClick={() => setViewMode('create')}
-              className="flex items-center gap-2 text-white bg-gradient-to-r from-primary to-secondary hover:from-[#7C3AED] hover:to-[#8B5CF6] px-4 py-2.5 text-xs font-bold rounded-xl transition-all shadow-[0_4px_14px_rgba(109,40,217,0.25)]"
+              className="flex items-center gap-2 text-white bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6] hover:from-[#7C3AED] hover:to-[#9333EA] px-5 py-2.5 text-[11px] font-bold rounded-xl transition-all duration-200 shadow-[0_4px_14px_rgba(109,40,217,0.25)] hover:shadow-[0_8px_25px_rgba(109,40,217,0.35)] hover:-translate-y-0.5 active:translate-y-0"
             >
               <Plus className="w-4 h-4" />
               Add New Coupon
@@ -298,41 +401,33 @@ const CouponsView = ({ triggerToast }) => {
 
           {/* Stats row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(109,40,217,0.06)] hover:border-primary transition-all duration-200">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Total Coupons</span>
-                <h3 className="text-xl font-black text-slate-900">{totalCoupons}</h3>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                <Tag className="w-4.5 h-4.5" />
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(16,185,129,0.06)] hover:border-emerald-500 transition-all duration-200">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Active Coupons</span>
-                <h3 className="text-xl font-black text-emerald-500">{activeCoupons}</h3>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
-                <CheckCircle2 className="w-4.5 h-4.5" />
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:shadow-[0_4px_20px_0_rgba(239,68,68,0.06)] hover:border-red-500 transition-all duration-200">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Inactive Coupons</span>
-                <h3 className="text-xl font-black text-red-500">{inactiveCoupons}</h3>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
-                <Ban className="w-4.5 h-4.5" />
-              </div>
-            </div>
+            <StatCard
+              label="Total Coupons"
+              value={totalCoupons}
+              icon={<Tag className="w-5 h-5" />}
+              accentColor="#8B5CF6"
+              hoverShadow="rgba(139,92,246,0.18)"
+            />
+            <StatCard
+              label="Active Coupons"
+              value={activeCoupons}
+              icon={<CheckCircle2 className="w-5 h-5" />}
+              accentColor="#10B981"
+              hoverShadow="rgba(16,185,129,0.18)"
+            />
+            <StatCard
+              label="Inactive Coupons"
+              value={inactiveCoupons}
+              icon={<Ban className="w-5 h-5" />}
+              accentColor="#EF4444"
+              hoverShadow="rgba(239,68,68,0.18)"
+            />
           </div>
 
           {/* Main Table Card */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             {/* Search / Filter header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 border-b border-slate-100 bg-white gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-6 py-5 border-b border-slate-100 bg-white gap-4">
               <div className="relative w-full sm:w-80">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <Search className="w-4 h-4 text-slate-400" />
@@ -342,15 +437,18 @@ const CouponsView = ({ triggerToast }) => {
                   placeholder="Search coupon name or promo code..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] hover:bg-[#F1F5F9] focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all duration-200 text-slate-900 font-medium placeholder-slate-400"
+                  className="w-full pl-10 pr-4 py-2.5 text-[11px] rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/60 focus:bg-white focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/10 outline-none transition-all duration-200 text-slate-900 font-semibold placeholder-slate-400"
                 />
               </div>
 
-              <div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <Filter className="w-3.5 h-3.5" />
+                </div>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-[#F8FAFC] focus:bg-white focus:border-primary outline-none transition-all text-slate-700 font-semibold"
+                  className="px-3.5 py-2.5 text-[11px] rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/60 focus:bg-white focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/10 outline-none transition-all duration-200 text-slate-700 font-bold cursor-pointer"
                 >
                   <option value="All">All Statuses</option>
                   <option value="Active">Active Only</option>
@@ -363,35 +461,39 @@ const CouponsView = ({ triggerToast }) => {
             <div className="overflow-x-auto w-full">
               <table className="min-w-full text-left">
                 <thead>
-                  <tr className="bg-[#F8FAFC] border-b border-slate-100">
-                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 pl-6">ID</th>
-                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Offer</th>
-                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Discount</th>
-                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Validity</th>
-                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Usage</th>
-                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-center">Status</th>
-                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 text-right pr-6">Actions</th>
+                  <tr className="bg-slate-50/80 border-b border-slate-100">
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5 pl-6">ID</th>
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Offer Name</th>
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Store</th>
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Type</th>
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Discount</th>
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Validity</th>
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Usage</th>
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5 text-center">Status</th>
+                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5 text-right pr-6">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100/80">
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center bg-white">
-                        <div className="flex flex-col items-center gap-2">
-                          <svg className="animate-spin h-6 w-6 text-[#8B5CF6]" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          <span className="text-xs font-semibold text-slate-400">Loading coupons...</span>
+                      <td colSpan={9} className="py-16 text-center bg-white">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-10 h-10 rounded-full border-[3px] border-slate-200 border-t-[#8B5CF6] animate-spin" />
+                          <span className="text-[11px] font-semibold text-slate-400">Loading coupons...</span>
                         </div>
                       </td>
                     </tr>
                   ) : filteredCoupons.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-16 text-center bg-white">
-                        <div className="flex flex-col items-center gap-2">
-                          <Tag className="w-10 h-10 text-slate-300 opacity-55" />
-                          <span className="text-xs font-semibold text-slate-400">No coupons found.</span>
+                      <td colSpan={9} className="py-20 text-center bg-white">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                            <Tag className="w-7 h-7 text-slate-300" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-bold text-slate-400 block">No coupons found</span>
+                            <span className="text-[11px] text-slate-350 mt-0.5 block">Try adjusting your search or filters</span>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -401,76 +503,99 @@ const CouponsView = ({ triggerToast }) => {
                       return (
                         <tr
                           key={coupon.id}
-                          className="hover:bg-violet-50/10 transition-colors"
+                          className="hover:bg-violet-50/30 transition-colors duration-150 group"
                         >
-                          <td className="px-6 py-4 pl-6 whitespace-nowrap text-xs font-semibold text-slate-400">
-                            #{coupon.id}
+                          {/* ID */}
+                          <td className="px-5 py-4 pl-6 whitespace-nowrap">
+                            <span className="text-[11px] font-bold text-slate-400">#{coupon.id}</span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold text-slate-800">
-                                {coupon.offer_name}
-                              </span>
-                              <span className="mt-1">
-                                <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-purple-50 text-purple-600 border border-purple-100">
-                                  {OFFER_TYPE_LABELS[coupon.offer_type] || 'Promo Code'}
-                                </span>
-                              </span>
-                            </div>
+
+                          {/* Offer Name */}
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className="text-[12px] font-bold text-slate-800">{coupon.offer_name}</span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-xs font-black text-amber-500">
-                                {coupon.value_type === 2 ? `${parseFloat(coupon.value).toFixed(2)}%` : `₹ ${parseFloat(coupon.value).toFixed(2)}`}
-                              </span>
-                              <span className="text-[9px] text-slate-400 font-semibold mt-0.5">
-                                Min Order: ₹{parseFloat(coupon.min_order_amount).toFixed(2)}
-                              </span>
-                              {coupon.max_discount && (
-                                <span className="text-[9px] text-slate-400 font-semibold">
-                                  Max Discount: ₹{parseFloat(coupon.max_discount).toFixed(2)}
-                                </span>
+
+                          {/* Store */}
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className="text-[11px] font-semibold text-slate-600">
+                              {coupon.store_name || coupon.gift_card_name || (
+                                <span className="text-slate-400">All Stores</span>
                               )}
+                            </span>
+                          </td>
+
+                          {/* Type */}
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                              coupon.offer_type === 1
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            }`}>
+                              {OFFER_TYPE_LABELS[coupon.offer_type] || 'Promo Code'}
+                            </span>
+                          </td>
+
+                          {/* Discount */}
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <div className="flex flex-col">
+                              <span className="text-[13px] font-extrabold text-[#8B5CF6]">
+                                {coupon.value_type === 2 ? `${parseFloat(coupon.value).toFixed(2)}%` : `₹${parseFloat(coupon.value).toFixed(2)}`}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium mt-0.5">
+                                Min ₹{parseFloat(coupon.min_order_amount).toFixed(0)}{coupon.max_discount ? ` · Max ₹${parseFloat(coupon.max_discount).toFixed(0)}` : ''}
+                              </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col text-[10px] text-slate-500 font-semibold gap-0.5">
-                              <span>From: <strong className="text-slate-750">{formatDate(coupon.start_date)}</strong></span>
-                              <span>To: <strong className="text-slate-750">{formatDate(coupon.end_date)}</strong></span>
+
+                          {/* Validity */}
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <div className="flex flex-col gap-0.5 text-[10px] font-semibold text-slate-500">
+                              <span>{formatDate(coupon.start_date)}</span>
+                              <span className="text-slate-400">to {formatDate(coupon.end_date)}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex flex-col text-[10px] text-slate-500 font-semibold gap-0.5">
-                              <span>Limit: <strong className="text-slate-750">{coupon.total_usage_limit || 'Unlimited'}</strong></span>
-                              <span>Per User: <strong className="text-slate-750">{coupon.per_user_limit || '1'}</strong></span>
-                              {coupon.unique_users_only === 1 && (
-                                <span className="mt-1">
-                                  <span className="px-1.5 py-0.5 rounded text-[8px] bg-amber-50 text-amber-600 border border-amber-100 font-extrabold">Unique Users Only</span>
-                                </span>
-                              )}
+
+                          {/* Usage */}
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            <div className="flex flex-col gap-0.5 text-[10px] font-semibold text-slate-500">
+                              <span>Limit: <strong className="text-slate-700">{coupon.total_usage_limit || '∞'}</strong></span>
+                              <span>Per User: <strong className="text-slate-700">{coupon.per_user_limit || '1'}</strong></span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
+
+                          {/* Status */}
+                          <td className="px-5 py-4 whitespace-nowrap text-center">
                             <button
                               onClick={() => handleToggleStatus(coupon)}
-                              className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors inline-flex items-center gap-1.5 ${
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wide border transition-all duration-200 ${
                                 isLive
-                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-250 hover:bg-emerald-100/50'
-                                  : 'bg-red-50 text-red-650 border-red-250 hover:bg-red-100/50'
+                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                                  : 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100'
                               }`}
                             >
-                              <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                              <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500 pulse-dot-green' : 'bg-red-500 pulse-dot-red'}`} />
                               {isLive ? 'Active' : 'Inactive'}
                             </button>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right pr-6">
-                            <button
-                              onClick={() => setDeleteTarget(coupon)}
-                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                              title="Delete Coupon"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+
+                          {/* Actions */}
+                          <td className="px-5 py-4 whitespace-nowrap text-right pr-6">
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                              <button
+                                onClick={() => handleEditClick(coupon)}
+                                className="p-2 text-slate-300 hover:text-[#8B5CF6] hover:bg-violet-50 rounded-lg transition-all duration-200"
+                                title="Edit Coupon"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget(coupon)}
+                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                title="Delete Coupon"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -482,9 +607,9 @@ const CouponsView = ({ triggerToast }) => {
 
             {/* Pagination Controls */}
             {filteredCoupons.length > 0 && (
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-semibold text-slate-500">
-                <div className="flex items-center gap-2">
-                  <span>Coupons per page:</span>
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] font-semibold text-slate-500">
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-400">Rows per page:</span>
                   <select
                     value={rowsPerPage}
                     onChange={(e) => {
@@ -492,15 +617,15 @@ const CouponsView = ({ triggerToast }) => {
                       setPage(0);
                       fetchCoupons(0, parseInt(e.target.value, 10));
                     }}
-                    className="px-2 py-1 rounded-lg border border-slate-200 bg-white outline-none focus:border-primary text-slate-700"
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white outline-none focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/10 text-slate-700 font-bold cursor-pointer transition-all"
                   >
                     <option value={5}>5</option>
                     <option value={10}>10</option>
                     <option value={20}>20</option>
                     <option value={50}>50</option>
                   </select>
-                  <span className="text-slate-400">
-                    {page * rowsPerPage + 1}-{Math.min((page + 1) * rowsPerPage, totalCoupons)} of {totalCoupons}
+                  <span className="text-slate-400 ml-1">
+                    <span className="text-slate-600 font-bold">{page * rowsPerPage + 1}–{Math.min((page + 1) * rowsPerPage, totalCoupons)}</span> of <span className="text-slate-600 font-bold">{totalCoupons}</span>
                   </span>
                 </div>
 
@@ -512,9 +637,9 @@ const CouponsView = ({ triggerToast }) => {
                       setPage(newPage);
                       fetchCoupons(newPage, rowsPerPage);
                     }}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                    className="px-4 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none font-bold"
                   >
-                    Prev
+                    ← Prev
                   </button>
                   <button
                     disabled={(page + 1) * rowsPerPage >= totalCoupons}
@@ -523,9 +648,9 @@ const CouponsView = ({ triggerToast }) => {
                       setPage(newPage);
                       fetchCoupons(newPage, rowsPerPage);
                     }}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                    className="px-4 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none font-bold"
                   >
-                    Next
+                    Next →
                   </button>
                 </div>
               </div>
@@ -535,38 +660,42 @@ const CouponsView = ({ triggerToast }) => {
       ) : (
         <div className="animate-fadeIn">
           {/* Header with Title & Back Button */}
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-8">
             <button
               type="button"
               onClick={() => {
                 resetForm();
                 setViewMode('list');
               }}
-              className="p-2.5 text-[#8B5CF6] hover:bg-violet-50 rounded-xl transition-all flex-shrink-0"
+              className="p-2.5 text-[#8B5CF6] hover:bg-violet-50 rounded-xl transition-all flex-shrink-0 border border-transparent hover:border-violet-200"
               title="Back to Coupons"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             
-            <div className="w-8 h-8 rounded-xl bg-violet-100/60 text-[#8B5CF6] flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Tag className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 text-[#8B5CF6] flex items-center justify-center flex-shrink-0 shadow-sm border border-violet-100">
+              <Tag className="w-4.5 h-4.5" />
             </div>
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none animate-slideDown">
-                Create New Coupon
+              <h2 className="text-[1.65rem] font-extrabold text-slate-900 tracking-tight leading-none">
+                {editingCoupon ? `Edit Coupon #${editingCoupon.id}` : 'Create New Coupon'}
               </h2>
-              <span className="text-[10px] font-extrabold text-slate-400 mt-1 block">Add an automatic Instant Discount or Cashback offer</span>
+              <span className="text-[10px] font-bold text-slate-400 mt-1.5 block">
+                {editingCoupon
+                  ? 'Modify coupon parameters, limits, or validity details'
+                  : 'Add an automatic Instant Discount or Cashback offer for your customers'}
+              </span>
             </div>
           </div>
 
           {/* Form inside a clean white card */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
-            <form onSubmit={handleAddSubmit} className="space-y-6">
-              {/* Section 1 */}
-              <div className="space-y-4 pb-5 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-violet-50 text-[#8B5CF6] flex items-center justify-center font-extrabold text-xs shadow-sm">1</span>
-                  <h4 className="text-xs font-bold text-slate-800">Basic Information</h4>
+          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <form onSubmit={handleAddSubmit}>
+              {/* Section 1: Basic Information */}
+              <div className="p-6 border-b border-slate-100">
+                <div className="flex items-center gap-2.5 mb-5">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-white flex items-center justify-center font-extrabold text-[11px] shadow-sm">1</span>
+                  <h4 className="text-[13px] font-bold text-slate-800">Basic Information</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="sm:col-span-2 flex flex-col gap-1.5">
@@ -579,8 +708,8 @@ const CouponsView = ({ triggerToast }) => {
                       placeholder="e.g. Summer Sale — 10% Off Everything"
                       value={formData.offer_name}
                       onChange={handleFormChange('offer_name')}
-                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
-                        formErrors.offer_name ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      className={`w-full px-4 py-2.5 text-[12px] rounded-xl border bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 ${
+                        formErrors.offer_name ? 'border-red-400 focus:border-red-400 focus:ring-red-500/5' : 'border-slate-200'
                       }`}
                     />
                     {formErrors.offer_name && <span className="text-[10px] text-red-500 font-semibold">{formErrors.offer_name}</span>}
@@ -592,10 +721,10 @@ const CouponsView = ({ triggerToast }) => {
                     <select
                       value={formData.offer_type}
                       onChange={handleFormChange('offer_type')}
-                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 cursor-pointer"
                     >
-                      <option value={1}>Instant Discount</option>
-                      <option value={2}>Cashback</option>
+                      <option value={1}>⚡ Instant Discount</option>
+                      <option value={2}>💰 Cashback</option>
                     </select>
                   </div>
                 </div>
@@ -608,7 +737,7 @@ const CouponsView = ({ triggerToast }) => {
                     <select
                       value={formData.store_id}
                       onChange={handleFormChange('store_id')}
-                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 cursor-pointer"
                     >
                       <option value="">All Stores (Global Offer)</option>
                       {stores.map((s) => (
@@ -625,10 +754,12 @@ const CouponsView = ({ triggerToast }) => {
                     <select
                       value={formData.gift_card_id}
                       onChange={handleFormChange('gift_card_id')}
-                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 cursor-pointer"
                     >
-                      <option value="">All Gift Cards (Global Offer)</option>
-                      {giftCards.map((g) => (
+                      <option value="">
+                        {formData.store_id ? 'All Gift Cards in Selected Store' : 'All Gift Cards (Global Offer)'}
+                      </option>
+                      {filteredGiftCards.map((g) => (
                         <option key={g.id} value={g.id}>
                           {g.gift_card_name || g.brand_name} (SKU: {g.sku})
                         </option>
@@ -638,11 +769,11 @@ const CouponsView = ({ triggerToast }) => {
                 </div>
               </div>
 
-              {/* Section 2 */}
-              <div className="space-y-4 pb-5 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-violet-50 text-[#8B5CF6] flex items-center justify-center font-extrabold text-xs shadow-sm">2</span>
-                  <h4 className="text-xs font-bold text-slate-800">Value &amp; Discount Details</h4>
+              {/* Section 2: Value & Discount */}
+              <div className="p-6 border-b border-slate-100">
+                <div className="flex items-center gap-2.5 mb-5">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-white flex items-center justify-center font-extrabold text-[11px] shadow-sm">2</span>
+                  <h4 className="text-[13px] font-bold text-slate-800">Value &amp; Discount Details</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
@@ -652,10 +783,10 @@ const CouponsView = ({ triggerToast }) => {
                     <select
                       value={formData.value_type}
                       onChange={handleFormChange('value_type')}
-                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 cursor-pointer"
                     >
-                      <option value={1}>Flat Amount (₹)</option>
-                      <option value={2}>Percentage (%)</option>
+                      <option value={1}>💵 Flat Amount (₹)</option>
+                      <option value={2}>📊 Percentage (%)</option>
                     </select>
                   </div>
 
@@ -670,8 +801,9 @@ const CouponsView = ({ triggerToast }) => {
                       placeholder={formData.value_type === 2 ? 'e.g. 10' : 'e.g. 150'}
                       value={formData.value}
                       onChange={handleFormChange('value')}
-                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
-                        formErrors.value ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      onWheel={(e) => e.target.blur()}
+                      className={`w-full px-4 py-2.5 text-[12px] rounded-xl border bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 ${
+                        formErrors.value ? 'border-red-400 focus:border-red-400 focus:ring-red-500/5' : 'border-slate-200'
                       }`}
                     />
                     {formErrors.value && <span className="text-[10px] text-red-500 font-semibold">{formErrors.value}</span>}
@@ -679,11 +811,11 @@ const CouponsView = ({ triggerToast }) => {
                 </div>
               </div>
 
-              {/* Section 3 */}
-              <div className="space-y-4 pb-5 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-violet-50 text-[#8B5CF6] flex items-center justify-center font-extrabold text-xs shadow-sm">3</span>
-                  <h4 className="text-xs font-bold text-slate-800">Limits &amp; Rules</h4>
+              {/* Section 3: Limits & Rules */}
+              <div className="p-6 border-b border-slate-100">
+                <div className="flex items-center gap-2.5 mb-5">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-white flex items-center justify-center font-extrabold text-[11px] shadow-sm">3</span>
+                  <h4 className="text-[13px] font-bold text-slate-800">Limits &amp; Rules</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   <div className="flex flex-col gap-1.5">
@@ -697,8 +829,9 @@ const CouponsView = ({ triggerToast }) => {
                       placeholder="e.g. 499"
                       value={formData.min_order_amount}
                       onChange={handleFormChange('min_order_amount')}
-                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
-                        formErrors.min_order_amount ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      onWheel={(e) => e.target.blur()}
+                      className={`w-full px-4 py-2.5 text-[12px] rounded-xl border bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 ${
+                        formErrors.min_order_amount ? 'border-red-400 focus:border-red-400 focus:ring-red-500/5' : 'border-slate-200'
                       }`}
                     />
                     {formErrors.min_order_amount && <span className="text-[10px] text-red-500 font-semibold">{formErrors.min_order_amount}</span>}
@@ -713,7 +846,8 @@ const CouponsView = ({ triggerToast }) => {
                       placeholder="e.g. 500"
                       value={formData.max_discount}
                       onChange={handleFormChange('max_discount')}
-                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                      onWheel={(e) => e.target.blur()}
+                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200"
                     />
                   </div>
 
@@ -728,8 +862,9 @@ const CouponsView = ({ triggerToast }) => {
                       placeholder="e.g. 1000"
                       value={formData.total_usage_limit}
                       onChange={handleFormChange('total_usage_limit')}
-                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
-                        formErrors.total_usage_limit ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      onWheel={(e) => e.target.blur()}
+                      className={`w-full px-4 py-2.5 text-[12px] rounded-xl border bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 ${
+                        formErrors.total_usage_limit ? 'border-red-400 focus:border-red-400 focus:ring-red-500/5' : 'border-slate-200'
                       }`}
                     />
                     {formErrors.total_usage_limit && <span className="text-[10px] text-red-500 font-semibold">{formErrors.total_usage_limit}</span>}
@@ -746,39 +881,40 @@ const CouponsView = ({ triggerToast }) => {
                       placeholder="e.g. 1"
                       value={formData.per_user_limit}
                       onChange={handleFormChange('per_user_limit')}
-                      className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all"
+                      onWheel={(e) => e.target.blur()}
+                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                <div className="mt-5">
                   <div
                     onClick={() => setFormData(prev => ({ ...prev, unique_users_only: prev.unique_users_only === 1 ? 0 : 1 }))}
-                    className={`p-3.5 rounded-xl border flex items-start gap-3.5 cursor-pointer transition-all select-none ${
+                    className={`p-4 rounded-xl border flex items-start gap-3.5 cursor-pointer transition-all duration-200 select-none ${
                       formData.unique_users_only === 1
-                        ? 'border-[#8B5CF6] bg-violet-50/20 text-[#8B5CF6]'
-                        : 'border-slate-200 bg-white text-[#8B5CF6] hover:border-slate-350'
+                        ? 'border-[#8B5CF6] bg-violet-50/40 shadow-[0_0_0_1px_rgba(139,92,246,0.2)]'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={formData.unique_users_only === 1}
                       readOnly
-                      className="h-4 w-4 mt-0.5 text-[#8B5CF6] border-slate-300 rounded focus:ring-[#8B5CF6] pointer-events-none"
+                      className="h-4 w-4 mt-0.5 text-[#8B5CF6] border-slate-300 rounded focus:ring-[#8B5CF6] pointer-events-none accent-[#8B5CF6]"
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-xs font-bold leading-none text-slate-800">New Users Only</span>
-                      <span className="text-[10px] text-slate-400 leading-tight">Only customers who haven't used this coupon before</span>
+                      <span className="text-[12px] font-bold leading-none text-slate-800">New Users Only</span>
+                      <span className="text-[10px] text-slate-400 leading-tight font-medium">Only customers who haven't used this coupon before</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-              {/* Section 4 */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-violet-50 text-[#8B5CF6] flex items-center justify-center font-extrabold text-xs shadow-sm">4</span>
-                  <h4 className="text-xs font-bold text-slate-800">Validity &amp; Status</h4>
+              {/* Section 4: Validity & Status */}
+              <div className="p-6 border-b border-slate-100">
+                <div className="flex items-center gap-2.5 mb-5">
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-white flex items-center justify-center font-extrabold text-[11px] shadow-sm">4</span>
+                  <h4 className="text-[13px] font-bold text-slate-800">Validity &amp; Status</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
@@ -799,8 +935,8 @@ const CouponsView = ({ triggerToast }) => {
                           }
                         }
                       }}
-                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
-                        formErrors.start_date ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      className={`w-full px-4 py-2.5 text-[12px] rounded-xl border bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 ${
+                        formErrors.start_date ? 'border-red-400 focus:border-red-400 focus:ring-red-500/5' : 'border-slate-200'
                       }`}
                     />
                     {formErrors.start_date && <span className="text-[10px] text-red-500 font-semibold">{formErrors.start_date}</span>}
@@ -824,8 +960,8 @@ const CouponsView = ({ triggerToast }) => {
                           }
                         }
                       }}
-                      className={`w-full px-4 py-2.5 text-xs rounded-xl border bg-white hover:border-slate-350 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all ${
-                        formErrors.end_date ? 'border-red-500 focus:border-red-500' : 'border-slate-200'
+                      className={`w-full px-4 py-2.5 text-[12px] rounded-xl border bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 ${
+                        formErrors.end_date ? 'border-red-400 focus:border-red-400 focus:ring-red-500/5' : 'border-slate-200'
                       }`}
                     />
                     {formErrors.end_date && <span className="text-[10px] text-red-500 font-semibold">{formErrors.end_date}</span>}
@@ -833,31 +969,37 @@ const CouponsView = ({ triggerToast }) => {
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+              {/* Submit actions */}
+              <div className="px-6 py-5 bg-slate-50/50 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     resetForm();
                     setViewMode('list');
                   }}
-                  className="px-5 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+                  className="px-5 py-2.5 text-[11px] font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200 border border-transparent hover:border-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-primary to-secondary hover:from-[#7C3AED] hover:to-[#8B5CF6] rounded-xl transition-all shadow-[0_4px_14px_rgba(109,40,217,0.25)] flex items-center gap-1.5"
+                  className="px-6 py-2.5 text-[11px] font-bold text-white bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6] hover:from-[#7C3AED] hover:to-[#9333EA] rounded-xl transition-all duration-200 shadow-[0_4px_14px_rgba(109,40,217,0.25)] hover:shadow-[0_8px_25px_rgba(109,40,217,0.35)] hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5 disabled:opacity-60 disabled:pointer-events-none"
                 >
                   {submitting ? (
-                    <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : editingCoupon ? (
+                    <Pencil className="w-4 h-4" />
                   ) : (
                     <Plus className="w-4 h-4" />
                   )}
-                  {submitting ? 'Creating...' : 'Create Coupon'}
+                  {submitting
+                    ? editingCoupon
+                      ? 'Updating...'
+                      : 'Creating...'
+                    : editingCoupon
+                    ? 'Update Coupon'
+                    : 'Create Coupon'}
                 </button>
               </div>
             </form>
@@ -867,34 +1009,34 @@ const CouponsView = ({ triggerToast }) => {
 
       {/* DELETE CONFIRM DIALOG */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[3px]">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden animate-fadeIn">
-            <div className="pt-6 px-6 pb-2">
-              <h3 className="text-sm font-extrabold text-red-500 tracking-tight">Delete Coupon</h3>
-            </div>
-            <div className="px-6 pb-4">
-              <p className="text-xs text-slate-650 leading-relaxed">
-                Are you sure you want to delete coupon <strong>"{deleteTarget.offer_name}"</strong>?
-              </p>
+            <div className="pt-6 px-6 pb-3 flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 border border-red-100">
+                <Trash2 className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Delete Coupon</h3>
+                <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
+                  Are you sure you want to delete <strong className="text-slate-700">"{deleteTarget.offer_name}"</strong>? This action cannot be undone.
+                </p>
+              </div>
             </div>
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
               <button
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleting}
-                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-[11px] font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all duration-200"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={deleting}
-                className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-md flex items-center gap-1.5"
+                className="px-4 py-2 text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg flex items-center gap-1.5 disabled:opacity-60"
               >
                 {deleting && (
-                  <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
+                  <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                 )}
                 {deleting ? 'Deleting...' : 'Delete'}
               </button>

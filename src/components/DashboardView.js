@@ -39,45 +39,6 @@ const StatusChip = ({ status }) => {
   );
 };
 
-// ─── Quick Action Card ───────────────────────────────────────────────────────
-const QuickActionCard = ({ icon, label, desc, color, onClick }) => (
-  <div
-    onClick={onClick}
-    className="flex flex-col gap-2 p-5 rounded-2xl border border-slate-200 bg-white cursor-pointer relative overflow-hidden transition-all duration-300 hover:-translate-y-1"
-    style={{
-      '--hover-border': color,
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.borderColor = color;
-      e.currentTarget.style.boxShadow = `0 12px 24px -8px ${color}20`;
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.borderColor = '#E2E8F0';
-      e.currentTarget.style.boxShadow = 'none';
-    }}
-  >
-    <div
-      className="width-11 h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0"
-      style={{
-        backgroundColor: `${color}15`,
-        color: color,
-      }}
-    >
-      {icon}
-    </div>
-    <div>
-      <h4 className="font-bold text-[0.88rem] text-slate-900 leading-tight">
-        {label}
-      </h4>
-      <p className="text-[0.74rem] text-slate-500 mt-1">
-        {desc}
-      </p>
-    </div>
-    <div className="flex items-center mt-auto pt-2" style={{ color: color }}>
-      <span className="text-[11px] font-bold">Open →</span>
-    </div>
-  </div>
-);
 
 // ─── KPI Card ────────────────────────────────────────────────────────────────
 const KpiCard = ({ icon, label, value, badge, badgeColor, sub, iconColor }) => {
@@ -286,24 +247,6 @@ const DashboardView = ({
         />
       </div>
 
-      {/* ── QUICK ACTIONS ───────────────────────────────────────── */}
-      <div className="mb-8">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-3">
-          Quick Actions
-        </span>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          {quickActions.map((a, i) => (
-            <QuickActionCard
-              key={i}
-              icon={a.icon}
-              label={a.label}
-              desc={a.desc}
-              color={a.color}
-              onClick={a.onClick}
-            />
-          ))}
-        </div>
-      </div>
 
       {/* ── TABLES ROW ──────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">

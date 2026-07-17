@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { storeService } from '../services/storeService';
-import { categoryService } from '../services/categoryService';
+import { storeService, categoryService } from '../services/adminService';
 import {
   Search,
   Plus,

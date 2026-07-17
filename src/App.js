@@ -148,11 +148,13 @@ function App() {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastSeverity, setToastSeverity] = useState('success'); // success, info, warning, error
+  const [toastTimerKey, setToastTimerKey] = useState(0);
 
   const triggerToast = (msg, severity = 'success') => {
     setToastMessage(msg);
     setToastSeverity(severity);
     setToastOpen(true);
+    setToastTimerKey((prev) => prev + 1);
   };
 
   // Automatically close toast
@@ -163,7 +165,7 @@ function App() {
       }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [toastOpen]);
+  }, [toastOpen, toastTimerKey]);
 
   // Actions
   const handleApproveRequest = (id) => {
@@ -449,8 +451,8 @@ function App() {
             )}
 
             {/* Page Title */}
-            <h1 className="text-base md:text-lg font-bold text-[#0F172A] capitalize tracking-tight leading-none">
-              {activeTab.replace('-', ' ')}
+            <h1 className="text-base md:text-lg font-bold text-[#0F172A] capitalize tracking-tight leading-none whitespace-nowrap">
+              {activeTab.replace(/-/g, ' ')}
             </h1>
           </div>
 
@@ -562,12 +564,6 @@ function App() {
                 : '#F59E0B',
           }}
         >
-          <span>
-            {toastSeverity === 'success' && '✅'}
-            {toastSeverity === 'error' && '❌'}
-            {toastSeverity === 'info' && 'ℹ️'}
-            {toastSeverity === 'warning' && '⚠️'}
-          </span>
           <div className="flex-1">{toastMessage}</div>
           <button
             onClick={() => setToastOpen(false)}

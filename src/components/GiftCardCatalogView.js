@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { storeService } from '../services/storeService';
-import { categoryService } from '../services/categoryService';
+import { storeService } from '../services/adminService';
 import {
   Tag,
   ChevronRight,
   ShoppingBag,
   Coins,
   Info,
+  Eye,
   ArrowRight,
   BookOpen,
   FileText,
-  Gift
+  Gift,
+  ArrowLeft,
+  Store
 } from 'lucide-react';
 
 const getBrandGradient = (brandName) => {
@@ -50,63 +52,76 @@ const getGiftCardImageUrl = (imagePath) => {
   return `${baseHost}${cleanPath}`;
 };
 
-const initialCards = [
-  { id: 1, brand: 'Amazon', category: 'Shopping', allowBuy: true, allowSell: true, buyDiscount: '3.5%', sellPayout: '90.0%', status: 'Active', stock: 120, bg: 'linear-gradient(135deg, #232f3e 0%, #146eb4 100%)' },
-  { id: 2, brand: 'Flipkart', category: 'Shopping', allowBuy: true, allowSell: true, buyDiscount: '4.0%', sellPayout: '91.0%', status: 'Active', stock: 85, bg: 'linear-gradient(135deg, #2874f0 0%, #004ba0 100%)' },
-  { id: 3, brand: 'Myntra', category: 'Lifestyle', allowBuy: true, allowSell: true, buyDiscount: '6.5%', sellPayout: '88.0%', status: 'Active', stock: 64, bg: 'linear-gradient(135deg, #fe3f6c 0%, #e7184a 100%)' },
-  { id: 4, brand: 'Swiggy', category: 'Food', allowBuy: true, allowSell: true, buyDiscount: '5.0%', sellPayout: '89.5%', status: 'Active', stock: 110, bg: 'linear-gradient(135deg, #fc8019 0%, #d45e0c 100%)' },
-  { id: 5, brand: 'Zomato', category: 'Food', allowBuy: true, allowSell: true, buyDiscount: '5.5%', sellPayout: '89.0%', status: 'Active', stock: 95, bg: 'linear-gradient(135deg, #cb202d 0%, #9a101b 100%)' },
-  { id: 6, brand: 'Nykaa', category: 'Beauty', allowBuy: true, allowSell: true, buyDiscount: '4.5%', sellPayout: '87.5%', status: 'Active', stock: 42, bg: 'linear-gradient(135deg, #fc2779 0%, #c40a50 100%)' },
-  { id: 7, brand: 'Google Play', category: 'Entertainment', allowBuy: true, allowSell: false, buyDiscount: '2.5%', sellPayout: 'N/A', status: 'Active', stock: 200, bg: 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)' },
-  { id: 8, brand: 'Ajio', category: 'Lifestyle', allowBuy: true, allowSell: true, buyDiscount: '7.0%', sellPayout: '86.0%', status: 'Disabled', stock: 0, bg: 'linear-gradient(135deg, #2d3e50 0%, #1e293b 100%)' },
-];
-
 let lastFetchTime = 0;
 
 const GiftCardCatalogView = ({ triggerToast }) => {
-  const [catalog, setCatalog] = useState(initialCards);
+  const [catalog, setCatalog] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0); // 0 = Buy Catalog, 1 = Sell Catalog
 
-  // View details dialog state
-  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      let categoriesList = [];
-      try {
-        const catRes = await categoryService.getCategories();
-        if (catRes && catRes.success && catRes.result && catRes.result.data) {
-          categoriesList = catRes.result.data;
-        }
-      } catch (catErr) {
-        console.error('Failed to fetch categories:', catErr);
-      }
-
       const response = await storeService.getGiftCards();
       if (response && response.success && response.result && response.result.data) {
         const fetchedCards = Array.isArray(response.result.data)
           ? response.result.data
           : (response.result.data.giftCards || []);
         const mappedCards = fetchedCards.map((card) => {
-          const catNames = (card.categories || []).map(catId => {
-            const matchedCat = categoriesList.find(c => String(c.id) === String(catId));
-            return matchedCat ? matchedCat.category_name : null;
-          }).filter(Boolean);
+          const mainCategory = card.category_name || 'General';
 
-          const mainCategory = card.category_name || (catNames.length > 0 ? catNames[0] : 'General');
+          // Safely parse discounts JSON or string
+          let discountsArr = [];
+          if (card.discounts) {
+            if (Array.isArray(card.discounts)) {
+              discountsArr = card.discounts;
+            } else if (typeof card.discounts === 'string') {
+              try {
+                discountsArr = JSON.parse(card.discounts);
+              } catch (e) {
+                const num = parseFloat(card.discounts);
+                if (!isNaN(num)) {
+                  discountsArr = [num];
+                }
+              }
+            }
+          }
+
+          // Priority: API offer data (most specific) > cashback_percentage > discounts array > NA
+          let buyDiscount = 'NA';
+          let offerTypeLabel = '';
+          if (card.max_offer_value && parseFloat(card.max_offer_value) > 0) {
+            offerTypeLabel = card.max_offer_type === 1 ? 'Discount' : 'Cashback';
+            buyDiscount = card.max_offer_value_type === 2
+              ? `${parseFloat(card.max_offer_value)}%`
+              : `₹${parseFloat(card.max_offer_value)}`;
+          } else if (card.cashback_percentage !== undefined && card.cashback_percentage !== null && parseFloat(card.cashback_percentage) > 0) {
+            buyDiscount = `${parseFloat(card.cashback_percentage)}%`;
+            offerTypeLabel = 'Cashback';
+          } else if (discountsArr.length > 0) {
+            buyDiscount = `${discountsArr[0]}%`;
+            offerTypeLabel = 'Discount';
+          }
+
+          // Sell payout rate from resell_margin
+          const sellPayout = card.payout_enabled === 1
+            ? (card.resell_margin !== undefined && card.resell_margin !== null
+                ? `${(100 - parseFloat(card.resell_margin)).toFixed(1)}%`
+                : '90.0%')
+            : 'N/A';
 
           return {
             id: card.id,
             brand: card.gift_card_name || card.brand_name || 'N/A',
             category: mainCategory,
-            allCategories: catNames,
+            allCategories: [],
             allowBuy: true,
             allowSell: card.payout_enabled === 1,
-            buyDiscount: card.discounts && card.discounts.length > 0 ? `${card.discounts[0]}%` : '3.5%',
-            sellPayout: card.payout_enabled === 1 ? '90.0%' : 'N/A',
+            buyDiscount,
+            offerTypeLabel,
+            sellPayout,
             status: card.status === 1 ? 'Active' : 'Disabled',
             stock: card.stock || (100 + (card.id % 5) * 20),
             bg: getBrandGradient(card.gift_card_name || card.brand_name),
@@ -149,6 +164,9 @@ const GiftCardCatalogView = ({ triggerToast }) => {
             return c;
           })
         );
+        setSelectedCard((prev) =>
+          prev && prev.id === id ? { ...prev, status: nextStatusText } : prev
+        );
       } else {
         triggerToast(response?.message || 'Failed to update status', 'error');
       }
@@ -174,6 +192,181 @@ const GiftCardCatalogView = ({ triggerToast }) => {
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </svg>
+      </div>
+    );
+  }
+
+  if (selectedCard) {
+    return (
+      <div className="w-full max-w-full box-border animate-fadeIn pt-4">
+        {/* Back Button */}
+        <div className="flex items-center gap-2 mb-6">
+          <button
+            onClick={() => setSelectedCard(null)}
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 bg-white border border-slate-200/80 px-3.5 py-2 rounded-xl transition-all shadow-sm hover:shadow active:scale-95"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
+
+        {/* Details Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* Left Column: Preview card */}
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-6">
+            <div
+              className="w-full h-44 rounded-2xl text-white flex flex-col justify-end shadow-md relative overflow-hidden border border-slate-200/80"
+              style={{
+                background: selectedCard?.raw?.giftcard_image
+                  ? `url(${getGiftCardImageUrl(selectedCard.raw.giftcard_image)}) no-repeat center/cover`
+                  : (selectedCard?.bg || 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)')
+              }}
+            >
+              {selectedCard?.raw?.giftcard_image && (
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 z-0" />
+              )}
+              <div className="p-6 relative z-10">
+                <h3 className="font-extrabold text-lg leading-tight drop-shadow-sm">
+                  {selectedCard?.raw?.gift_card_name || selectedCard?.brand}
+                </h3>
+                <p className="text-[10px] font-bold opacity-85 mt-1 uppercase tracking-wide">
+                  {selectedCard?.raw?.store_name || 'Gift Card'}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Category
+                </span>
+                <span className="text-xs font-bold text-primary">
+                  {selectedCard.category}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Status
+                </span>
+                <button
+                  onClick={() => handleToggleStatus(selectedCard.id, selectedCard.status)}
+                  className={`text-xs font-bold transition-all active:scale-95 hover:underline block w-fit ${
+                    selectedCard.status === 'Active' ? 'text-emerald-650' : 'text-red-650'
+                  }`}
+                >
+                  {selectedCard.status === 'Active' ? 'Active' : 'Inactive'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Full specs */}
+          <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-6">
+            <h2 className="text-sm font-extrabold text-slate-900 border-b border-slate-100 pb-3">
+              Gift Card Specifications
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all duration-200">
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  <FileText className="w-4 h-4 text-pink-500" />
+                  Card Type
+                </span>
+                <span className="text-sm font-bold text-slate-800 uppercase">
+                  {selectedCard.raw.product_type?.replace('-', ' ') || 'e-gift-card'}
+                </span>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all duration-200">
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  <Tag className="w-4 h-4 text-violet-500" />
+                  Brand Name
+                </span>
+                <span className="text-sm font-bold text-slate-800">
+                  {selectedCard.raw.brand_name || 'N/A'}
+                </span>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all duration-200">
+                <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  <Store className="w-4 h-4 text-indigo-500" />
+                  Store Name
+                </span>
+                <span className="text-sm font-bold text-slate-800">
+                  {selectedCard.raw.store_name || 'N/A'}
+                </span>
+              </div>
+            </div>
+
+            {selectedCard.raw.short_description && (
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Short Description
+                </span>
+                <p className="text-xs text-slate-650 bg-slate-50 p-4 border-l-4 border-primary rounded-r-xl leading-relaxed whitespace-pre-line">
+                  {selectedCard.raw.short_description}
+                </p>
+              </div>
+            )}
+
+            {selectedCard.raw.description && (
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Product Description
+                </span>
+                <p className="text-xs text-slate-650 bg-slate-50 p-4 border-l-4 border-indigo-500 rounded-r-xl leading-relaxed">
+                  {selectedCard.raw.description}
+                </p>
+              </div>
+            )}
+
+            {!selectedCard.raw.description && !selectedCard.raw.short_description && (
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Product Description
+                </span>
+                <p className="text-xs text-slate-650 bg-slate-50 p-4 border-l-4 border-primary rounded-r-xl leading-relaxed">
+                  No description available for this gift card.
+                </p>
+              </div>
+            )}
+
+            {selectedCard.raw.redeem_steps && (
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Steps To Redeem
+                </span>
+                <div
+                  className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 text-xs text-slate-650 leading-relaxed
+                  [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-4 [&_ol]:pl-4 [&_li]:mb-1.5 [&_a]:text-primary [&_a]:font-bold hover:[&_a]:underline"
+                  dangerouslySetInnerHTML={{ __html: selectedCard.raw.redeem_steps }}
+                />
+              </div>
+            )}
+
+            {selectedCard.raw.things_to_note && (
+              <div className="p-4 bg-amber-50/50 border-l-4 border-amber-500 rounded-r-xl">
+                <span className="text-[10px] font-bold text-amber-600 block mb-0.5">IMPORTANT NOTES</span>
+                <p className="text-xs text-amber-850 leading-relaxed font-semibold">
+                  {selectedCard.raw.things_to_note}
+                </p>
+              </div>
+            )}
+
+            {selectedCard.raw.tnc_link && (
+              <a
+                href={selectedCard.raw.tnc_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[#6D28D9] hover:text-[#5B21B6] text-xs font-bold w-fit hover:underline pt-2"
+              >
+                View Official Terms & Conditions Link
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
@@ -218,8 +411,11 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                 <tr className="bg-[#F8FAFC] border-b border-slate-100">
                   <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3 pl-6">Gift Card Brand</th>
                   <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Category</th>
+                  <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">SKU</th>
+                  <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Denominations</th>
+                  <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Validity</th>
                   {activeTab === 0 ? (
-                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Max Cashback Offer</th>
+                    <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Discount %</th>
                   ) : (
                     <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3">Platform Payout Rate</th>
                   )}
@@ -259,9 +455,24 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                           {card.category}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-mono font-semibold text-slate-600">
+                        {card.raw?.sku || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-800">
+                        {card.raw?.currency_symbol || '₹'}{parseFloat(card.raw?.min_denomination || 0).toFixed(0)} - {card.raw?.currency_symbol || '₹'}{parseFloat(card.raw?.max_denomination || 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-650">
+                        {card.raw?.validity || 'N/A'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-xs font-extrabold">
                         {activeTab === 0 ? (
-                          <span className="text-primary">{card.buyDiscount} OFF</span>
+                          card.buyDiscount === 'NA' ? (
+                            <span className="text-slate-400 font-semibold">NA</span>
+                          ) : (
+                            <span className="text-primary">
+                              {card.buyDiscount} <span className="text-[10px] font-bold text-slate-400">{card.offerTypeLabel}</span>
+                            </span>
+                          )
                         ) : (
                           <span className="text-emerald-500">{card.sellPayout} Payout</span>
                         )}
@@ -280,14 +491,80 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                       </td>
                       <td className="px-6 py-4 text-right pr-6 whitespace-nowrap">
                         <button
-                          onClick={() => {
-                            setSelectedCard(card);
-                            setOpenDetailsDialog(true);
+                          onClick={async () => {
+                            try {
+                              const response = await storeService.getGiftCardById(card.id);
+                              if (response && response.success && response.result?.data) {
+                                const fullCard = response.result.data;
+                                const mainCategory = fullCard.category_name || 'General';
+
+                                // Safely parse discounts JSON or string
+                                let discountsArr = [];
+                                if (fullCard.discounts) {
+                                  if (Array.isArray(fullCard.discounts)) {
+                                    discountsArr = fullCard.discounts;
+                                  } else if (typeof fullCard.discounts === 'string') {
+                                    try {
+                                      discountsArr = JSON.parse(fullCard.discounts);
+                                    } catch (e) {
+                                      const num = parseFloat(fullCard.discounts);
+                                      if (!isNaN(num)) {
+                                        discountsArr = [num];
+                                      }
+                                    }
+                                  }
+                                }
+
+                                // Priority: API offer data > cashback_percentage > discounts array > NA
+                                let buyDiscount = 'NA';
+                                let offerTypeLabel = '';
+                                if (fullCard.max_offer_value && parseFloat(fullCard.max_offer_value) > 0) {
+                                  offerTypeLabel = fullCard.max_offer_type === 1 ? 'Discount' : 'Cashback';
+                                  buyDiscount = fullCard.max_offer_value_type === 2
+                                    ? `${parseFloat(fullCard.max_offer_value)}%`
+                                    : `₹${parseFloat(fullCard.max_offer_value)}`;
+                                } else if (fullCard.cashback_percentage !== undefined && fullCard.cashback_percentage !== null && parseFloat(fullCard.cashback_percentage) > 0) {
+                                  buyDiscount = `${parseFloat(fullCard.cashback_percentage)}%`;
+                                  offerTypeLabel = 'Cashback';
+                                } else if (discountsArr.length > 0) {
+                                  buyDiscount = `${discountsArr[0]}%`;
+                                  offerTypeLabel = 'Discount';
+                                }
+
+                                // Sell payout rate from resell_margin
+                                const sellPayout = fullCard.payout_enabled === 1
+                                  ? (fullCard.resell_margin !== undefined && fullCard.resell_margin !== null
+                                      ? `${(100 - parseFloat(fullCard.resell_margin)).toFixed(1)}%`
+                                      : '90.0%')
+                                  : 'N/A';
+
+                                setSelectedCard({
+                                  id: fullCard.id,
+                                  brand: fullCard.gift_card_name || fullCard.brand_name || 'N/A',
+                                  category: mainCategory,
+                                  allCategories: [],
+                                  allowBuy: true,
+                                  allowSell: fullCard.payout_enabled === 1,
+                                  buyDiscount,
+                                  offerTypeLabel,
+                                  sellPayout,
+                                  status: fullCard.status === 1 ? 'Active' : 'Disabled',
+                                  stock: fullCard.stock || (100 + (fullCard.id % 5) * 20),
+                                  bg: getBrandGradient(fullCard.gift_card_name || fullCard.brand_name),
+                                  raw: fullCard,
+                                });
+                              } else {
+                                triggerToast(response?.message || 'Failed to fetch gift card details', 'error');
+                              }
+                            } catch (err) {
+                              console.error('Error fetching gift card details:', err);
+                              triggerToast('Error loading gift card details', 'error');
+                            }
                           }}
-                          className="flex items-center gap-1.5 border border-primary/30 text-primary hover:bg-primary/5 px-3 py-1.5 text-[10px] font-bold rounded-lg transition-colors ml-auto"
+                          className="flex items-center justify-center border border-primary/30 text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors ml-auto"
+                          title="Details"
                         >
-                          <Info className="w-3.5 h-3.5" />
-                          Details
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -298,162 +575,6 @@ const GiftCardCatalogView = ({ triggerToast }) => {
           </div>
         )}
       </div>
-
-      {/* POPUP: Gift Card Details Popup */}
-      {openDetailsDialog && (
-        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-fadeIn flex flex-col max-h-[90vh]">
-            {/* Gradient Header */}
-            <div
-              className="p-6 text-white relative flex-shrink-0"
-              style={{ background: selectedCard?.bg || 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)' }}
-            >
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex items-center gap-3">
-                  {selectedCard?.raw?.giftcard_image ? (
-                    <img
-                      src={getGiftCardImageUrl(selectedCard.raw.giftcard_image)}
-                      alt={selectedCard.brand}
-                      className="w-12 h-12 rounded-lg object-cover bg-white p-0.5 border-2 border-white shadow-md"
-                    />
-                  ) : selectedCard?.raw?.brand_logo ? (
-                    <img
-                      src={selectedCard.raw.brand_logo}
-                      alt={selectedCard.brand}
-                      className="w-12 h-12 rounded-full object-cover bg-white p-0.5 border-2 border-white shadow-md"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-md">
-                      <Gift className="w-6 h-6 text-white" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-extrabold text-base leading-tight drop-shadow-sm">
-                      {selectedCard?.raw?.gift_card_name || selectedCard?.brand}
-                    </h3>
-                    <p className="text-[10px] font-bold opacity-85 mt-0.5 uppercase tracking-wide">
-                      {selectedCard?.raw?.brand_name || 'Gift Card'} • {selectedCard?.raw?.brand_code || 'N/A'}
-                    </p>
-                  </div>
-                </div>
-                <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold border ${
-                  selectedCard?.status === 'Active'
-                    ? 'bg-emerald-500/25 border-emerald-500/35 text-white'
-                    : 'bg-white/20 border-white/30 text-white'
-                }`}>
-                  {selectedCard?.status === 'Active' ? 'Active' : 'Disabled'}
-                </span>
-              </div>
-            </div>
-
-            {/* Scrollable details content */}
-            <div className="p-6 space-y-5 overflow-y-auto flex-1 bg-white">
-              {selectedCard?.raw && (
-                <div className="space-y-5">
-                  {/* Highlights Grid */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all duration-200">
-                      <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        <ShoppingBag className="w-3.5 h-3.5 text-primary" />
-                        Denominations
-                      </span>
-                      <span className="text-xs font-extrabold text-slate-800">
-                        {selectedCard.raw.currency_symbol || '₹'}{parseFloat(selectedCard.raw.min_denomination).toFixed(0)} - {selectedCard.raw.currency_symbol || '₹'}{parseFloat(selectedCard.raw.max_denomination).toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all duration-200">
-                      <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
-                        Validity
-                      </span>
-                      <span className="text-xs font-extrabold text-slate-800">
-                        {selectedCard.raw.validity || 'N/A'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all duration-200">
-                      <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        <Tag className="w-3.5 h-3.5 text-blue-500" />
-                        SKU Code
-                      </span>
-                      <span className="text-xs font-mono font-bold text-slate-800">
-                        {selectedCard.raw.sku || 'N/A'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all duration-200">
-                      <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                        <FileText className="w-3.5 h-3.5 text-pink-500" />
-                        Card Type
-                      </span>
-                      <span className="text-xs font-bold text-slate-800 uppercase">
-                        {selectedCard.raw.product_type?.replace('-', ' ') || 'e-gift-card'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      Product Description
-                    </span>
-                    <p className="text-xs text-slate-650 bg-slate-50 p-4 border-l-4 border-primary rounded-r-xl leading-relaxed">
-                      {selectedCard.raw.description || selectedCard.raw.short_description || 'No description available for this gift card.'}
-                    </p>
-                  </div>
-
-                  {/* Redemption steps */}
-                  {selectedCard.raw.redeem_steps && (
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                        Steps To Redeem
-                      </span>
-                      <div
-                        className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 text-xs text-slate-650 max-h-[160px] overflow-y-auto leading-relaxed
-                        [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-4 [&_ol]:pl-4 [&_li]:mb-1.5 [&_a]:text-primary [&_a]:font-bold hover:[&_a]:underline"
-                        dangerouslySetInnerHTML={{ __html: selectedCard.raw.redeem_steps }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Important Notes */}
-                  {selectedCard.raw.things_to_note && (
-                    <div className="p-3 bg-amber-50/50 border-l-4 border-amber-500 rounded-r-xl">
-                      <span className="text-[10px] font-bold text-amber-600 block mb-0.5">IMPORTANT NOTES</span>
-                      <p className="text-[11px] text-amber-850 leading-relaxed font-semibold">
-                        {selectedCard.raw.things_to_note}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* T&C Link */}
-                  {selectedCard.raw.tnc_link && (
-                    <a
-                      href={selectedCard.raw.tnc_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[#6D28D9] hover:text-[#5B21B6] text-xs font-bold w-fit hover:underline"
-                    >
-                      View Official Terms & Conditions Link
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex-shrink-0">
-              <button
-                onClick={() => setOpenDetailsDialog(false)}
-                className="w-full py-2.5 text-xs font-bold text-white bg-primary hover:bg-[#5B21B6] rounded-xl transition-all shadow-md"
-              >
-                Dismiss Details
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

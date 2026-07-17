@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { storeService } from '../services/storeService';
+import { storeService } from '../services/adminService';
 import {
   RefreshCw,
   Search,
