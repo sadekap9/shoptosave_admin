@@ -6,10 +6,8 @@ import {
   Tag,
   CheckCircle2,
   Ban,
-  ChevronRight,
   Trash2,
   Pencil,
-  X,
   ArrowLeft,
   Filter
 } from 'lucide-react';
@@ -17,7 +15,6 @@ import {
 const OFFER_TYPE_LABELS = {
   1: 'Instant Discount',
   2: 'Cashback',
-  // 3: 'Promo Code',
 };
 
 const formatDate = (isoStr) => {
@@ -52,15 +49,9 @@ const formatForDatetimeInput = (isoStr) => {
 
 const INITIAL_FORM = {
   offer_name: '',
-  offer_type: 2,
-  promo_code: '',
-  value_type: 2,
+  offer_type: 1,
+  description: '',
   value: '',
-  min_order_amount: '',
-  max_discount: '',
-  total_usage_limit: '',
-  per_user_limit: 1,
-  unique_users_only: 0,
   start_date: '',
   end_date: '',
   status: 1,
@@ -178,11 +169,11 @@ const CouponsView = ({ triggerToast }) => {
     const fetchSelectData = async () => {
       try {
         const [storeRes, giftRes] = await Promise.all([
-          storeService.getStores(),
-          storeService.getGiftCards()
+          storeService.getStores(1, 1000),
+          storeService.getGiftCards(1, 1000)
         ]);
         if (storeRes && storeRes.success && storeRes.result && storeRes.result.data) {
-          setStores(storeRes.result.data);
+          setStores(Array.isArray(storeRes.result.data) ? storeRes.result.data : []);
         }
         if (giftRes && giftRes.success && giftRes.result && giftRes.result.data) {
           const fetchedCards = Array.isArray(giftRes.result.data)
@@ -220,10 +211,7 @@ const CouponsView = ({ triggerToast }) => {
     const errors = {};
     if (!formData.offer_name.trim()) errors.offer_name = 'Offer name is required';
     if (!formData.value || Number(formData.value) <= 0) errors.value = 'Value must be > 0';
-    if (!formData.min_order_amount || Number(formData.min_order_amount) < 0)
-      errors.min_order_amount = 'Minimum order amount is required';
-    if (!formData.total_usage_limit || Number(formData.total_usage_limit) <= 0)
-      errors.total_usage_limit = 'Total usage limit must be > 0';
+    if (Number(formData.value) > 100) errors.value = 'Value percentage must be <= 100';
     if (!formData.start_date) errors.start_date = 'Start date is required';
     if (!formData.end_date) errors.end_date = 'End date is required';
     if (formData.start_date && formData.end_date && formData.start_date >= formData.end_date)
@@ -240,16 +228,10 @@ const CouponsView = ({ triggerToast }) => {
   const handleEditClick = (coupon) => {
     setEditingCoupon(coupon);
     setFormData({
-      offer_name: coupon.offer_name || '',
+      offer_name: coupon.offer_name || coupon.title || '',
+      description: coupon.description || '',
       offer_type: coupon.offer_type || 1,
-      promo_code: coupon.promo_code || '',
-      value_type: coupon.value_type || 1,
       value: coupon.value !== undefined && coupon.value !== null ? coupon.value : '',
-      min_order_amount: coupon.min_order_amount !== undefined && coupon.min_order_amount !== null ? coupon.min_order_amount : '',
-      max_discount: coupon.max_discount !== undefined && coupon.max_discount !== null ? coupon.max_discount : '',
-      total_usage_limit: coupon.total_usage_limit !== undefined && coupon.total_usage_limit !== null ? coupon.total_usage_limit : '',
-      per_user_limit: coupon.per_user_limit !== undefined && coupon.per_user_limit !== null ? coupon.per_user_limit : 1,
-      unique_users_only: coupon.unique_users_only ? 1 : 0,
       start_date: formatForDatetimeInput(coupon.start_date),
       end_date: formatForDatetimeInput(coupon.end_date),
       status: coupon.status !== undefined ? coupon.status : 1,
@@ -280,7 +262,6 @@ const CouponsView = ({ triggerToast }) => {
         start_date: toIso(formData.start_date),
         end_date: toIso(formData.end_date),
       };
-      delete payload.priority;
 
       let response;
       if (editingCoupon) {
@@ -316,7 +297,7 @@ const CouponsView = ({ triggerToast }) => {
     try {
       await couponService.updateCouponStatus(coupon.id, newStatus);
       triggerToast(
-        `Coupon "${coupon.offer_name}" is now ${newStatus === 1 ? 'Active' : 'Inactive'}`,
+        `Coupon "${coupon.offer_name || coupon.title}" is now ${newStatus === 1 ? 'Active' : 'Inactive'}`,
         'info'
       );
       fetchCoupons(page, rowsPerPage);
@@ -334,7 +315,7 @@ const CouponsView = ({ triggerToast }) => {
     try {
       await couponService.deleteCoupon(deleteTarget.id);
       setCoupons((prev) => prev.filter((c) => c.id !== deleteTarget.id));
-      triggerToast(`Coupon "${deleteTarget.offer_name}" deleted`, 'success');
+      triggerToast(`Coupon "${deleteTarget.offer_name || deleteTarget.title}" deleted`, 'success');
       setDeleteTarget(null);
       if (coupons.length === 1 && page > 0) {
         setPage((p) => p - 1);
@@ -348,12 +329,6 @@ const CouponsView = ({ triggerToast }) => {
     }
   };
 
-  const handleCopyCode = (code) => {
-    navigator.clipboard.writeText(code).then(() => {
-      triggerToast(`Copied "${code}" to clipboard`, 'success');
-    });
-  };
-
   const totalCoupons = statsMeta.total;
   const activeCoupons = statsMeta.active;
   const inactiveCoupons = statsMeta.inactive;
@@ -365,9 +340,8 @@ const CouponsView = ({ triggerToast }) => {
 
   const filteredCoupons = coupons.filter((c) => {
     const q = searchTerm.toLowerCase();
-    const matchesSearch =
-      (c.offer_name || '').toLowerCase().includes(q) ||
-      (c.promo_code || '').toLowerCase().includes(q);
+    const titleVal = c.offer_name || c.title || '';
+    const matchesSearch = titleVal.toLowerCase().includes(q);
     const matchesStatus =
       statusFilter === 'All' ||
       (statusFilter === 'Active' && c.status === 1) ||
@@ -375,21 +349,13 @@ const CouponsView = ({ triggerToast }) => {
     return matchesSearch && matchesStatus;
   });
 
-  // Pagination calculation
-  const startRow = page * rowsPerPage + 1;
-  const endRow = Math.min((page + 1) * rowsPerPage, paginationMeta.total);
-
   return (
     <div className="w-full max-w-full box-border animate-fadeIn">
       {viewMode === 'list' ? (
         <>
           {/* Header Row */}
           <div className="flex justify-between items-start mb-8 flex-wrap gap-4">
-            <div>
-              
-              
-             
-            </div>
+            <div />
             <button
               onClick={() => setViewMode('create')}
               className="flex items-center gap-2 text-white bg-gradient-to-r from-[#6D28D9] to-[#8B5CF6] hover:from-[#7C3AED] hover:to-[#9333EA] px-5 py-2.5 text-[11px] font-bold rounded-xl transition-all duration-200 shadow-[0_4px_14px_rgba(109,40,217,0.25)] hover:shadow-[0_8px_25px_rgba(109,40,217,0.35)] hover:-translate-y-0.5 active:translate-y-0"
@@ -434,7 +400,7 @@ const CouponsView = ({ triggerToast }) => {
                 </span>
                 <input
                   type="text"
-                  placeholder="Search coupon name or promo code..."
+                  placeholder="Search coupon name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 text-[11px] rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/60 focus:bg-white focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/10 outline-none transition-all duration-200 text-slate-900 font-semibold placeholder-slate-400"
@@ -468,7 +434,6 @@ const CouponsView = ({ triggerToast }) => {
                     <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Type</th>
                     <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Discount</th>
                     <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Validity</th>
-                    <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5">Usage</th>
                     <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5 text-center">Status</th>
                     <th className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-5 py-3.5 text-right pr-6">Actions</th>
                   </tr>
@@ -476,7 +441,7 @@ const CouponsView = ({ triggerToast }) => {
                 <tbody className="divide-y divide-slate-100/80">
                   {loading ? (
                     <tr>
-                      <td colSpan={9} className="py-16 text-center bg-white">
+                      <td colSpan={8} className="py-16 text-center bg-white">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-10 h-10 rounded-full border-[3px] border-slate-200 border-t-[#8B5CF6] animate-spin" />
                           <span className="text-[11px] font-semibold text-slate-400">Loading coupons...</span>
@@ -485,7 +450,7 @@ const CouponsView = ({ triggerToast }) => {
                     </tr>
                   ) : filteredCoupons.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="py-20 text-center bg-white">
+                      <td colSpan={8} className="py-20 text-center bg-white">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
                             <Tag className="w-7 h-7 text-slate-300" />
@@ -500,6 +465,7 @@ const CouponsView = ({ triggerToast }) => {
                   ) : (
                     filteredCoupons.map((coupon) => {
                       const isLive = coupon.status === 1;
+                      const valNum = parseFloat(coupon.value || 0).toFixed(2);
                       return (
                         <tr
                           key={coupon.id}
@@ -512,7 +478,7 @@ const CouponsView = ({ triggerToast }) => {
 
                           {/* Offer Name */}
                           <td className="px-5 py-4 whitespace-nowrap">
-                            <span className="text-[12px] font-bold text-slate-800">{coupon.offer_name}</span>
+                            <span className="text-[12px] font-bold text-slate-800">{coupon.offer_name || coupon.title}</span>
                           </td>
 
                           {/* Store */}
@@ -531,20 +497,15 @@ const CouponsView = ({ triggerToast }) => {
                                 ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                 : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             }`}>
-                              {OFFER_TYPE_LABELS[coupon.offer_type] || 'Promo Code'}
+                              {OFFER_TYPE_LABELS[coupon.offer_type] || 'Offer'}
                             </span>
                           </td>
 
                           {/* Discount */}
                           <td className="px-5 py-4 whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-[13px] font-extrabold text-[#8B5CF6]">
-                                {coupon.value_type === 2 ? `${parseFloat(coupon.value).toFixed(2)}%` : `₹${parseFloat(coupon.value).toFixed(2)}`}
-                              </span>
-                              <span className="text-[10px] text-slate-400 font-medium mt-0.5">
-                                Min ₹{parseFloat(coupon.min_order_amount).toFixed(0)}{coupon.max_discount ? ` · Max ₹${parseFloat(coupon.max_discount).toFixed(0)}` : ''}
-                              </span>
-                            </div>
+                            <span className="text-[13px] font-extrabold text-[#8B5CF6]">
+                              {coupon.display_text || `${valNum}%`}
+                            </span>
                           </td>
 
                           {/* Validity */}
@@ -552,14 +513,6 @@ const CouponsView = ({ triggerToast }) => {
                             <div className="flex flex-col gap-0.5 text-[10px] font-semibold text-slate-500">
                               <span>{formatDate(coupon.start_date)}</span>
                               <span className="text-slate-400">to {formatDate(coupon.end_date)}</span>
-                            </div>
-                          </td>
-
-                          {/* Usage */}
-                          <td className="px-5 py-4 whitespace-nowrap">
-                            <div className="flex flex-col gap-0.5 text-[10px] font-semibold text-slate-500">
-                              <span>Limit: <strong className="text-slate-700">{coupon.total_usage_limit || '∞'}</strong></span>
-                              <span>Per User: <strong className="text-slate-700">{coupon.per_user_limit || '1'}</strong></span>
                             </div>
                           </td>
 
@@ -682,7 +635,7 @@ const CouponsView = ({ triggerToast }) => {
               </h2>
               <span className="text-[10px] font-bold text-slate-400 mt-1.5 block">
                 {editingCoupon
-                  ? 'Modify coupon parameters, limits, or validity details'
+                  ? 'Modify coupon parameters, or validity details'
                   : 'Add an automatic Instant Discount or Cashback offer for your customers'}
               </span>
             </div>
@@ -723,8 +676,8 @@ const CouponsView = ({ triggerToast }) => {
                       onChange={handleFormChange('offer_type')}
                       className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 cursor-pointer"
                     >
-                      <option value={1}>⚡ Instant Discount</option>
-                      <option value={2}>💰 Cashback</option>
+                      <option value={1}>Instant Discount</option>
+                      <option value={2}>Cashback</option>
                     </select>
                   </div>
                 </div>
@@ -769,36 +722,24 @@ const CouponsView = ({ triggerToast }) => {
                 </div>
               </div>
 
-              {/* Section 2: Value & Discount */}
+              {/* Section 2: Discount Percentage */}
               <div className="p-6 border-b border-slate-100">
                 <div className="flex items-center gap-2.5 mb-5">
                   <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-white flex items-center justify-center font-extrabold text-[11px] shadow-sm">2</span>
-                  <h4 className="text-[13px] font-bold text-slate-800">Value &amp; Discount Details</h4>
+                  <h4 className="text-[13px] font-bold text-slate-800">Discount Value</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                      Value Type *
-                    </label>
-                    <select
-                      value={formData.value_type}
-                      onChange={handleFormChange('value_type')}
-                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 cursor-pointer"
-                    >
-                      <option value={1}>💵 Flat Amount (₹)</option>
-                      <option value={2}>📊 Percentage (%)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                      Discount Value *
+                      Percentage Value (%) *
                     </label>
                     <input
                       type="number"
                       required
-                      min="1"
-                      placeholder={formData.value_type === 2 ? 'e.g. 10' : 'e.g. 150'}
+                      min="0.01"
+                      max="100"
+                      step="0.01"
+                      placeholder="e.g. 10"
                       value={formData.value}
                       onChange={handleFormChange('value')}
                       onWheel={(e) => e.target.blur()}
@@ -811,109 +752,10 @@ const CouponsView = ({ triggerToast }) => {
                 </div>
               </div>
 
-              {/* Section 3: Limits & Rules */}
+              {/* Section 3: Validity & Status */}
               <div className="p-6 border-b border-slate-100">
                 <div className="flex items-center gap-2.5 mb-5">
                   <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-white flex items-center justify-center font-extrabold text-[11px] shadow-sm">3</span>
-                  <h4 className="text-[13px] font-bold text-slate-800">Limits &amp; Rules</h4>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                      Min Order Amount *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      placeholder="e.g. 499"
-                      value={formData.min_order_amount}
-                      onChange={handleFormChange('min_order_amount')}
-                      onWheel={(e) => e.target.blur()}
-                      className={`w-full px-4 py-2.5 text-[12px] rounded-xl border bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 ${
-                        formErrors.min_order_amount ? 'border-red-400 focus:border-red-400 focus:ring-red-500/5' : 'border-slate-200'
-                      }`}
-                    />
-                    {formErrors.min_order_amount && <span className="text-[10px] text-red-500 font-semibold">{formErrors.min_order_amount}</span>}
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                      Max Discount (Optional)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 500"
-                      value={formData.max_discount}
-                      onChange={handleFormChange('max_discount')}
-                      onWheel={(e) => e.target.blur()}
-                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                      Total Usage Limit *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      placeholder="e.g. 1000"
-                      value={formData.total_usage_limit}
-                      onChange={handleFormChange('total_usage_limit')}
-                      onWheel={(e) => e.target.blur()}
-                      className={`w-full px-4 py-2.5 text-[12px] rounded-xl border bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200 ${
-                        formErrors.total_usage_limit ? 'border-red-400 focus:border-red-400 focus:ring-red-500/5' : 'border-slate-200'
-                      }`}
-                    />
-                    {formErrors.total_usage_limit && <span className="text-[10px] text-red-500 font-semibold">{formErrors.total_usage_limit}</span>}
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                      Per User Limit *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      placeholder="e.g. 1"
-                      value={formData.per_user_limit}
-                      onChange={handleFormChange('per_user_limit')}
-                      onWheel={(e) => e.target.blur()}
-                      className="w-full px-4 py-2.5 text-[12px] rounded-xl border border-slate-200 bg-white hover:border-slate-300 focus:border-[#8B5CF6] focus:ring-4 focus:ring-[#8B5CF6]/5 outline-none text-slate-700 font-semibold shadow-sm transition-all duration-200"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-5">
-                  <div
-                    onClick={() => setFormData(prev => ({ ...prev, unique_users_only: prev.unique_users_only === 1 ? 0 : 1 }))}
-                    className={`p-4 rounded-xl border flex items-start gap-3.5 cursor-pointer transition-all duration-200 select-none ${
-                      formData.unique_users_only === 1
-                        ? 'border-[#8B5CF6] bg-violet-50/40 shadow-[0_0_0_1px_rgba(139,92,246,0.2)]'
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.unique_users_only === 1}
-                      readOnly
-                      className="h-4 w-4 mt-0.5 text-[#8B5CF6] border-slate-300 rounded focus:ring-[#8B5CF6] pointer-events-none accent-[#8B5CF6]"
-                    />
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[12px] font-bold leading-none text-slate-800">New Users Only</span>
-                      <span className="text-[10px] text-slate-400 leading-tight font-medium">Only customers who haven't used this coupon before</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 4: Validity & Status */}
-              <div className="p-6 border-b border-slate-100">
-                <div className="flex items-center gap-2.5 mb-5">
-                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6] to-[#6D28D9] text-white flex items-center justify-center font-extrabold text-[11px] shadow-sm">4</span>
                   <h4 className="text-[13px] font-bold text-slate-800">Validity &amp; Status</h4>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1018,7 +860,7 @@ const CouponsView = ({ triggerToast }) => {
               <div>
                 <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Delete Coupon</h3>
                 <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                  Are you sure you want to delete <strong className="text-slate-700">"{deleteTarget.offer_name}"</strong>? This action cannot be undone.
+                  Are you sure you want to delete <strong className="text-slate-700">"{deleteTarget.offer_name || deleteTarget.title}"</strong>? This action cannot be undone.
                 </p>
               </div>
             </div>

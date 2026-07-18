@@ -147,8 +147,8 @@ export const storeService = {
   /**
    * Fetch stores list from backend
    */
-  async getStores() {
-    return apiClient.get('/stores/list');
+  async getStores(page = 1, limit = 1000) {
+    return apiClient.get(`/stores/list?page=${page}&limit=${limit}`);
   },
 
   /**
@@ -223,8 +223,8 @@ export const storeService = {
   /**
    * Fetch all gift cards in the catalog
    */
-  async getGiftCards() {
-    return apiClient.get('/gift-cards/admin/list');
+  async getGiftCards(page = 1, limit = 1000) {
+    return apiClient.get(`/gift-cards/admin/list?page=${page}&limit=${limit}`);
   },
 
   /**

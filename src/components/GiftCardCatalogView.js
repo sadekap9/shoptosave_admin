@@ -94,9 +94,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
           let offerTypeLabel = '';
           if (card.max_offer_value && parseFloat(card.max_offer_value) > 0) {
             offerTypeLabel = card.max_offer_type === 1 ? 'Discount' : 'Cashback';
-            buyDiscount = card.max_offer_value_type === 2
-              ? `${parseFloat(card.max_offer_value)}%`
-              : `₹${parseFloat(card.max_offer_value)}`;
+            buyDiscount = `${parseFloat(card.max_offer_value)}%`;
           } else if (card.cashback_percentage !== undefined && card.cashback_percentage !== null && parseFloat(card.cashback_percentage) > 0) {
             buyDiscount = `${parseFloat(card.cashback_percentage)}%`;
             offerTypeLabel = 'Cashback';
@@ -520,9 +518,7 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                                 let offerTypeLabel = '';
                                 if (fullCard.max_offer_value && parseFloat(fullCard.max_offer_value) > 0) {
                                   offerTypeLabel = fullCard.max_offer_type === 1 ? 'Discount' : 'Cashback';
-                                  buyDiscount = fullCard.max_offer_value_type === 2
-                                    ? `${parseFloat(fullCard.max_offer_value)}%`
-                                    : `₹${parseFloat(fullCard.max_offer_value)}`;
+                                  buyDiscount = `${parseFloat(fullCard.max_offer_value)}%`;
                                 } else if (fullCard.cashback_percentage !== undefined && fullCard.cashback_percentage !== null && parseFloat(fullCard.cashback_percentage) > 0) {
                                   buyDiscount = `${parseFloat(fullCard.cashback_percentage)}%`;
                                   offerTypeLabel = 'Cashback';
