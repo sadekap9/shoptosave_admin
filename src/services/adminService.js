@@ -20,6 +20,15 @@ export const bannerService = {
     }
     
     return apiClient.post('/banners/add', formData);
+  },
+
+  /**
+   * Update a banner's status
+   * @param {number|string} id - Banner ID
+   * @param {number} status - 1 for active, 0 for inactive
+   */
+  async updateBannerStatus(id, status) {
+    return apiClient.patch(`/banners/status/${id}`, { status });
   }
 };
 
@@ -179,11 +188,10 @@ export const storeService = {
   /**
    * Add a voucher/gift card mapping to a store
    */
-  async addVoucher(storeId, sku, featured, categoryId, giftcardImage) {
+  async addVoucher(storeId, sku, categoryId, giftcardImage) {
     const formData = new FormData();
     formData.append('store_id', Number(storeId));
     formData.append('sku', sku.trim());
-    formData.append('featured', Number(featured));
     formData.append('category_id', Number(categoryId));
     if (giftcardImage) {
       formData.append('giftcard_image', giftcardImage);
@@ -194,11 +202,10 @@ export const storeService = {
   /**
    * Update voucher/gift card mapping
    */
-  async updateVoucher(id, storeId, sku, featured, categoryId, giftcardImage) {
+  async updateVoucher(id, storeId, sku, categoryId, giftcardImage) {
     const formData = new FormData();
     formData.append('store_id', Number(storeId));
     formData.append('sku', sku.trim());
-    formData.append('featured', Number(featured));
     formData.append('category_id', Number(categoryId));
     if (giftcardImage) {
       formData.append('giftcard_image', giftcardImage);

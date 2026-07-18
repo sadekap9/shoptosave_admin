@@ -166,6 +166,11 @@ const CouponsView = ({ triggerToast }) => {
   }, [page, rowsPerPage]);
 
   useEffect(() => {
+    // Only fetch these large lists when the user actually wants to create/edit a coupon
+    if (viewMode !== 'create') return;
+    // Don't refetch if we already have them
+    if (stores.length > 0 || giftCards.length > 0) return;
+
     const fetchSelectData = async () => {
       try {
         const [storeRes, giftRes] = await Promise.all([
@@ -186,7 +191,7 @@ const CouponsView = ({ triggerToast }) => {
       }
     };
     fetchSelectData();
-  }, []);
+  }, [viewMode, stores.length, giftCards.length]);
 
   const handleFormChange = (field) => (e) => {
     const val = e.target.type === 'checkbox' ? (e.target.checked ? 1 : 0) : e.target.value;
@@ -262,6 +267,9 @@ const CouponsView = ({ triggerToast }) => {
         start_date: toIso(formData.start_date),
         end_date: toIso(formData.end_date),
       };
+
+      if (!payload.store_id) delete payload.store_id;
+      if (!payload.gift_card_id) delete payload.gift_card_id;
 
       let response;
       if (editingCoupon) {

@@ -22,13 +22,38 @@ const getBannerImageUrl = (imagePath) => {
 
 const BannersView = ({ triggerToast }) => {
   const [banners, setBanners] = useState([]);
-  const handleToggleStatus = (bannerId) => {
+  const handleToggleStatus = async (banner) => {
+    const newStatus = banner.status === 1 ? 0 : 1;
+    
+    // Optimistic UI update
     setBanners((prevBanners) =>
       prevBanners.map((b) =>
-        b.id === bannerId ? { ...b, status: b.status === 1 ? 0 : 1 } : b
+        b.id === banner.id ? { ...b, status: newStatus } : b
       )
     );
-    triggerToast('Banner status updated locally (no API call)', 'success');
+
+    try {
+      const response = await bannerService.updateBannerStatus(banner.id, newStatus);
+      if (response && response.success) {
+        triggerToast('Banner status updated successfully', 'success');
+      } else {
+        // Revert optimistic update on failure
+        setBanners((prevBanners) =>
+          prevBanners.map((b) =>
+            b.id === banner.id ? { ...b, status: banner.status } : b
+          )
+        );
+        triggerToast(response?.message || 'Failed to update status', 'error');
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      setBanners((prevBanners) =>
+        prevBanners.map((b) =>
+          b.id === banner.id ? { ...b, status: banner.status } : b
+        )
+      );
+      triggerToast(error.message || 'An error occurred', 'error');
+    }
   };
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -299,7 +324,7 @@ const BannersView = ({ triggerToast }) => {
                       </td>
                       <td className="px-6 py-4 text-center pr-6 whitespace-nowrap">
                         <button
-                          onClick={() => handleToggleStatus(banner.id)}
+                          onClick={() => handleToggleStatus(banner)}
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${
                             isActive
                               ? 'bg-emerald-50 text-emerald-600 border-emerald-500/10 hover:bg-emerald-100'

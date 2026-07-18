@@ -322,7 +322,7 @@ const StoresView = ({ triggerToast }) => {
     try {
       if (voucherFormMode === 'add') {
         const storeId = selectedStore.rawStore?.id || selectedStore.id;
-        const response = await storeService.addVoucher(storeId, vchSku, vchFeatured, vchCategoryId, vchImage);
+        const response = await storeService.addVoucher(storeId, vchSku, vchCategoryId, vchImage);
 
         if (response && response.success) {
           triggerToast(`Voucher SKU "${vchSku.trim()}" registered successfully!`, 'success');
@@ -336,13 +336,14 @@ const StoresView = ({ triggerToast }) => {
           if (hasUniqueError) {
             triggerToast('Gift card already added for this store', 'error');
           } else {
-            triggerToast(response?.message || 'Failed to register voucher mapping', 'error');
+            const firstErrorMsg = errorsList[0]?.message || response?.message || 'Failed to register voucher mapping';
+            triggerToast(firstErrorMsg, 'error');
           }
           return;
         }
       } else if (voucherFormMode === 'edit') {
         const storeId = selectedStore.rawStore?.id || selectedStore.id;
-        const response = await storeService.updateVoucher(selectedVoucher.id, storeId, vchSku, vchFeatured, vchCategoryId, vchImage);
+        const response = await storeService.updateVoucher(selectedVoucher.id, storeId, vchSku, vchCategoryId, vchImage);
 
         if (response && response.success) {
           triggerToast(`Voucher SKU "${vchSku.trim()}" updated successfully!`, 'success');
@@ -352,7 +353,9 @@ const StoresView = ({ triggerToast }) => {
           });
           await fetchStoreVouchers(storeId);
         } else {
-          triggerToast(response?.message || 'Failed to update voucher', 'error');
+          const errorsList = response?.errors || [];
+          const firstErrorMsg = errorsList[0]?.message || response?.message || 'Failed to update voucher';
+          triggerToast(firstErrorMsg, 'error');
           return;
         }
       }
@@ -369,7 +372,7 @@ const StoresView = ({ triggerToast }) => {
       if (errorMsg.toLowerCase().includes('unique')) {
         triggerToast('Gift card already added for this store', 'error');
       } else {
-        triggerToast(err.message || 'An error occurred while submitting voucher mapping', 'error');
+        triggerToast(errorMsg || err.message || 'An error occurred while submitting voucher mapping', 'error');
       }
     }
   };
@@ -503,6 +506,7 @@ const StoresView = ({ triggerToast }) => {
                       <thead className="bg-[#F8FAFC]">
                         <tr className="border-b border-slate-150">
                           <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3.5">Gift Card Name</th>
+                          <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3.5">Category</th>
                           <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3.5">Type</th>
                           <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3.5">Validity</th>
                           <th className="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-6 py-3.5">Range</th>
@@ -534,6 +538,11 @@ const StoresView = ({ triggerToast }) => {
                                     <span className="text-[10px] text-slate-400 block mt-0.5 font-bold">SKU: {v.sku}</span>
                                   </div>
                                 </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="text-xs font-bold text-slate-600">
+                                  {categoriesList.find((c) => String(c.id) === String(v.category_id))?.category_name || 'N/A'}
+                                </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className="text-xs font-bold text-slate-600">
@@ -602,6 +611,7 @@ const StoresView = ({ triggerToast }) => {
                               </h5>
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-[9px] text-slate-400 font-semibold">
                                 <span>SKU: {v.sku}</span>
+                                {(() => { const catName = categoriesList.find((c) => String(c.id) === String(v.category_id))?.category_name; return catName ? (<><span className="w-0.5 h-0.5 rounded-full bg-slate-300 flex-shrink-0" /><span>Category: {catName}</span></>) : null; })()}
                                 {v.product_type && (
                                   <>
                                     <span className="w-0.5 h-0.5 rounded-full bg-slate-300 flex-shrink-0" />
@@ -729,7 +739,7 @@ const StoresView = ({ triggerToast }) => {
                     className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 bg-[#F8FAFC] outline-none focus:bg-white focus:border-[#8B5CF6] focus:ring-2 focus:ring-[#8B5CF6]/10 text-slate-700 font-semibold transition-all shadow-sm cursor-pointer"
                   >
                     <option value="">-- Choose Category --</option>
-                    {categoriesList.map((cat) => (
+                    {categoriesList.filter((cat) => cat.status === 1).map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.category_name}
                       </option>
