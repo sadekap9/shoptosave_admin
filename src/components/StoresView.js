@@ -664,7 +664,7 @@ const StoresView = ({ triggerToast }) => {
           ) : (
             /* Voucher Form View (Add/Edit) */
             <div className="max-w-xl mx-auto space-y-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+              {/* <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
                 <button
                   type="button"
                   onClick={handleCancelVoucherForm}
@@ -680,7 +680,7 @@ const StoresView = ({ triggerToast }) => {
                     {voucherFormMode === 'add' ? 'Add digital reward listings to the catalog.' : 'Update voucher configurations.'}
                   </p>
                 </div>
-              </div>
+              </div> */}
 
               <form onSubmit={handleVoucherSubmit} className="space-y-5">
                 {/* Product Autocomplete Dropdown Search */}

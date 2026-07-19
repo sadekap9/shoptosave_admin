@@ -89,24 +89,19 @@ export const couponService = {
    * @param {Object} data - Coupon fields matching the API payload
    */
   async addCoupon(data) {
-    return apiClient.post('/offers/add', {
+    const payload = {
       offer_name: data.offer_name,
       offer_type: Number(data.offer_type),
-      promo_code: data.promo_code,
-      value_type: Number(data.value_type),
       value: Number(data.value),
-      min_order_amount: Number(data.min_order_amount),
-      max_discount: Number(data.max_discount),
-      total_usage_limit: Number(data.total_usage_limit),
-      per_user_limit: Number(data.per_user_limit),
-      unique_users_only: Number(data.unique_users_only),
-      priority: Number(data.priority),
       start_date: data.start_date,
       end_date: data.end_date,
       status: Number(data.status),
-      store_id: data.store_id ? Number(data.store_id) : null,
-      gift_card_id: data.gift_card_id ? Number(data.gift_card_id) : null,
-    });
+    };
+    if (data.description) payload.description = data.description;
+    if (data.store_id) payload.store_id = Number(data.store_id);
+    if (data.gift_card_id) payload.gift_card_id = Number(data.gift_card_id);
+
+    return apiClient.post('/offers/add', payload);
   },
 
   /**
@@ -115,23 +110,29 @@ export const couponService = {
    * @param {Object} data - Coupon fields matching the API payload
    */
   async updateCoupon(id, data) {
-    return apiClient.patch(`/offers/update/${id}`, {
+    const payload = {
       offer_name: data.offer_name,
       offer_type: Number(data.offer_type),
-      promo_code: data.promo_code || null,
-      value_type: Number(data.value_type),
       value: Number(data.value),
-      min_order_amount: Number(data.min_order_amount),
-      max_discount: data.max_discount ? Number(data.max_discount) : null,
-      total_usage_limit: data.total_usage_limit ? Number(data.total_usage_limit) : null,
-      per_user_limit: data.per_user_limit ? Number(data.per_user_limit) : null,
-      unique_users_only: Number(data.unique_users_only),
       start_date: data.start_date,
       end_date: data.end_date,
       status: Number(data.status),
       store_id: data.store_id ? Number(data.store_id) : null,
       gift_card_id: data.gift_card_id ? Number(data.gift_card_id) : null,
-    });
+    };
+    if (data.description !== undefined) payload.description = data.description;
+    if (data.store_id) {
+      payload.store_id = Number(data.store_id);
+      payload.gift_card_id = null;
+    } else if (data.gift_card_id) {
+      payload.gift_card_id = Number(data.gift_card_id);
+      payload.store_id = null;
+    } else {
+      payload.store_id = null;
+      payload.gift_card_id = null;
+    }
+
+    return apiClient.patch(`/offers/update/${id}`, payload);
   },
 
   /**

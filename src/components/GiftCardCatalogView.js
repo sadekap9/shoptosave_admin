@@ -12,7 +12,8 @@ import {
   FileText,
   Gift,
   ArrowLeft,
-  Store
+  Store,
+  Trash2
 } from 'lucide-react';
 
 const getBrandGradient = (brandName) => {
@@ -60,6 +61,8 @@ const GiftCardCatalogView = ({ triggerToast }) => {
   const [activeTab, setActiveTab] = useState(0); // 0 = Buy Catalog, 1 = Sell Catalog
 
   const [selectedCard, setSelectedCard] = useState(null);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState(null);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -175,6 +178,37 @@ const GiftCardCatalogView = ({ triggerToast }) => {
         errorMsg = err.data.message;
       }
       triggerToast(errorMsg, 'error');
+    }
+  };
+
+  const handleDeleteGiftCard = (id, brand) => {
+    setCardToDelete({ id, brand });
+    setOpenDeleteDialog(true);
+  };
+
+  const handleConfirmDeleteGiftCard = async () => {
+    if (!cardToDelete) return;
+    try {
+      const response = await storeService.deleteVoucher(cardToDelete.id);
+      if (response && response.success) {
+        triggerToast(`Gift card "${cardToDelete.brand}" deleted successfully!`, 'success');
+        setCatalog(catalog.filter((c) => c.id !== cardToDelete.id));
+        if (selectedCard && selectedCard.id === cardToDelete.id) {
+          setSelectedCard(null);
+        }
+      } else {
+        triggerToast(response?.message || 'Failed to delete gift card', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to delete gift card:', err);
+      let errorMsg = err.message || 'An error occurred while deleting';
+      if (err.data && err.data.message) {
+        errorMsg = err.data.message;
+      }
+      triggerToast(errorMsg, 'error');
+    } finally {
+      setOpenDeleteDialog(false);
+      setCardToDelete(null);
     }
   };
 
@@ -488,80 +522,89 @@ const GiftCardCatalogView = ({ triggerToast }) => {
                         </button>
                       </td>
                       <td className="px-6 py-4 text-right pr-6 whitespace-nowrap">
-                        <button
-                          onClick={async () => {
-                            try {
-                              const response = await storeService.getGiftCardById(card.id);
-                              if (response && response.success && response.result?.data) {
-                                const fullCard = response.result.data;
-                                const mainCategory = fullCard.category_name || 'General';
+                        <div className="flex justify-end gap-1.5 ml-auto w-fit">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await storeService.getGiftCardById(card.id);
+                                if (response && response.success && response.result?.data) {
+                                  const fullCard = response.result.data;
+                                  const mainCategory = fullCard.category_name || 'General';
 
-                                // Safely parse discounts JSON or string
-                                let discountsArr = [];
-                                if (fullCard.discounts) {
-                                  if (Array.isArray(fullCard.discounts)) {
-                                    discountsArr = fullCard.discounts;
-                                  } else if (typeof fullCard.discounts === 'string') {
-                                    try {
-                                      discountsArr = JSON.parse(fullCard.discounts);
-                                    } catch (e) {
-                                      const num = parseFloat(fullCard.discounts);
-                                      if (!isNaN(num)) {
-                                        discountsArr = [num];
+                                  // Safely parse discounts JSON or string
+                                  let discountsArr = [];
+                                  if (fullCard.discounts) {
+                                    if (Array.isArray(fullCard.discounts)) {
+                                      discountsArr = fullCard.discounts;
+                                    } else if (typeof fullCard.discounts === 'string') {
+                                      try {
+                                        discountsArr = JSON.parse(fullCard.discounts);
+                                      } catch (e) {
+                                        const num = parseFloat(fullCard.discounts);
+                                        if (!isNaN(num)) {
+                                          discountsArr = [num];
+                                        }
                                       }
                                     }
                                   }
+
+                                  // Priority: API offer data > cashback_percentage > discounts array > NA
+                                  let buyDiscount = 'NA';
+                                  let offerTypeLabel = '';
+                                  if (fullCard.max_offer_value && parseFloat(fullCard.max_offer_value) > 0) {
+                                    offerTypeLabel = fullCard.max_offer_type === 1 ? 'Discount' : 'Cashback';
+                                    buyDiscount = `${parseFloat(fullCard.max_offer_value)}%`;
+                                  } else if (fullCard.cashback_percentage !== undefined && fullCard.cashback_percentage !== null && parseFloat(fullCard.cashback_percentage) > 0) {
+                                    buyDiscount = `${parseFloat(fullCard.cashback_percentage)}%`;
+                                    offerTypeLabel = 'Cashback';
+                                  } else if (discountsArr.length > 0) {
+                                    buyDiscount = `${discountsArr[0]}%`;
+                                    offerTypeLabel = 'Discount';
+                                  }
+
+                                  // Sell payout rate from resell_margin
+                                  const sellPayout = fullCard.payout_enabled === 1
+                                    ? (fullCard.resell_margin !== undefined && fullCard.resell_margin !== null
+                                        ? `${(100 - parseFloat(fullCard.resell_margin)).toFixed(1)}%`
+                                        : '90.0%')
+                                    : 'N/A';
+
+                                  setSelectedCard({
+                                    id: fullCard.id,
+                                    brand: fullCard.gift_card_name || fullCard.brand_name || 'N/A',
+                                    category: mainCategory,
+                                    allCategories: [],
+                                    allowBuy: true,
+                                    allowSell: fullCard.payout_enabled === 1,
+                                    buyDiscount,
+                                    offerTypeLabel,
+                                    sellPayout,
+                                    status: fullCard.status === 1 ? 'Active' : 'Disabled',
+                                    stock: fullCard.stock || (100 + (fullCard.id % 5) * 20),
+                                    bg: getBrandGradient(fullCard.gift_card_name || fullCard.brand_name),
+                                    raw: fullCard,
+                                  });
+                                } else {
+                                  triggerToast(response?.message || 'Failed to fetch gift card details', 'error');
                                 }
-
-                                // Priority: API offer data > cashback_percentage > discounts array > NA
-                                let buyDiscount = 'NA';
-                                let offerTypeLabel = '';
-                                if (fullCard.max_offer_value && parseFloat(fullCard.max_offer_value) > 0) {
-                                  offerTypeLabel = fullCard.max_offer_type === 1 ? 'Discount' : 'Cashback';
-                                  buyDiscount = `${parseFloat(fullCard.max_offer_value)}%`;
-                                } else if (fullCard.cashback_percentage !== undefined && fullCard.cashback_percentage !== null && parseFloat(fullCard.cashback_percentage) > 0) {
-                                  buyDiscount = `${parseFloat(fullCard.cashback_percentage)}%`;
-                                  offerTypeLabel = 'Cashback';
-                                } else if (discountsArr.length > 0) {
-                                  buyDiscount = `${discountsArr[0]}%`;
-                                  offerTypeLabel = 'Discount';
-                                }
-
-                                // Sell payout rate from resell_margin
-                                const sellPayout = fullCard.payout_enabled === 1
-                                  ? (fullCard.resell_margin !== undefined && fullCard.resell_margin !== null
-                                      ? `${(100 - parseFloat(fullCard.resell_margin)).toFixed(1)}%`
-                                      : '90.0%')
-                                  : 'N/A';
-
-                                setSelectedCard({
-                                  id: fullCard.id,
-                                  brand: fullCard.gift_card_name || fullCard.brand_name || 'N/A',
-                                  category: mainCategory,
-                                  allCategories: [],
-                                  allowBuy: true,
-                                  allowSell: fullCard.payout_enabled === 1,
-                                  buyDiscount,
-                                  offerTypeLabel,
-                                  sellPayout,
-                                  status: fullCard.status === 1 ? 'Active' : 'Disabled',
-                                  stock: fullCard.stock || (100 + (fullCard.id % 5) * 20),
-                                  bg: getBrandGradient(fullCard.gift_card_name || fullCard.brand_name),
-                                  raw: fullCard,
-                                });
-                              } else {
-                                triggerToast(response?.message || 'Failed to fetch gift card details', 'error');
+                              } catch (err) {
+                                console.error('Error fetching gift card details:', err);
+                                triggerToast('Error loading gift card details', 'error');
                               }
-                            } catch (err) {
-                              console.error('Error fetching gift card details:', err);
-                              triggerToast('Error loading gift card details', 'error');
-                            }
-                          }}
-                          className="flex items-center justify-center border border-primary/30 text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors ml-auto"
-                          title="Details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                            }}
+                            className="flex items-center justify-center border border-primary/30 text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors"
+                            title="Details"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGiftCard(card.id, card.brand)}
+                            className="flex items-center justify-center border border-red-300 text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -571,6 +614,39 @@ const GiftCardCatalogView = ({ triggerToast }) => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirm Dialog */}
+      {openDeleteDialog && (
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden animate-fadeIn">
+            <div className="pt-6 px-6 pb-2">
+              <h3 className="text-sm font-extrabold text-red-500 tracking-tight">Delete Gift Card</h3>
+            </div>
+            <div className="px-6 pb-4">
+              <p className="text-xs text-slate-650 leading-relaxed">
+                Are you sure you want to delete gift card <strong>"{cardToDelete?.brand}"</strong>?
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setOpenDeleteDialog(false);
+                  setCardToDelete(null);
+                }}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDeleteGiftCard}
+                className="px-4 py-2 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-md"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
