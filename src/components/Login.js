@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import useLoginViewModel from '../viewmodels/useLoginViewModel';
 
-export default function Login({ onLoginSuccess }) {
+export default function Login({ onLoginSuccess, sessionExpired }) {
   const {
     email,
     password,
@@ -44,6 +44,13 @@ export default function Login({ onLoginSuccess }) {
         </div>
 
         {/* Error alerts */}
+        {sessionExpired && !apiError && (
+          <div className="mb-6 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-600 text-[0.78rem] font-semibold flex items-start gap-2">
+            <span className="mt-0.5 text-base leading-none">⚠️</span>
+            <div>Session expired, please login again</div>
+          </div>
+        )}
+
         {apiError && (
           <div className="mb-6 p-4 rounded-xl border border-red-200 bg-red-50 text-red-500 text-[0.78rem] font-semibold flex items-start gap-2">
             <span className="mt-0.5 text-base leading-none">⚠️</span>

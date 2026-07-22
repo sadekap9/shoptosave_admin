@@ -43,11 +43,31 @@ import authModel from './models/authModel';
 
 // Initial Mock Orders
 const initialOrders = [
-  { id: 'ORD-2041', user: 'Ravi M.', brand: 'Amazon', amount: '₹1,000', status: 'Complete', timestamp: '2026-05-22 11:45' },
-  { id: 'ORD-2040', user: 'Priya S.', brand: 'Flipkart', amount: '₹500', status: 'Complete', timestamp: '2026-05-22 10:30' },
-  { id: 'ORD-2039', user: 'Amit K.', brand: 'Myntra', amount: '₹2,000', status: 'Processing', timestamp: '2026-05-22 09:15' },
-  { id: 'ORD-2038', user: 'Sneha R.', brand: 'Google Play', amount: '₹1,500', status: 'Complete', timestamp: '2026-05-21 17:40' },
-  { id: 'ORD-2037', user: 'Rahul P.', brand: 'Swiggy', amount: '₹750', status: 'Failed', timestamp: '2026-05-21 14:22' },
+  { 
+    id: 'ORD-2041', user: 'Ravi M.', brand: 'Amazon Pay eGift Card', amount: '₹1,000', status: 'Complete', timestamp: '2026-05-22 11:45',
+    quantity: 1, store: 'Amazon', category: 'Shopping', instantDiscount: '₹50', cashback: '₹0',
+    couponCode: 'AMZ-5D9F-3B2A', couponExpiry: '2027-05-22', couponPin: '8492'
+  },
+  { 
+    id: 'ORD-2040', user: 'Priya S.', brand: 'Flipkart eGift Voucher', amount: '₹500', status: 'Complete', timestamp: '2026-05-22 10:30',
+    quantity: 2, store: 'Flipkart', category: 'Shopping', instantDiscount: '₹0', cashback: '₹15',
+    couponCode: 'FLK-9X4C-1M7P', couponExpiry: '2026-12-31', couponPin: '1122'
+  },
+  { 
+    id: 'ORD-2039', user: 'Amit K.', brand: 'Myntra Gift Card', amount: '₹2,000', status: 'Processing', timestamp: '2026-05-22 09:15',
+    quantity: 1, store: 'Myntra', category: 'Fashion', instantDiscount: '₹100', cashback: '₹0',
+    couponCode: 'Pending', couponExpiry: 'Pending', couponPin: 'Pending'
+  },
+  { 
+    id: 'ORD-2038', user: 'Sneha R.', brand: 'Google Play Recharge', amount: '₹1,500', status: 'Complete', timestamp: '2026-05-21 17:40',
+    quantity: 3, store: 'Google Play', category: 'Entertainment', instantDiscount: '₹0', cashback: '₹75',
+    couponCode: 'GPL-2V8N-9K3J', couponExpiry: '2028-01-01', couponPin: 'None'
+  },
+  { 
+    id: 'ORD-2037', user: 'Rahul P.', brand: 'Swiggy Money Voucher', amount: '₹750', status: 'Failed', timestamp: '2026-05-21 14:22',
+    quantity: 1, store: 'Swiggy', category: 'Food', instantDiscount: '₹0', cashback: '₹0',
+    couponCode: 'N/A', couponExpiry: 'N/A', couponPin: 'N/A'
+  },
 ];
 
 // Initial Mock Resell Card Requests
@@ -69,6 +89,7 @@ const initialStores = [
 function App() {
   // Authentication status state
   const [isAuthenticated, setIsAuthenticated] = useState(authModel.isAuthenticated());
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -115,6 +136,7 @@ function App() {
       const authState = authModel.isAuthenticated();
       setIsAuthenticated(authState);
       if (authState) {
+        setSessionExpired(false);
         const user = authModel.getUser();
         setAdminProfile({
           name: user.name || user.email || 'Admin User',
@@ -126,12 +148,17 @@ function App() {
       }
     };
 
+    const handleAuthExpired = () => {
+      setSessionExpired(true);
+      handleAuthChange();
+    };
+
     window.addEventListener('s2s_auth_change', handleAuthChange);
-    window.addEventListener('s2s_auth_expired', handleAuthChange);
+    window.addEventListener('s2s_auth_expired', handleAuthExpired);
 
     return () => {
       window.removeEventListener('s2s_auth_change', handleAuthChange);
-      window.removeEventListener('s2s_auth_expired', handleAuthChange);
+      window.removeEventListener('s2s_auth_expired', handleAuthExpired);
     };
   }, []);
 
@@ -295,7 +322,15 @@ function App() {
   const sidebarWidth = isCollapsed ? 72 : 260;
 
   if (!isAuthenticated) {
-    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+    return (
+      <Login
+        onLoginSuccess={() => {
+          setSessionExpired(false);
+          setIsAuthenticated(true);
+        }}
+        sessionExpired={sessionExpired}
+      />
+    );
   }
 
   const renderNavItem = (tabName, label, IconComponent, badgeContent, badgeClass = 'bg-primary-light text-primary') => {
@@ -393,6 +428,8 @@ function App() {
             )}
             <ul className="space-y-1">
               {renderNavItem('dashboard', 'Dashboard', LayoutDashboard)}
+              {renderNavItem('orders', 'Orders', ShoppingBag)}
+              {renderNavItem('sell-requests', 'Sell Orders', Repeat)}
               {renderNavItem('users', 'User Accounts', Users, '1.2k', 'bg-[#F5F3FF] text-[#A855F7]')}
               {renderNavItem('sub-admins', 'Sub-Admins', ShieldCheck)}
             </ul>
